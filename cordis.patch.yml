@@ -1,6 +1,6 @@
-# dsh-workspace-plus bundle patch. (Fork of KannaKuron/dsh-better-workspace;
+# dsh-workspace-plus bundle patch.
 # wire identifiers dsh.betterWorkspace persistence / settings namespace are
-# retained so existing browser state migrates transparently.)
+# retained so existing browser state migrates transparently.
 #
 # Manual mount equivalent (profile cordis.patch.yml):
 #

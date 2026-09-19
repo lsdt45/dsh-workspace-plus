@@ -1,5 +1,5 @@
 /**
- * dsh-workspace-plus (fork of KannaKuron/dsh-better-workspace) — client half (plain JavaScript, no build step).
+ * dsh-workspace-plus — client half (plain JavaScript, no build step).
  *
  * Three registrations:
  *  1. `sidebar.workspaces` (priority -1): replaces the shipped workspace

@@ -1,5 +1,5 @@
 /**
- * dsh-workspace-plus (fork of KannaKuron/dsh-better-workspace) — host half (plain JavaScript, no build step).
+ * dsh-workspace-plus — host half (plain JavaScript, no build step).
  *
  * The feature lives in the client half (src/client.js): the hierarchy tree,
  * the add-workspace parent-group popup, and view state (persisted in the

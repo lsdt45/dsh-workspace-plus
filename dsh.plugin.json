@@ -1,0 +1,13 @@
+{
+  "id": "dsh-external/dsh-workspace-plus",
+  "version": "0.1.0",
+  "main": "./src/index.js",
+  "description": "侧边栏工作区层级树 + 会话时间分桶排序 + 会话置顶(全局置顶区与工作区内浮顶):名称中的 / 即虚拟分组,时间视图按今天/昨天/近7天/近30天/更早分桶,任意会话可置顶。Fork of KannaKuron/dsh-better-workspace.",
+  "engines": {
+    "dsh": ">=0.0.1"
+  },
+  "contributes": {
+    "tools": [],
+    "skills": []
+  }
+}

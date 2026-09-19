@@ -1,0 +1,68 @@
+{
+  "name": "dsh-workspace-plus",
+  "version": "0.1.0",
+  "description": "DSH web plugin: a hierarchical workspace tree for the sidebar with time-bucket sorting and session pinning. Fork of KannaKuron/dsh-better-workspace. Workspace titles containing \"/\" group into virtual folders (web/前端 · web/后端); sessions sort by recency buckets (today/yesterday/7d/30d/earlier) or pin to the top of the sidebar.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lsdt45/dsh-workspace-plus.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./src/client.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-modules"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "src/index.js",
+    "src/client.js",
+    "cordis.patch.yml",
+    "dsh.plugin.json",
+    "README.md",
+    "README_EN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test tests/smoke.mjs",
+    "version": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('dsh.plugin.json','utf8'));const v=JSON.parse(fs.readFileSync('package.json','utf8')).version;m.version=v;fs.writeFileSync('dsh.plugin.json',JSON.stringify(m,null,2)+'\\n')\" && git add dsh.plugin.json"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "sidebar",
+    "workspace",
+    "dsh-better",
+    "workspace-plus"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-settings": ">=0.1.0-rc.7",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "homepage": "https://github.com/lsdt45/dsh-workspace-plus",
+  "bugs": {
+    "url": "https://github.com/lsdt45/dsh-workspace-plus/issues"
+  }
+}

@@ -1,0 +1,16 @@
+# dsh-workspace-plus bundle patch. (Fork of KannaKuron/dsh-better-workspace;
+# wire identifiers dsh.betterWorkspace persistence / settings namespace are
+# retained so existing browser state migrates transparently.)
+#
+# Manual mount equivalent (profile cordis.patch.yml):
+#
+#   - insert:
+#       - id: workspace-plus
+#         name: 'dsh-workspace-plus'
+#
+# Only the Node half loads through this row; the web client half is served
+# through the package's exports["./client"] entry and mounted by the browser
+# boot graph (window.__DSH_BOOT__).
+- insert:
+    - id: workspace-plus
+      name: 'dsh-workspace-plus'

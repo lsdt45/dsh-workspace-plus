@@ -2,7 +2,7 @@
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
-> **Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)** adding **projects/time dual views** and **session pinning** on top of the hierarchy tree; independent version line starting at 0.1.0. Existing browser state (folders/expansion/prefs/styling) migrates seamlessly.
+> **Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)** (the upstream is KannaKuron's original work — not itself a fork — and part of the dsh-better-* plugin family) adding **projects/time dual views** and **session pinning** on top of the hierarchy tree; independent version line starting at 0.1.0. Existing browser state (folders/expansion/prefs/styling) migrates seamlessly.
 
 > A **folder system** for the DeepSeek Harness (DSH) sidebar workspace list — a workspace is still one directory, but every `/` in its name becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder.
 

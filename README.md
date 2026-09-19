@@ -2,7 +2,7 @@
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
-> **Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)**,在层级树基础上新增**项目/时间双视图**与**会话置顶**;版本线独立从 0.1.0 起算,旧版浏览器状态(分组/折叠/偏好/外观)无缝迁移。
+> **Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)**（上游为 KannaKuron 原创、非二次 fork，属 dsh-better-* 插件家族）,在层级树基础上新增**项目/时间双视图**与**会话置顶**;版本线独立从 0.1.0 起算,旧版浏览器状态(分组/折叠/偏好/外观)无缝迁移。
 
 > 给 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 的侧边栏「工作区」列表装上一套**文件夹系统**——工作区还是那个工作区(一个目录),但名字里的 `/` 就是层级,让「网页前端」「网页后端」这类工作区可以归到同一个 `web` 分组下。
 

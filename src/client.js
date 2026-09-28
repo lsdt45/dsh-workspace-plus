@@ -307,9 +307,55 @@ window.__ModuleLoader__.load({
     }
     const normPath = (p) => splitTitleSegs(p).join('/')
 
+    /* ---- primitives icon bridge (size suffix → weight suffix) ---------- *
+     * 0.1.7 "size-neutral product icon weights" dropped the size suffix from
+     * every shared glyph: IconFolderClose16 became IconFolderCloseRegular /
+     * IconFolderCloseMedium and the old export is gone. A plain ui[name]
+     * lookup then resolves nothing and the slot renders blank — silently,
+     * because an unknown name degrades to null by design. This bridge speaks
+     * both vocabularies, caches per name, and warns once about a name that
+     * resolves nowhere so a future rename cannot blank the sidebar unseen.
+     *
+     * Order: exact export → size suffix rewritten to a weight (…16 →
+     * …Regular → …Medium) → weight rewritten back to the historical size
+     * (older harness) → any export sharing the base name (future suffixes).
+     */
+    const iconCache = new Map()
+    const ICON_SIZE_SUFFIX = /^(.*?)(\d+)$/
+    const ICON_WEIGHT_SUFFIX = /^(.*?)(Regular|Medium)$/
+    /** Own export only (never Object.prototype), and only something React can render. */
+    const iconExport = (key) => {
+      if (!Object.prototype.hasOwnProperty.call(ui, key)) return null
+      const C = ui[key]
+      if (typeof C === 'function') return C
+      return C !== null && typeof C === 'object' && C.$$typeof !== undefined ? C : null
+    }
+    const resolveIcon = (name) => {
+      const key = String(name == null ? '' : name)
+      if (key === '') return null
+      if (iconCache.has(key)) return iconCache.get(key)
+      let C = iconExport(key)
+      const sized = ICON_SIZE_SUFFIX.exec(key)
+      if (!C && sized) C = iconExport(sized[1] + 'Regular') || iconExport(sized[1] + 'Medium')
+      const weighted = ICON_WEIGHT_SUFFIX.exec(key)
+      if (!C && weighted) C = iconExport(weighted[1] + '16') || iconExport(weighted[1] + '14') || iconExport(weighted[1])
+      if (!C) {
+        const base = sized ? sized[1] : (weighted ? weighted[1] : key)
+        for (const k of Object.keys(ui).filter((k) => k.indexOf(base) === 0 && k.length > base.length).sort((a, b) => a.length - b.length)) {
+          C = iconExport(k)
+          if (C) break
+        }
+      }
+      if (!C && typeof console !== 'undefined' && console.warn) {
+        console.warn('[workspace-plus] primitives icon unavailable: ' + key)
+      }
+      iconCache.set(key, C || null)
+      return C || null
+    }
+
     /** Render a primitives icon by name; unknown names degrade to null, never crash. */
     const icon = (name, size) => {
-      const C = ui[name]
+      const C = resolveIcon(name)
       return C ? E(C, { size: size || 16 }) : null
     }
 
@@ -1464,7 +1510,7 @@ window.__ModuleLoader__.load({
 
     function BetterWorkspacePluginCard({ useStore, actions, t }) {
       const [open, setOpen] = React.useState(false)
-      const Chevron = ui.IconChevronDownOutline14
+      const Chevron = resolveIcon('IconChevronDownOutline14')
       return E('li', { className: cls('bw-plugin-card', open && 'bw-plugin-card-open') },
         E('button', {
           type: 'button',
@@ -1477,7 +1523,7 @@ window.__ModuleLoader__.load({
             E('span', { className: 'bw-plugin-name' }, t('settings.title')),
             E('span', { className: 'bw-plugin-desc' }, t('settings.desc')),
           ),
-          Chevron ? E(Chevron, { className: cls('bw-plugin-chevron', open && 'bw-plugin-chevron-open') }) : null,
+          Chevron ? E(Chevron, { size: 14, className: cls('bw-plugin-chevron', open && 'bw-plugin-chevron-open') }) : null,
         ),
         open ? E('div', { className: 'bw-plugin-body' },
           E(BetterWorkspaceSettings, { useStore, actions, t }),
@@ -2772,15 +2818,20 @@ window.__ModuleLoader__.load({
         const result = await session.rename(title)
         if (!result || !result.ok) throw new Error(result && result.error ? result.error.message : 'session rename failed')
       }
+      const openSessionCompat = (sessionId) => {
+        // 0.1.7: sessions.open 已移除；官方入口为 uiWorkspace.openSession（旧版 harness 回退保留）
+        if (uiWorkspace && typeof uiWorkspace.openSession === 'function') { uiWorkspace.openSession(sessionId); return }
+        if (typeof sessions.open === 'function') sessions.open(sessionId)
+      }
       const forkSession = (sessionId) => {
         sessions.fork({ sessionId, increaseTitle: true })
-          .then((childId) => sessions.open(childId))
+          .then((childId) => openSessionCompat(childId))
           .catch(() => { /* keep current selection */ })
       }
 
       const browserInjected = () => ({
         startSession: (workspaceId) => { uiWorkspace.startSession(workspaceId) },
-        open: (sessionId) => { sessions.open(sessionId) },
+        open: (sessionId) => { openSessionCompat(sessionId) },
         searchSessions,
         searchResultLimit: sessions.searchResultLimit !== undefined ? sessions.searchResultLimit : 20,
         renameSession,

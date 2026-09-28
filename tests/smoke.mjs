@@ -1,9 +1,10 @@
 // Smoke tests: pure helper/file-level, no Cordis runtime, no network.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { homedir } from 'node:os'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const read = (p) => readFileSync(join(root, p), 'utf8')
@@ -244,3 +245,126 @@ test('locale dictionaries cover every static t() key in both languages', () => {
     assert.ok(zhKeys.has('time.' + unit) && enKeys.has('time.' + unit), 'missing time.' + unit)
   }
 })
+
+/* ==================== primitives icon bridge (0.1.7) ==================== */
+
+/**
+ * Extract the primitives icon bridge from the client bundle and run it for
+ * real (same technique as loadTitleSegs): the slice from the per-name cache to
+ * the end of icon() is plain, dependency-free JavaScript that only needs the
+ * primitives module and createElement.
+ */
+const loadIconBridge = (ui, warn) => {
+  const text = read('src/client.js')
+  const start = text.indexOf('    const iconCache = new Map()')
+  const iconFn = text.indexOf('    /** Render a primitives icon by name;')
+  const closeAt = text.indexOf('\n    }\n', iconFn)
+  assert.ok(start !== -1 && iconFn !== -1 && closeAt !== -1 && start < iconFn, 'icon bridge not found')
+  const slice = text.slice(start, closeAt + '\n    }'.length)
+  const E = (C, props) => ({ C, props })
+  return new Function('ui', 'E', 'console', slice + '\nreturn { resolveIcon, icon }')(ui, E, { warn: warn || (() => {}) })
+}
+
+/** A stand-in primitives module: one stub component per export name. */
+const stubModule = (names) => Object.fromEntries(names.map((name) => [name, function Stub() {}]))
+
+/** Export names of a built primitives bundle (trailing "export { ... }" clause). */
+const primitivesExports = (path) => {
+  const src = readFileSync(path, 'utf8')
+  const start = src.lastIndexOf('export {')
+  const end = src.indexOf('}', start)
+  assert.ok(start !== -1 && end !== -1, 'no export clause in ' + path)
+  return src.slice(start + 'export {'.length, end)
+    .split(',')
+    .map((s) => s.trim().split(/\s+as\s+/).pop())
+    .filter(Boolean)
+}
+
+/** Installed client-primitives builds of the harness that serves the GUI. */
+const installedPrimitives = () => {
+  const candidates = []
+  const add = (path) => {
+    try { if (statSync(path).isFile()) candidates.push(path) } catch { /* absent */ }
+  }
+  if (process.env.DSH_PRIMITIVES_LIB) add(process.env.DSH_PRIMITIVES_LIB)
+  if (process.env.DSH_HARNESS_ROOT) add(join(process.env.DSH_HARNESS_ROOT, 'packages/client/ui-primitives/lib/index.js'))
+  const profiles = join(homedir(), '.dsh', 'profiles')
+  try {
+    for (const name of readdirSync(profiles)) {
+      add(join(profiles, name, 'node_modules/@deepseek-ai/dsh-client-ui-primitives/lib/index.js'))
+    }
+  } catch { /* no profiles directory */ }
+  return candidates
+}
+
+test('icon bridge: size-suffixed names resolve on weight-suffixed primitives', () => {
+  const weight = stubModule(['IconFolderCloseRegular', 'IconFolderCloseMedium', 'IconSearchOutlineRegular', 'IconSparkleMedium'])
+  const bridge = loadIconBridge(weight)
+  // 0.1.7 dropped every size suffix; the bridge speaks the new vocabulary.
+  assert.equal(bridge.resolveIcon('IconFolderClose16'), weight.IconFolderCloseRegular)
+  assert.equal(bridge.resolveIcon('IconFolderClose16'), weight.IconFolderCloseRegular, 'cached lookup stays stable')
+  assert.equal(bridge.resolveIcon('IconSearchOutline16'), weight.IconSearchOutlineRegular)
+  // Medium is the fallback when a glyph ships only the heavier weight.
+  assert.equal(bridge.resolveIcon('IconSparkle16'), weight.IconSparkleMedium)
+})
+
+test('icon bridge: legacy builds, weight names and future suffixes', () => {
+  // Older harness: the size-suffixed export still exists — the exact hit wins.
+  const legacy = stubModule(['IconFolderClose16', 'IconTriangleRightFill14'])
+  const onLegacy = loadIconBridge(legacy)
+  assert.equal(onLegacy.resolveIcon('IconFolderClose16'), legacy.IconFolderClose16)
+  // A weight name asked of an old build falls back to the historical size.
+  assert.equal(onLegacy.resolveIcon('IconFolderCloseRegular'), legacy.IconFolderClose16)
+  assert.equal(onLegacy.resolveIcon('IconTriangleRightFillMedium'), legacy.IconTriangleRightFill14)
+  // A future suffix rename still resolves through the shared base name.
+  const future = stubModule(['IconFolderCloseBold'])
+  assert.equal(loadIconBridge(future).resolveIcon('IconFolderClose16'), future.IconFolderCloseBold)
+})
+
+test('icon bridge: silence is never the failure mode, Object.prototype is never an icon', () => {
+  const warnings = []
+  const bridge = loadIconBridge(stubModule(['IconSearchOutlineRegular']), (m) => warnings.push(m))
+  assert.equal(bridge.resolveIcon('IconNoSuchGlyph16'), null, 'unknown names degrade to null')
+  assert.equal(warnings.length, 1, 'a missing icon warns exactly once')
+  bridge.resolveIcon('IconNoSuchGlyph16')
+  assert.equal(warnings.length, 1, 'the per-name cache keeps the warning one-shot')
+  const empty = loadIconBridge({})
+  assert.equal(empty.resolveIcon('toString'), null)
+  assert.equal(empty.resolveIcon('constructor'), null)
+  assert.equal(empty.resolveIcon(''), null)
+})
+
+test('icon bridge keeps the bundle\'s own render sizes: 16px default, explicit size wins', () => {
+  const mod = stubModule(['IconTriangleRightFillRegular', 'IconArchiveOutlineRegular', 'IconFolderCloseRegular'])
+  const bridge = loadIconBridge(mod)
+  // The bundle has always passed an explicit 16px default, whatever suffix the
+  // glyph name carries — the rename must not quietly resize anything.
+  assert.equal(bridge.icon('IconArchiveOutline20').props.size, 16)
+  assert.equal(bridge.icon('IconFolderClose16').props.size, 16)
+  assert.equal(bridge.icon('IconTriangleRightFill14', 14).props.size, 14)
+  assert.equal(bridge.icon('IconTriangleRightFill14', 12).props.size, 12)
+  assert.equal(bridge.icon('IconTriangleRightFill14').C, mod.IconTriangleRightFillRegular, 'the resolved component is the weight-suffixed glyph')
+  assert.equal(bridge.icon('IconMissingGlyph16'), null)
+})
+
+test('client half reaches every icon through the bridge, never through ui.Icon…', () => {
+  const text = read('src/client.js')
+  assert.doesNotMatch(text, /ui\.Icon[A-Za-z0-9]/, 'icon access must go through resolveIcon/icon')
+  assert.match(text, /const Chevron = resolveIcon\('IconChevronDownOutline14'\)/)
+})
+
+test('every icon name in the bundle resolves on an installed primitives build', (t) => {
+  const libs = installedPrimitives()
+  if (libs.length === 0) {
+    t.skip('no installed primitives build found (set DSH_PRIMITIVES_LIB)')
+    return
+  }
+  const names = [...new Set([...read('src/client.js').matchAll(/'((?:Icon)[A-Za-z0-9]+)'/g)].map((m) => m[1]))]
+  assert.ok(names.length > 30, 'icon vocabulary looks too small: ' + names.length)
+  for (const lib of libs) {
+    const bridge = loadIconBridge(stubModule(primitivesExports(lib)))
+    const missing = names.filter((name) => !bridge.resolveIcon(name))
+    assert.deepEqual(missing, [], 'unresolved icons against ' + lib + ': ' + missing.join(', '))
+  }
+})
+

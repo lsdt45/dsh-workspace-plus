@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-plus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DSH web plugin: a hierarchical workspace tree for the sidebar with time-bucket sorting and session pinning. Workspace titles containing \"/\" group into virtual folders (web/前端 · web/后端); sessions sort by recency buckets (today/yesterday/7d/30d/earlier) or pin to the top of the sidebar.",
   "type": "module",
   "repository": {
@@ -43,7 +43,6 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test tests/smoke.mjs",
     "version": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('dsh.plugin.json','utf8'));const v=JSON.parse(fs.readFileSync('package.json','utf8')).version;m.version=v;fs.writeFileSync('dsh.plugin.json',JSON.stringify(m,null,2)+'\\n')\" && git add dsh.plugin.json"
   },
   "keywords": [

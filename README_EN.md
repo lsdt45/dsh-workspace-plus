@@ -2,30 +2,26 @@
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
-> **Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)** (the upstream is KannaKuron's original work — not itself a fork — and part of the dsh-better-\* plugin family) adding **projects/time dual views**, **session pinning** and **search** on top of the hierarchy tree; independent version line starting at 0.1.0. Existing browser state (folders/expansion/prefs/styling) migrates seamlessly.
+> Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
 > A **folder system** for the DeepSeek Harness (DSH) sidebar workspace list — a workspace is still one directory, but every `/` in its name becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder.
 
 ```
-web/                 <- virtual folder (naming only, not a real directory)
-|- frontend          <- workspace "web/frontend"
-`- backend           <- workspace "web/backend"
+github/                 <- virtual folder (naming only, not a real directory)
+`- dsh-plan-plus        <- workspace "github/dsh-plan-plus"
+dsh-workspace-plus      <- single-root workspaces sit at root
+codeisland-ask-bridge
+dsh-model-config
 ```
 
 ## Features & preview
-
-<!--
-Screenshots to be added later (place into docs/screenshots/ and update refs):
-- 1-workspace-tree.png   hierarchical tree (existing)
-- time view, pinned tray, search (to be added)
--->
 
 ### Hierarchical tree
 
 <table>
 <tr>
-<td align="center" width="58%"><img src="docs/screenshots/1-workspace-tree.png" alt="Hierarchical workspace tree"/></td>
-<td valign="top"><b>Hierarchical tree</b><br/>Every `/` in a workspace title creates a virtual folder: web/frontend and web/backend sit under one web group, arbitrarily deep; workspaces without a `/` stay at the root. Renaming a workspace re-derives the tree <b>instantly</b> — folders are a projection of names, there is no second source of truth.</td>
+<td align="center" width="48%"><img src="docs/screenshots/1-workspace-tree.png" alt="Hierarchical workspace tree"/></td>
+<td valign="top"><b>Hierarchical tree (Projects view)</b><br/>Every <code>/</code> in a workspace title creates a virtual folder: <code>github/dsh-plan-plus</code> automatically groups under <code>github</code>, arbitrarily deep; workspaces without a <code>/</code> (like <code>dsh-workspace-plus</code>) stay at the root. Renaming a workspace re-derives the tree <b>instantly</b> — folders are a projection of names, there is no second source of truth.</td>
 </tr>
 </table>
 
@@ -39,27 +35,68 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 
 ### Search
 
-The sidebar search button filters **workspaces and sessions** by name instantly (local title filtering); the tree force-expands while searching, and pinned rows stay in their search-result positions. Host-level content search (`session.search`) is planned.
+The sidebar search button filters **workspaces, independent groups and sessions** by name instantly (local title filtering); the tree force-expands while searching. Host-level content search (`session.search`) is planned.
 
-### Projects / time dual views (fork addition)
+### Workspace and session sections
 
-<!-- Screenshot to be added: time view -->
+<table>
+<tr>
+<td align="center" width="55%"><img src="docs/screenshots/9-workspace-sections.png" alt="Workspace and session sections menu"/></td>
+<td valign="top" width="45%">
+  <b>Independent Section Management</b><br/>
+  Right-click a workspace or session → <b>Section</b> to choose an existing section, <b>Ungrouped (Projects)</b> or <b>New section…</b>.<br/><br/>
+  A session action moves only that session; a workspace action moves the workspace and all its sessions together. Sessions can restore original placement by choosing <b>Follow workspace</b>.<br/><br/>
+  Sections have one level, can be collapsed, and accept drag & drop from workspaces and sessions.
+</td>
+</tr>
+</table>
 
-Toggle from the sidebar view button (the icon previews the active view — a tree for projects, a calendar for time); an equivalent segmented control lives in Settings → Plugins → Configuration.
+Right-click a workspace or session → **Section**, then choose an existing section, **Ungrouped (Projects)** or **New section…**. A session action moves only that session. A workspace action moves the workspace and all its sessions, including previously sectioned sessions. Sessions can choose **Follow workspace** to restore their original placement. Creation assigns the right-clicked object; section-heading menus can create an empty section. Section creation and session forking are available through context menus, with no toolbar entries.
 
-- **Projects view** (default): the title-grouped tree with drag reordering; a row tail shows the relative time since the last message.
-- **Time view**: ONE global timeline across projects — every visible session joins the same stream, bucketed by **today / yesterday / last 7 days / last 30 days / earlier** (local calendar days), empty buckets hidden, title groups yield; direction is **latest / oldest first**. On hover, the row's relative time swaps for its workspace tag (and the pin button appears), and the official primitives Tooltip pops right under the row (opaque dark surface, two lines: full title + project · absolute timestamp); the tag is hover-revealed here, while pinned-tray rows always show theirs.
-- The preference persists per browser. In the time view session reorder drags are disabled by design (visual order is not the host order); the projects view keeps group-drop drags.
+Sections have one level and share the same list for workspaces and sessions. Individually sectioned sessions appear directly under their section with a workspace badge. Section headings collapse. Drag a workspace or session onto a section heading to move it, or onto Projects to ungroup it. Empty and collapsed sections accept drops and expand afterward. Pinned, archived and unassigned sessions also support section moves. Recency sorting preserves local section moves without changing host order. Search disables dragging.
 
-### Session pinning (fork addition)
+Workspaces and sessions have separate ID-based membership without changing names, directories or host workspace/session associations. Section-heading menus offer rename and confirmed deletion; deleting a section moves its workspaces back to Projects and individually sectioned sessions back to their workspace. Sections and collapse state persist in the current browser. Sections appear in workspace-tree and workspace views; flat and time views continue to flatten sessions. Existing title-based folders remain under Projects, while custom sections show full workspace names.
 
-<!-- Screenshot to be added: pinned tray -->
+### View settings
 
-Right-click → Pin / Unpin, or the pin button on row hover, for any session including ungrouped ones. The **global Pinned section** stays at the very top: cross-workspace, most-recent pin first, each row tagged with its workspace name, click opens it directly (switching workspaces); a pinned session is **hidden inside its workspace / the ungrouped area** (tray-only — unpinning restores it), and a collapsed workspace row keeps a pin-count badge. Pinned rows carry a small brand-colored pin glyph, subtle tint and a left accent bar, stacking cleanly with the current-session highlight. Pinning is a pure display-layer projection (no reordering, no renames), persists across restarts, auto-unpins hard-deleted sessions, and hides (but keeps) pins of archived sessions until unarchive.
+<table>
+<tr>
+<td align="center" width="45%"><img src="docs/screenshots/6-time-view.png" alt="Time view timeline"/></td>
+<td valign="top" width="55%">
+  <img src="docs/screenshots/7-view-switch.png" alt="Sidebar view switch menu"/><br/><br/>
+  <b>One-click view switching</b><br/>
+  The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; Settings → Plugins → Configuration exposes the same choices.<br/><br/>
+  <b>Time view (Global timeline)</b><br/>
+  ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with an official Tooltip popup.
+</td>
+</tr>
+</table>
+
+- **Workspace tree** (default): title-based folders, single-chain merging and custom appearance.
+- **Workspace**: full workspace names displayed flat within independent groups and Projects. Switching views or reordering across name groups never renames a workspace.
+- **Single list**: sessions across workspaces, with a workspace badge on hover. Manual order follows host workspace and session order; drag in a workspace view to adjust it.
+- **Time**: global date buckets with latest-first or oldest-first ordering across buckets.
+- **Sorting**: manual or recently updated, independent of grouping. Recency sorts workspaces, folders and sessions by visible session activity without changing host order; manual mode restores that order. Automatic sorting, flat and time views disable drag reordering. The pinned tray keeps pin-recency order.
+- **Archive filter**: hide archived (default), all conversations, or archived only; shared by every view and search. Archived-only mode omits empty workspaces and folders, with a show-all action for empty results. Archived rows have a badge and hover/context-menu restore actions; unarchive before opening. Restore is disabled when an older host lacks the action.
+- Preferences persist per browser; legacy projects/time and sorting preferences remain compatible.
+
+### Session pinning
+
+<table>
+<tr>
+<td align="center" width="45%"><img src="docs/screenshots/8-pinned-tray.png" alt="Global pinned section"/></td>
+<td valign="top" width="55%">
+  <b>Global Pinned Tray</b><br/>
+  Right-click → Pin / Unpin, or click the pin button on row hover, for any session including ungrouped ones.<br/><br/>
+  The <b>global Pinned section</b> stays at the very top: cross-workspace aggregation, most-recent pin first, each row tagged with its workspace name, click opens it directly (switching workspaces); a pinned session is <b>hidden inside its workspace / the ungrouped area</b> (tray-only — unpinning restores it), and a collapsed workspace row keeps a pin-count badge.<br/><br/>
+  Pinned rows carry a small brand-colored pin glyph, subtle tint and a left accent bar, stacking cleanly with the current-session highlight. Pure display-layer projection (never alters titles or host order), persists across restarts, auto-unpins hard-deleted sessions, and keeps archived pins out of the tray. When archives are shown, they appear as ordinary rows; unarchiving restores their saved pin.
+</td>
+</tr>
+</table>
 
 ### Drag & drop
 
-Drag a workspace row above/below another to reorder (writes back the host order) or onto a folder row to move it into that group; drag session rows to reorder within the same workspace, or onto a session group to move. While dragging a workspace, merged single-chain rows temporarily re-expand into folder rows — every level of the path becomes a drop target, and chains merge back when the drag ends. Display order = host manual order, drag results are visible immediately (time mode and pinned rows never act as reorder anchors).
+Drag a workspace row above/below another to reorder (writes back the host order) or onto a folder row to move it into that group; drag session rows to reorder within the same workspace, or onto a session group to move. While dragging a workspace, merged single-chain rows temporarily re-expand into folder rows — every level of the path becomes a drop target, and chains merge back when the drag ends. Display order = host manual order, drag results are visible immediately (automatic sorting, flat/time views, archived rows and pinned rows never act as reorder surfaces).
 
 ### Status at a glance
 
@@ -88,29 +125,55 @@ A toggle in the settings card (on by default): a level with exactly one child me
 - **Slash-bearing titles never nest from URLs**: when a host-generated session title lands containing `/` (e.g. echoing a pasted URL), it is auto-wrapped in `“”` and shown verbatim — only for sessions **created after this launch**, and only once the name stays stable for ~20s (letting the native AI naming land first); pre-existing sessions and your manually named `/` groupings are never touched. Quotes (manual ones too) never split on `/`, and a lone quote is just an ordinary character; unquoted URL tails still fall back flat.
 - zh/en localization follows the UI language; session rows show a relative time at the tail (yields on hover).
 
-## Settings card
+### Context menu
 
-<table>
-<tr>
-<td align="center" width="58%"><img src="docs/screenshots/4-settings-card.png" alt="Settings card"/></td>
-<td valign="top"><b>Settings → Plugins → Configuration</b><br/>A "Better Workspaces" card (official accordion style) with a <b>single-chain merge</b> toggle, a <b>status breathing light</b> toggle and a <b>projects/time</b> segmented switch (direction options appear while the time view is active). Expansion state and styling persist via the dsh client store in the browser.</td>
-</tr>
-</table>
+Workspace context menus offer rename, delete and customize. Folder menus offer new subfolder, new workspace here, rename group (updates all descendant workspaces), delete empty group and customize. Session groups offer rename and customize.
 
-Context menus keep every action one click away: workspace rows — rename / delete / fork / archive / customize; folder rows — new subfolder / new workspace here / rename group (updates all descendant workspaces) / delete empty group / customize; session &amp; session-group rows — rename / fork / archive / pin / customize.
+Session menus offer rename, archive, permanent deletion, open in the file manager, copy working directory, copy session ID, fork, pin, customize and page refresh. Forking opens the new branch. Directory actions prefer the target session's `cwd`, falling back to its workspace path; unassigned sessions can use their own directory. Archived sessions offer restore, delete, directory and copy actions.
 
-<!-- Screenshot to be added: context menu (5-context-menu.png exists, reusable) -->
+Permanent deletion uses the host endpoint supplied by Better Context Menu (`@baihejiangnan/dsh-session-context-menu`), which must be enabled in the same DSH profile; otherwise deletion is disabled. A confirmation is required before stopping running tasks and permanently removing session records and attachments. Successful deletion clears the plugin's pin entry and refreshes the session list. Missing directories or unavailable host actions disable the corresponding menu items.
 
 ## Install
 
+Install the plugin into your active DSH profile. Typically `desktop` for desktop builds or `web` for web builds.
+
 ```bash
-# once the npm package is published
-dsh plugin --profile web add dsh-workspace-plus
-# dev link: install into a profile via a link: dependency (restart DSH after edits)
-# or: npm pack, then pnpm add <tarball> inside the profile
+# DSH Desktop
+dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.git
+
+# DSH Web
+dsh plugin --profile web add https://github.com/lsdt45/dsh-workspace-plus.git
 ```
 
-Plain JavaScript, zero build, zero npm dependencies (dsh client baseline modules only). Restart DSH after installing.
+Restart DSH after installing.
+
+### Update
+
+Plugins installed from Git can be updated per profile:
+
+```bash
+dsh plugin --profile desktop update dsh-workspace-plus
+```
+
+If using a web profile, replace `desktop` with `web`. Restart DSH after updating.
+
+### Local source preview
+
+Replace the path with the absolute path to your local repository:
+
+```bash
+dsh plugin --profile desktop add /absolute/path/to/dsh-workspace-plus
+```
+
+The local folder is linked into the profile as a `link:` dependency. Edits take effect on restart. For web profiles, use `--profile web`.
+
+### Uninstall
+
+```bash
+dsh plugin --profile desktop remove dsh-workspace-plus
+```
+
+Restart DSH after removal. For web profiles, use `--profile web`.
 
 ## How it works
 
@@ -120,21 +183,9 @@ The add flow lands in the seam dsh designed for third parties: the two `director
 
 View state (folder collapse, session expansion, explicit empty folders), custom styling and plugin settings persist browser-side via the dsh client store (`dsh.betterWorkspace.view.v1`). Note: that store's hydration replaces the whole value without merging defaults — after an upgrade, a stale state keeps its old shape and missing keys fall back to defaults.
 
-## Relationship to dsh-better-sidebar
-
-Same `dsh-better-*` family, zero overlap: [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) is the VSCode-like panel on the right; this plugin only takes over the left workspace list. They can be installed together.
-
-## Limitations / roadmap
-
-- A session dragged onto a session row **inside another group** only gets reordered in the flat list (its title group stays); drag onto the group row or rename to move it.
-- Search is local title filtering; host content search (`session.search`) is planned.
-- Explicit empty folders persist per-browser (roadmap: host-side folder registry + settings page).
-- The flat view is not taken over; the hierarchical tree is the view.
-
 ## Develop
 
 ```bash
-npm test        # smoke: manifest consistency / baseline require whitelist / dictionary alignment / syntax
 npm pack        # tarball for local install verification
 ```
 

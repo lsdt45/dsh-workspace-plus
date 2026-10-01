@@ -35,6 +35,9 @@ window.__ModuleLoader__.load({
       'rail.add': '添加工作区',
       'empty': '暂无工作区',
       'empty.search': '没有匹配的结果',
+      'empty.archived': '暂无已归档会话',
+      'empty.sessions': '暂无符合筛选条件的会话',
+      'empty.showAll': '查看全部对话',
       'session.new': '新会话',
       'group.ungrouped': '未分组',
       'sessions.expand': '展开 {n} 个会话',
@@ -53,9 +56,29 @@ window.__ModuleLoader__.load({
       'status.subagents': '{n} 个子任务运行中',
       'schedule.active': '有活动定时任务',
       'menu.rename': '重命名',
+      'menu.renameSession': '重命名会话',
+      'menu.archiveSession': '归档会话',
+      'menu.deleteSession': '删除会话',
+      'menu.openDirectory': '在资源管理器中打开',
+      'menu.copyDirectory': '复制工作目录',
+      'menu.copySessionId': '复制会话 ID',
+      'menu.refresh': '刷新',
+      'menu.deleteUnavailable': '删除会话需要启用“更好的右键”插件',
+      'session.delete.title': '永久删除会话？',
+      'session.delete.body': '确定删除「{name}」？会话记录与附件将永久删除，运行中的任务也会停止。此操作无法恢复。',
+      'session.delete.confirm': '确定删除',
+      'session.delete.busy': '正在删除…',
+      'session.delete.done': '会话已删除',
+      'session.delete.cleanupWarning': '会话文件已删除，但列表同步未完成，请刷新页面。',
+      'copy.directory.done': '已复制工作目录',
+      'copy.sessionId.done': '已复制会话 ID',
+      'copy.failed': '复制失败，请检查剪贴板权限',
       'menu.delete': '删除',
-      'menu.fork': '分叉',
+      'menu.fork': '创建会话分支',
       'menu.archive': '归档',
+      'menu.unarchive': '取消归档',
+      'session.archived': '已归档',
+      'session.archivedHint': '请先取消归档，再打开此会话。',
       'menu.newSubfolder': '新增子分组',
       'menu.newSubWorkspace': '新增子工作区',
       'menu.renameFolder': '重命名分组',
@@ -63,12 +86,25 @@ window.__ModuleLoader__.load({
       'menu.renameSgroup': '重命名会话分组',
       'menu.pin': '置顶',
       'menu.unpin': '取消置顶',
-      'view.label': '视图',
-      'view.projects': '项目视图',
-      'view.time': '时间视图',
+      'view.label': '视图配置',
+      'view.grouping': '分组方式',
+      'view.workspaces': '按工作区',
+      'view.projects': '按工作区树',
+      'view.flat': '单列表',
+      'view.time': '按时间',
+      'view.sort': '排序方式',
+      'view.sort.manual': '手动排序',
+      'view.sort.latest': '最近更新',
+      'view.filter': '筛选会话',
+      'view.filter.hide': '隐藏已归档',
+      'view.filter.show': '全部对话（显示已归档）',
+      'view.filter.only': '仅显示已归档',
+      'view.time.direction': '时间方向',
+      'view.time.hint': '时间视图按更新时间分桶，不能手动重排。',
+      'view.flat.hint': '单列表的手动顺序沿用工作区及其会话顺序；请在工作区视图中拖拽调整。',
       'view.time.latest': '最新在前',
       'view.time.oldest': '最旧在前',
-      'view.hint': '项目视图按名称 / 分组展示会话并支持拖拽重排;时间视图按今天 / 昨天 / 近 7 天 / 近 30 天 / 更早分桶(忽略名称分组),方向可选最新或最旧在前。',
+      'view.hint': '分组、排序与归档筛选独立保存。最近更新只改变显示顺序，切回手动排序恢复原顺序；自动排序期间关闭拖拽重排。',
       'bucket.today': '今天',
       'bucket.yesterday': '昨天',
       'bucket.week': '近 7 天',
@@ -128,6 +164,18 @@ window.__ModuleLoader__.load({
       'folder.error.empty': '分组路径不能为空',
       'folder.error.exists': '分组已存在',
       'folder.error.notEmpty': '分组内还有工作区,无法删除',
+      'wgroup.menu': '分区',
+      'wgroup.projects': '项目',
+      'wgroup.unassigned': '未分区（项目）',
+      'wgroup.new': '新建分区…',
+      'wgroup.new.title': '新建分区',
+      'wgroup.hint': '分区名称；工作区与会话的名称、目录保持原样',
+      'wgroup.rename': '重命名分区',
+      'wgroup.delete': '删除分区',
+      'wgroup.delete.body': '删除「{name}」？组内工作区将移回“项目”，单独分区的会话回到所属工作区，工作区与会话都会保留。',
+      'wgroup.followWorkspace': '跟随所属工作区',
+      'wgroup.error.empty': '分区名称不能为空',
+      'wgroup.error.exists': '分区已存在',
     }
 
     const en = {
@@ -138,6 +186,9 @@ window.__ModuleLoader__.load({
       'rail.add': 'Add workspace',
       'empty': 'No workspaces yet',
       'empty.search': 'No matches',
+      'empty.archived': 'No archived sessions',
+      'empty.sessions': 'No sessions match this filter',
+      'empty.showAll': 'Show all conversations',
       'session.new': 'New session',
       'group.ungrouped': 'Ungrouped',
       'sessions.expand': 'Show {n} more sessions',
@@ -156,9 +207,29 @@ window.__ModuleLoader__.load({
       'status.subagents': '{n} subagent(s) running',
       'schedule.active': 'Has active scheduled task',
       'menu.rename': 'Rename',
+      'menu.renameSession': 'Rename session',
+      'menu.archiveSession': 'Archive session',
+      'menu.deleteSession': 'Delete session',
+      'menu.openDirectory': 'Open in File Explorer',
+      'menu.copyDirectory': 'Copy working directory',
+      'menu.copySessionId': 'Copy session ID',
+      'menu.refresh': 'Refresh',
+      'menu.deleteUnavailable': 'Session deletion requires the Better Context Menu plugin',
+      'session.delete.title': 'Permanently delete session?',
+      'session.delete.body': 'Delete "{name}"? Session records and attachments will be permanently deleted, and running tasks will stop. This cannot be undone.',
+      'session.delete.confirm': 'Delete',
+      'session.delete.busy': 'Deleting…',
+      'session.delete.done': 'Session deleted',
+      'session.delete.cleanupWarning': 'Session files were deleted, but list synchronization is incomplete. Please refresh the page.',
+      'copy.directory.done': 'Working directory copied',
+      'copy.sessionId.done': 'Session ID copied',
+      'copy.failed': 'Copy failed. Check clipboard permissions.',
       'menu.delete': 'Delete',
       'menu.fork': 'Fork',
       'menu.archive': 'Archive',
+      'menu.unarchive': 'Unarchive',
+      'session.archived': 'Archived',
+      'session.archivedHint': 'Unarchive this session before opening it.',
       'menu.newSubfolder': 'New subfolder',
       'menu.newSubWorkspace': 'New workspace here',
       'menu.renameFolder': 'Rename folder',
@@ -166,12 +237,25 @@ window.__ModuleLoader__.load({
       'menu.renameSgroup': 'Rename session group',
       'menu.pin': 'Pin',
       'menu.unpin': 'Unpin',
-      'view.label': 'View',
-      'view.projects': 'Projects view',
-      'view.time': 'Time view',
+      'view.label': 'View settings',
+      'view.grouping': 'Group by',
+      'view.workspaces': 'Workspace',
+      'view.projects': 'Workspace tree',
+      'view.flat': 'Single list',
+      'view.time': 'Time',
+      'view.sort': 'Sort by',
+      'view.sort.manual': 'Manual order',
+      'view.sort.latest': 'Recently updated',
+      'view.filter': 'Filter sessions',
+      'view.filter.hide': 'Hide archived',
+      'view.filter.show': 'All conversations (including archived)',
+      'view.filter.only': 'Archived only',
+      'view.time.direction': 'Time direction',
+      'view.time.hint': 'The time view uses update-time buckets and cannot be manually reordered.',
+      'view.flat.hint': 'Manual list order follows workspace and session order. Drag in a workspace view to reorder.',
       'view.time.latest': 'Latest first',
       'view.time.oldest': 'Oldest first',
-      'view.hint': 'The projects view shows sessions as a title-grouped tree with drag reordering; the time view buckets them by today / yesterday / last 7 days / last 30 days / earlier (ignoring title groups), with a latest or oldest direction.',
+      'view.hint': 'Grouping, sorting and archive visibility are saved independently. Recency changes display order only; manual mode restores the original order. Drag reordering is disabled during automatic sorting.',
       'bucket.today': 'Today',
       'bucket.yesterday': 'Yesterday',
       'bucket.week': 'Last 7 days',
@@ -231,12 +315,82 @@ window.__ModuleLoader__.load({
       'folder.error.empty': 'Folder path must not be empty',
       'folder.error.exists': 'Folder already exists',
       'folder.error.notEmpty': 'Folder still contains workspaces',
+      'wgroup.menu': 'Section',
+      'wgroup.projects': 'Projects',
+      'wgroup.unassigned': 'Ungrouped (Projects)',
+      'wgroup.new': 'New section…',
+      'wgroup.new.title': 'New section',
+      'wgroup.hint': 'Section name; workspace and session names and directories stay unchanged',
+      'wgroup.rename': 'Rename section',
+      'wgroup.delete': 'Delete section',
+      'wgroup.delete.body': 'Delete "{name}"? Its workspaces return to Projects and individually sectioned sessions return to their workspace. Workspaces and sessions will be retained.',
+      'wgroup.followWorkspace': 'Follow workspace',
+      'wgroup.error.empty': 'Section name must not be empty',
+      'wgroup.error.exists': 'Section already exists',
     }
 
     /* ============================= helpers ============================ */
 
     const cls = (...xs) => xs.filter(Boolean).join(' ')
     const messageOf = (reason) => (reason instanceof Error ? reason.message : String(reason))
+
+    // DSH exposes archive, but no permanent-delete RPC. Reuse the installed
+    // Better Context Menu backend, which owns stopping agents and safe cleanup.
+    const SESSION_DELETE_ROUTE = '/dsh-session-context-menu/delete'
+    const checkSessionDelete = async () => {
+      const response = await fetch(SESSION_DELETE_ROUTE, { method: 'GET' })
+      if (response.status !== 405) return false
+      const result = await response.json()
+      return result.error === 'method-not-allowed'
+    }
+    const deleteSessionRecord = async (sessionId) => {
+      const response = await fetch(SESSION_DELETE_ROUTE, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+      if (!response.ok) throw new Error('Session deletion failed (HTTP ' + response.status + ')')
+      const result = await response.json()
+      if (result.ok !== true || result.removed !== true) throw new Error(result.error || 'Session deletion was not confirmed')
+      return result
+    }
+    const writeClipboardText = async (text) => {
+      if (typeof ui.writeClipboard === 'function') return ui.writeClipboard(text)
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+      return false
+    }
+    const openSessionDirectory = async (path) => {
+      const response = await fetch('/api/session/openWorkspacePath', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'client-request', rpcId: crypto.randomUUID(), method: 'session/openWorkspacePath', payload: { args: { request: { path } } } }),
+      })
+      if (!response.ok) throw new Error('Open directory failed (HTTP ' + response.status + ')')
+      const envelope = await response.json()
+      const result = envelope.result
+      if (!result || result.ok !== true || !result.value || result.value.opened !== true) {
+        throw new Error(result && result.error ? (result.error.message || messageOf(result.error)) : 'Open directory was not confirmed')
+      }
+    }
+
+    /**
+     * Project badge for a session row (time-view hover tag / pinned-tray tag).
+     *
+     * The label is GENERATED CONTENT (`data-tag` + the `.bw-pinned-ws-tag::after`
+     * rule in the stylesheet), never a text child:
+     * @baihejiangnan/dsh-session-context-menu classifies a [role=treeitem] row as
+     * a WORKSPACE row as soon as any leaf span/button/div inside it trims to a
+     * workspace title (treeItemWorkspace), and a real text child made every
+     * tagged session row open the workspace menu (new session / rename
+     * workspace / …) instead of this plugin's session menu. Keep the text in a
+     * data attribute; `title` carries the native tooltip.
+     */
+    const renderWsTag = (workspaceTag, tagOnHover) => E('span', {
+      className: cls('bw-pinned-ws-tag', tagOnHover && 'bw-ws-tag-hover'),
+      title: workspaceTag,
+      'data-tag': workspaceTag,
+    })
 
     const basename = (p) => {
       if (!p) return ''
@@ -392,6 +546,10 @@ window.__ModuleLoader__.load({
       E('path', { d: 'M3 10a2 2 0 0 0 2 2h3' }),
       E('path', { d: 'M3 5v12a2 2 0 0 0 2 2h3' }),
     ])
+
+    const ListIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
+      E('path', { key: 'lines', d: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01' }),
+    ])
     const CalendarDaysIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
       E('path', { d: 'M8 2v4' }),
       E('path', { d: 'M16 2v4' }),
@@ -448,15 +606,41 @@ window.__ModuleLoader__.load({
       return String(summary.displayTitle || summary.title || '')
     }
 
-    /**
-     * Official visibility rule (dsh tree.ts sessionVisible): subagent children
-     * live in their parent's catalog, archived sessions are visible nowhere,
-     * and a blank row is the provisional New Session of the current selection.
-     */
-    const sessionVisible = (summary, current, archivedSet) => !!summary
-      && summary.origin !== 'subagent'
-      && !(archivedSet && archivedSet.has(summary.id))
-      && (!summary.blank || summary.id === current)
+    const VIEW_MODES = ['workspaces', 'projects', 'flat', 'time']
+    const ARCHIVED_FILTERS = ['hide', 'show', 'only']
+
+    // Shared by both controls; persisted hydration replaces defaults wholesale.
+    // Legacy sortMode selected a view, so the new independent key is sortOrder.
+    const viewStateOf = (prefs) => {
+      const p = prefs || {}
+      const legacy = p.sortMode
+      let mode = 'projects'
+      if (VIEW_MODES.includes(p.viewMode)) mode = p.viewMode
+      else if (p.viewMode === undefined && (legacy === 'latest' || legacy === 'oldest')) mode = 'time'
+      let dir = 'latest'
+      if (p.timeDirection === 'oldest' || (p.timeDirection === undefined && legacy === 'oldest')) dir = 'oldest'
+      return {
+        mode,
+        dir,
+        sortOrder: p.sortOrder === 'latest' ? 'latest' : 'manual',
+        archivedFilter: ARCHIVED_FILTERS.includes(p.archivedFilter) ? p.archivedFilter : 'hide',
+      }
+    }
+
+    // Subagent children stay in their parent catalog; only the current blank
+    // is visible. Archive filtering is identical in all views and search.
+    const sessionVisible = (summary, current, archivedSet, archivedFilter = 'hide') => {
+      if (!summary || summary.origin === 'subagent' || (summary.blank && summary.id !== current)) return false
+      const archived = archivedSet.has(summary.id)
+      if (archivedFilter === 'only') return archived
+      if (archivedFilter === 'show') return true
+      return !archived
+    }
+
+    const orderRows = (rows, sortOrder) => {
+      if (sortOrder !== 'latest') return rows
+      return rows.slice().sort((a, b) => b.updatedAt - a.updatedAt)
+    }
 
     /**
      * Active-schedule marker, mirroring the official tree's
@@ -511,7 +695,7 @@ window.__ModuleLoader__.load({
      * titles. Groups are virtual (projection of names). Rows keep the Host
      * workspace.sessionIds (manual) order — drag-to-reorder must be visible.
      */
-    function buildSessionTree(rows) {
+    function buildSessionTree(rows, sortOrder = 'manual') {
       const root = { path: '', name: '', groups: [], sessions: [] }
       const byPath = new Map([['', root]])
       // SEGMENT-driven: paths arrive as already-split segment arrays (URL-aware
@@ -541,8 +725,12 @@ window.__ModuleLoader__.load({
         ensure(segs.slice(0, -1)).sessions.push({ ...row, leaf })
       }
       const sortRec = (node) => {
-        node.groups.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
         for (const group of node.groups) sortRec(group)
+        node.updatedAt = node.sessions.concat(node.groups).reduce((latest, row) => Math.max(latest, row.updatedAt || 0), 0)
+        if (sortOrder === 'latest') {
+          node.sessions = orderRows(node.sessions, sortOrder)
+          node.groups.sort((a, b) => b.updatedAt - a.updatedAt || a.name.localeCompare(b.name, 'zh'))
+        } else node.groups.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
       }
       sortRec(root)
       return root
@@ -571,7 +759,7 @@ window.__ModuleLoader__.load({
      * Returns { path, name, folders, workspaces } with workspaces carrying
      * their leaf display name.
      */
-    function buildTree(items, explicitFolders) {
+    function buildTree(items, explicitFolders, recency) {
       const root = { path: '', name: '', folders: [], workspaces: [] }
       const byPath = new Map([['', root]])
       // SEGMENT-driven, same as buildSessionTree: the joined path is only a
@@ -606,14 +794,33 @@ window.__ModuleLoader__.load({
           sessionIds: Array.isArray(workspace.sessionIds) ? workspace.sessionIds : [],
           leaf,
           folderPath,
+          updatedAt: recency ? (recency.get(workspace.workspaceId) || 0) : 0,
         })
       }
       const sortRec = (node) => {
-        node.folders.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
         for (const child of node.folders) sortRec(child)
+        node.updatedAt = node.workspaces.concat(node.folders).reduce((latest, row) => Math.max(latest, row.updatedAt || 0), 0)
+        if (recency) {
+          node.workspaces = orderRows(node.workspaces, 'latest')
+          node.folders.sort((a, b) => b.updatedAt - a.updatedAt || a.name.localeCompare(b.name, 'zh'))
+        } else node.folders.sort((a, b) => a.name.localeCompare(b.name, 'zh'))
       }
       sortRec(root)
       return root
+    }
+
+    // Preserve title and folderPath: changing the view must never rename a
+    // workspace, including when a drag reorders the flat workspace list.
+    const buildWorkspaceList = (items, recency) => {
+      const tree = buildTree(items, [], recency)
+      const byId = new Map()
+      const collect = (node) => {
+        for (const workspace of node.workspaces) byId.set(workspace.workspaceId, { ...workspace, leaf: workspace.title || workspace.leaf })
+        for (const folder of node.folders) collect(folder)
+      }
+      collect(tree)
+      const rows = (items || []).map(workspace => byId.get(workspace.workspaceId))
+      return { ...tree, folders: [], workspaces: orderRows(rows, recency ? 'latest' : 'manual') }
     }
 
     const countWorkspaces = (node) => (node.kind === 'ws' ? 1 : node.workspaces.length + node.folders.reduce((sum, f) => sum + countWorkspaces(f), 0))
@@ -712,6 +919,7 @@ window.__ModuleLoader__.load({
       '.bw-color-input{width:36px;height:26px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:6px;background:transparent;cursor:pointer;padding:0}',
       '.bw-seg{display:flex;gap:6px;flex-wrap:wrap}',
       '.bw-seg-btn{height:24px;padding:0 10px;border-radius:6px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));background:transparent;color:var(--dsw-alias-label-secondary,#b8b8b8);font-size:12px;cursor:pointer;font-family:inherit}',
+      '.bw-seg-btn:disabled{opacity:.45;cursor:default}',
       '.bw-seg-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.12))}',
       '.bw-seg-btn-active{background:var(--dsw-alias-brand-primary,#5b8def);border-color:transparent;color:var(--dsw-alias-brand-text,#fff)}',
       '.bw-seg-btn-active:hover{background:var(--dsw-alias-button-primary-hover,var(--dsw-alias-brand-primary,#5b8def));border-color:transparent}',
@@ -727,6 +935,26 @@ window.__ModuleLoader__.load({
       '.bw-ctx-menu{position:fixed;min-width:170px;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.72)));-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.35);display:flex;flex-direction:column}',
       '.bw-ctx-item{display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border:none;background:transparent;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:12.5px;border-radius:6px;cursor:pointer;text-align:left;font-family:inherit}',
       '.bw-ctx-item:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}',
+      '.bw-ctx-item:disabled{opacity:.45;cursor:default}',
+      '.bw-ctx-heading{padding:6px 10px 4px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+      '.bw-ctx-menu{max-height:calc(100vh - 16px);overflow-y:auto}',
+      '.bw-archive-mark{flex:none;display:grid;place-items:center;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+      '.bw-session-row-archived .bw-row-label{color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
+      '.bw-empty .bw-btn{margin-top:10px}',
+      '.bw-menu-label{flex:1}',
+      '.bw-menu-icon{flex:none;width:14px;height:14px;display:grid;place-items:center;color:inherit}',
+      '.bw-menu-pin{color:var(--dsw-alias-brand-primary,#5b8def)}',
+      '.bw-workspace-group{display:flex;align-items:center;gap:6px;min-height:32px;margin-top:10px;padding:4px 8px;box-sizing:border-box;border-radius:6px;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-size:12.5px;cursor:pointer}',
+      '.bw-workspace-group:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}',
+      '.bw-workspace-group .bw-row-label{flex:0 1 auto}',
+      '.bw-workspace-group:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
+      '.bw-workspace-group-chevron{display:grid;place-items:center;transition:transform .12s}',
+      '.bw-workspace-group-chevron-open{transform:rotate(90deg)}',
+      '.bw-ctx-submenu{min-width:200px;max-width:min(280px,calc(100vw - 16px))}',
+      '.bw-ctx-submenu .bw-menu-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bw-menu-shortcut{font-size:11px;color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
+      '.bw-notice{position:absolute;bottom:16px;left:8px;right:8px;padding:8px 10px;border-radius:6px;background:var(--dsw-alias-bg-overlay,#222);color:var(--dsw-alias-label-primary,#fff);box-shadow:0 4px 14px rgba(0,0,0,.2);font-size:12px;pointer-events:none;z-index:41}',
+      '.bw-confirm-danger{background:var(--dsw-alias-state-error-primary,#d93025)!important;color:#fff!important}',
       '.bw-ctx-danger{color:var(--dsw-alias-state-error-primary,#f85149)}',
       '.bw-ctx-sep{height:1px;background:var(--dsw-alias-border-l1,rgba(127,127,127,.2));margin:4px 6px}',
       '.bw-settings{display:flex;flex-direction:column;gap:6px;max-width:640px}',
@@ -790,6 +1018,10 @@ window.__ModuleLoader__.load({
       // time hides in favor of the tag (container query; older engines just
       // show both and squeeze the tag instead).
       '.bw-pinned-ws-tag{flex:none;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:16px;color:var(--dsw-alias-label-quaternary,#8a8a8a);border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:4px;padding:0 4px}',
+      // Badge text ships as generated content (see renderWsTag): a real text
+      // child inside a session row reads as a workspace label to the third-party
+      // context-menu plugin and would swap the session menu for the workspace one.
+      '.bw-pinned-ws-tag::after{content:attr(data-tag)}',
       '.bw-bucket-header{display:flex;align-items:center;gap:5px;padding:8px 4px 3px;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-quaternary,#8a8a8a);user-select:none}',
       '.bw-sort-menu-item{display:flex;align-items:center;gap:8px}',
       '.bw-sort-menu-check{flex:none;width:14px;display:grid;place-items:center;color:var(--dsw-alias-brand-primary,#5b8def)}',
@@ -814,10 +1046,7 @@ window.__ModuleLoader__.load({
     /* ========================== view store =========================== */
 
     const createViewStore = () => storeKit.defineStore({
-      // View model: prefs.viewMode ∈ projects|time; prefs.timeDirection only
-      // matters in the time view. Legacy sortMode values (manual/latest/oldest)
-      // map onto the pair when read — see viewStateOf below.
-      init: () => ({ folders: [], expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { compactChains: true, viewMode: 'projects', timeDirection: 'latest' }, styling: {}, pinned: [] }),
+      init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { compactChains: true, viewMode: 'projects', timeDirection: 'latest', sortOrder: 'manual', archivedFilter: 'hide' }, styling: {}, pinned: [] }),
       // NOTE: hydration REPLACES the state with the persisted whole value —
       // init defaults never merge. Every action must tolerate a missing key
       // (states persisted by older plugin versions lack sessionGroups), and
@@ -829,8 +1058,45 @@ window.__ModuleLoader__.load({
         setSessionGroupExpanded: (d, key, value) => { if (!d.sessionGroups) d.sessionGroups = {}; d.sessionGroups[key] = value },
         setPref: (d, key, value) => { if (!d.prefs) d.prefs = {}; d.prefs[key] = value },
         setStyling: (d, key, value) => { if (!d.styling) d.styling = {}; if (value === null) delete d.styling[key]; else d.styling[key] = value },
-        setViewMode: (d, mode) => { if (!d.prefs) d.prefs = {}; d.prefs.viewMode = mode === 'time' ? 'time' : 'projects' },
+        createWorkspaceGroup: (d, id, name, workspaceId) => {
+          if (!Array.isArray(d.workspaceGroups)) d.workspaceGroups = []
+          if (d.workspaceGroups.some(group => group.id === id)) return
+          d.workspaceGroups.push({ id, name })
+          if (workspaceId) {
+            if (!d.workspaceGroupById) d.workspaceGroupById = {}
+            d.workspaceGroupById[workspaceId] = id
+          }
+        },
+        assignWorkspaceGroup: (d, workspaceId, groupId) => {
+          if (groupId && !(d.workspaceGroups || []).some(group => group.id === groupId)) return
+          if (!d.workspaceGroupById) d.workspaceGroupById = {}
+          if (groupId) d.workspaceGroupById[workspaceId] = groupId
+          else delete d.workspaceGroupById[workspaceId]
+        },
+        assignSessionSection: (d, sessionId, groupId) => {
+          if (groupId && !(d.workspaceGroups || []).some(group => group.id === groupId)) return
+          if (!d.sessionSectionById) d.sessionSectionById = {}
+          if (groupId === null) delete d.sessionSectionById[sessionId]
+          else d.sessionSectionById[sessionId] = groupId
+        },
+        renameWorkspaceGroup: (d, id, name) => {
+          const group = (d.workspaceGroups || []).find(group => group.id === id)
+          if (group) group.name = name
+        },
+        deleteWorkspaceGroup: (d, id) => {
+          d.workspaceGroups = (d.workspaceGroups || []).filter(group => group.id !== id)
+          for (const [workspaceId, groupId] of Object.entries(d.workspaceGroupById || {})) {
+            if (groupId === id) delete d.workspaceGroupById[workspaceId]
+          }
+          for (const [sessionId, groupId] of Object.entries(d.sessionSectionById || {})) {
+            if (groupId === id) delete d.sessionSectionById[sessionId]
+          }
+          if (d.expanded) delete d.expanded['workspace-group:' + id]
+        },
+        setViewMode: (d, mode) => { if (!d.prefs) d.prefs = {}; d.prefs.viewMode = VIEW_MODES.includes(mode) ? mode : 'projects' },
         setTimeDirection: (d, dir) => { if (!d.prefs) d.prefs = {}; d.prefs.timeDirection = dir === 'oldest' ? 'oldest' : 'latest' },
+        setSortOrder: (d, order) => { if (!d.prefs) d.prefs = {}; d.prefs.sortOrder = order === 'latest' ? 'latest' : 'manual' },
+        setArchivedFilter: (d, filter) => { if (!d.prefs) d.prefs = {}; d.prefs.archivedFilter = ARCHIVED_FILTERS.includes(filter) ? filter : 'hide' },
         // Pin order IS the visual order: most recent unshift first. Removing
         // keeps the rest of the order intact. Session ids are stable host ids.
         togglePin: (d, id) => {
@@ -863,7 +1129,7 @@ window.__ModuleLoader__.load({
     const BTN = (props) => (
       ui.Button
         ? E(ui.Button, props)
-        : E('button', { type: 'button', className: cls('bw-btn', props.variant === 'primary' && 'bw-btn-primary'), onClick: props.onClick, disabled: props.disabled }, props.children)
+        : E('button', { type: 'button', className: cls('bw-btn', props.variant === 'primary' && 'bw-btn-primary', props.className), onClick: props.onClick, disabled: props.disabled }, props.children)
     )
 
     function TextDialog({ title, hint, initial, confirmLabel, onConfirm, onClose, t }) {
@@ -897,15 +1163,15 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function ConfirmDialog({ title, body, onConfirm, onClose, t }) {
+    function ConfirmDialog({ title, body, onConfirm, onClose, confirmLabel, danger, busy, t }) {
       return E(ui.Modal, {
         open: true,
         onClose,
         closeLabel: t('close'),
         title,
         footer: E('div', { className: 'bw-modal-actions' },
-          E(BTN, { variant: 'outline', onClick: onClose }, t('cancel')),
-          E(BTN, { variant: 'primary', onClick: onConfirm }, t('confirm')),
+          E(BTN, { variant: 'outline', onClick: onClose, disabled: busy }, t('cancel')),
+          E(BTN, { variant: 'primary', className: danger ? 'bw-confirm-danger' : undefined, onClick: onConfirm, disabled: busy }, confirmLabel || t('confirm')),
         ),
       }, E('div', { className: 'bw-modal-body' }, E('div', { className: 'bw-hint' }, body)), StyleNode())
     }
@@ -1078,6 +1344,7 @@ window.__ModuleLoader__.load({
         : iconEl
       return E('div', {
         className: cls('bw-row', dropInto && 'bw-drop-into'),
+        'data-bw-context': 'folder',
         style: { paddingLeft: 4 + depth * 12, ...(custStyle || {}), ...(pulse ? { '--bw-pulse-color': PULSE_COLORS[pulse] || PULSE_COLORS.ongoing } : null) },
         onClick: onToggle,
         onContextMenu: onContextMenu,
@@ -1093,6 +1360,22 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function WorkspaceGroupRow({ group, expanded, onToggle, onContextMenu, dropInto, dragEvents }) {
+      return E('div', {
+        className: cls('bw-workspace-group', dropInto && 'bw-drop-into'),
+        'data-bw-context': 'workspace-group',
+        role: 'treeitem', 'aria-expanded': group.id ? expanded : undefined, tabIndex: 0,
+        onClick: onToggle, onContextMenu,
+        onKeyDown: event => {
+          if (onToggle && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onToggle() }
+        },
+        ...(dragEvents || {}),
+      },
+        E('span', { className: 'bw-row-label' }, group.name),
+        group.id ? E('span', { className: cls('bw-workspace-group-chevron', expanded && 'bw-workspace-group-chevron-open'), 'aria-hidden': true }, icon('IconChevronRightOutline14', 14)) : null,
+      )
+    }
+
     function WorkspaceRow({ workspace, depth, count, sessionsOpen, onToggle, onStart, onContextMenu, currentInside, dropHalf, dragEvents, custStyle, iconMode, pulse, pinCount, t }) {
       const iconEl = iconOf(iconMode, sessionsOpen)
       const iconChild = pulse
@@ -1100,6 +1383,7 @@ window.__ModuleLoader__.load({
         : iconEl
       return E('div', {
         className: cls('bw-row', currentInside && 'bw-row-current', dropHalf === 'before' && 'bw-drop-before', dropHalf === 'after' && 'bw-drop-after'),
+        'data-bw-context': 'workspace',
         style: { paddingLeft: 6 + depth * 12, ...(custStyle || {}), ...(pulse ? { '--bw-pulse-color': PULSE_COLORS[pulse] || PULSE_COLORS.ongoing } : null) },
         onClick: onToggle,
         onContextMenu: onContextMenu,
@@ -1156,7 +1440,7 @@ window.__ModuleLoader__.load({
       return s === 'ongoing' ? null : s
     }
 
-    function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, workspaceTag, tagOnHover, tooltip, t }) {
+    function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
       const state = sessionStateOf(node)
       const status = state === null ? null : {
         state,
@@ -1181,8 +1465,26 @@ window.__ModuleLoader__.load({
       const nativeTitle = hasHoverLabel && typeof ui.Tooltip !== 'function'
         ? hoverLabel()
         : undefined
+      const renderActions = () => {
+        let button
+        if (node.archived) {
+          button = E('button', {
+            type: 'button', className: 'bw-icon-btn', disabled: typeof onUnarchive !== 'function',
+            'aria-label': t('menu.unarchive'), title: t('menu.unarchive'),
+            onClick: (e) => { e.stopPropagation(); if (onUnarchive) onUnarchive(node.id) },
+          }, icon('IconArchiveOutline20', 14))
+        } else if (typeof onTogglePin === 'function') {
+          button = E('button', {
+            type: 'button', className: 'bw-icon-btn', 'aria-pressed': pinned ? 'true' : 'false',
+            'aria-label': pinned ? t('menu.unpin') : t('menu.pin'), title: pinned ? t('menu.unpin') : t('menu.pin'),
+            onClick: (e) => { e.stopPropagation(); onTogglePin(node.id) },
+          }, E(PinIcon16, null))
+        } else return null
+        return E('span', { className: 'bw-row-actions', onClick: (e) => e.stopPropagation() }, button)
+      }
       const row = E('div', {
-        className: cls('bw-row', 'bw-session-row', current && 'bw-row-current', pinned && 'bw-session-row-pinned', workspaceTag && !tagOnHover && 'bw-tray-row', dropHalf === 'before' && 'bw-drop-before', dropHalf === 'after' && 'bw-drop-after'),
+        className: cls('bw-row', 'bw-session-row', node.archived && 'bw-session-row-archived', current && 'bw-row-current', pinned && 'bw-session-row-pinned', workspaceTag && !tagOnHover && 'bw-tray-row', dropHalf === 'before' && 'bw-drop-before', dropHalf === 'after' && 'bw-drop-after'),
+        'data-bw-context': 'session',
         title: nativeTitle,
         style: { paddingLeft: 8 + depth * 12, ...(custStyle || {}) },
         onClick: () => onOpen(node.id),
@@ -1202,19 +1504,13 @@ window.__ModuleLoader__.load({
             : E('span', { className: 'bw-dot' }),
         ),
         E('span', { className: 'bw-row-label' }, node.leaf || node.title),
-        workspaceTag ? E('span', { className: cls('bw-pinned-ws-tag', tagOnHover && 'bw-ws-tag-hover'), title: workspaceTag }, workspaceTag) : null,
+        node.archived ? E('span', { className: 'bw-archive-mark', role: 'img', 'aria-label': t('session.archived'), title: t('session.archived') }, icon('IconArchiveOutline20', 14)) : null,
+        workspaceTag ? renderWsTag(workspaceTag, tagOnHover) : null,
         node.hasActiveSchedule
           ? E('span', { className: 'bw-schedule-badge', role: 'img', 'aria-label': t('schedule.active'), title: t('schedule.active') }, icon('IconAlarmClockOutline16', 14))
           : null,
         E('span', { className: 'bw-row-time' }, timeLabel(node.updatedAt, now, t)),
-        typeof onTogglePin === 'function'
-          ? E('span', { className: 'bw-row-actions', onClick: (e) => e.stopPropagation() },
-            E('button', {
-              type: 'button', className: 'bw-icon-btn', 'aria-pressed': pinned ? 'true' : 'false',
-              'aria-label': pinned ? t('menu.unpin') : t('menu.pin'), title: pinned ? t('menu.unpin') : t('menu.pin'),
-              onClick: (e) => { e.stopPropagation(); onTogglePin(node.id) },
-            }, E(PinIcon16, null)),
-          ) : null,
+        renderActions(),
       )
       // The official primitives Tooltip replaces the native title when the
       // runtime ships it: same bubble as every dsh surface, anchored UNDER
@@ -1233,6 +1529,7 @@ window.__ModuleLoader__.load({
      */
     function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, t }) {
       return E('div', {
+        'data-bw-context': 'session-group',
         className: cls('bw-row', 'bw-sgroup-row', dropInto && 'bw-drop-into'),
         style: { paddingLeft: 10 + depth * 12, ...(custStyle || {}) },
         onClick: onToggle,
@@ -1438,18 +1735,19 @@ window.__ModuleLoader__.load({
       const prefs = useStore ? (useStore(s => s.prefs) || {}) : {}
       const compactChains = prefs.compactChains !== false
       const statusPulse = prefs.statusPulse !== false
-      // Same legacy mapping as the browser (sortMode 0.1.0-dev builds).
-      const viewStateOf = (p) => {
-        const legacy = p && p.sortMode
-        const mode = (p && p.viewMode) === 'time' || ((p && p.viewMode) === undefined && (legacy === 'latest' || legacy === 'oldest'))
-          ? 'time'
-          : 'projects'
-        const dir = (p && p.timeDirection) === 'oldest' || ((p && p.timeDirection) === undefined && legacy === 'oldest')
-          ? 'oldest'
-          : 'latest'
-        return { mode, dir }
-      }
-      const { mode: viewMode, dir: timeDirection } = viewStateOf(prefs)
+      const { mode: viewMode, dir: timeDirection, sortOrder, archivedFilter } = viewStateOf(prefs)
+      const choices = (label, options, selected, onPick, disabled = false) => E('div', { className: 'bw-setting-row', style: { marginTop: 10 } },
+        E('div', { className: 'bw-setting-label' }, t(label)),
+        E('div', { className: 'bw-seg', role: 'radiogroup', 'aria-label': t(label) },
+          options.map(([value, key]) => E('button', {
+            key: value, type: 'button', role: 'radio',
+            disabled,
+            'aria-checked': selected === value,
+            className: cls('bw-seg-btn', selected === value && 'bw-seg-btn-active'),
+            onClick: () => onPick(value),
+          }, t(key))),
+        ),
+      )
       return E('div', { className: 'bw-settings' },
         StyleNode(),
         E('div', { className: 'bw-setting-row' },
@@ -1476,32 +1774,14 @@ window.__ModuleLoader__.load({
           }, E('span', { className: 'bw-switch-thumb' })),
         ),
         E('div', { className: 'bw-hint' }, t('settings.statusPulse.hint')),
-        E('div', { className: 'bw-setting-row', style: { marginTop: 10 } },
-          E('div', { className: 'bw-setting-label' }, t('view.label')),
-          E('div', { className: 'bw-seg', role: 'radiogroup', 'aria-label': t('view.label') },
-            [['projects', 'view.projects'], ['time', 'view.time']].map(([mode, key]) => E('button', {
-              key: mode,
-              type: 'button',
-              role: 'radio',
-              'aria-checked': viewMode === mode,
-              className: cls('bw-seg-btn', viewMode === mode && 'bw-seg-btn-active'),
-              onClick: () => { actions.setViewMode(mode) },
-            }, t(key))),
-          ),
-        ),
-        viewMode === 'time' ? E('div', { className: 'bw-setting-row' },
-          E('div', { className: 'bw-setting-label' }, t('view.time')),
-          E('div', { className: 'bw-seg', role: 'radiogroup', 'aria-label': t('view.time') },
-            [['latest', 'view.time.latest'], ['oldest', 'view.time.oldest']].map(([dir, key]) => E('button', {
-              key: dir,
-              type: 'button',
-              role: 'radio',
-              'aria-checked': timeDirection === dir,
-              className: cls('bw-seg-btn', timeDirection === dir && 'bw-seg-btn-active'),
-              onClick: () => { actions.setTimeDirection(dir) },
-            }, t(key))),
-          ),
-        ) : null,
+        choices('view.grouping', VIEW_MODES.map(mode => [mode, 'view.' + mode]), viewMode, mode => actions.setViewMode(mode)),
+        choices('view.sort', [['manual', 'view.sort.manual'], ['latest', 'view.sort.latest']], viewMode === 'time' ? 'latest' : sortOrder, order => actions.setSortOrder(order), viewMode === 'time'),
+        viewMode === 'time'
+          ? choices('view.time.direction', [['latest', 'view.time.latest'], ['oldest', 'view.time.oldest']], timeDirection, dir => actions.setTimeDirection(dir))
+          : null,
+        viewMode === 'time' ? E('div', { className: 'bw-hint' }, t('view.time.hint')) : null,
+        viewMode === 'flat' ? E('div', { className: 'bw-hint' }, t('view.flat.hint')) : null,
+        choices('view.filter', ARCHIVED_FILTERS.map(filter => [filter, 'view.filter.' + filter]), archivedFilter, filter => actions.setArchivedFilter(filter)),
         E('div', { className: 'bw-hint' }, t('view.hint')),
       )
     }
@@ -1539,7 +1819,8 @@ window.__ModuleLoader__.load({
         useSessions, useSessionPendingInteraction, useWorkspaces,
         useStore, actions,
         startSession, open, renameSession, forkSession, renameWorkspace, deleteWorkspace,
-        archiveSession, createWorkspace, pickDirectory, insertWorkspaceBefore, insertSessionBefore,
+        archiveSession, unarchiveSession, createWorkspace, pickDirectory, insertWorkspaceBefore, insertSessionBefore,
+        deleteSession, checkSessionDelete: checkDelete, openDirectory, refreshSessions, refreshPage,
         t,
       } = props
 
@@ -1554,33 +1835,34 @@ window.__ModuleLoader__.load({
       const list = useSessions(s => s)
       const pending = useSessionPendingInteraction ? useSessionPendingInteraction(s => s) : null
       const storeFolders = useStore ? (useStore(s => s.folders) || []) : []
+      const workspaceGroups = useStore ? (useStore(s => s.workspaceGroups) || []) : []
+      const workspaceGroupById = useStore ? (useStore(s => s.workspaceGroupById) || {}) : {}
+      const sessionSectionById = useStore ? (useStore(s => s.sessionSectionById) || {}) : {}
+      const workspaceGroupIds = new Set(workspaceGroups.map(group => group.id))
+      const workspaceGroupOf = id => workspaceGroupIds.has(workspaceGroupById[id]) ? workspaceGroupById[id] : ''
+      // null follows the host workspace; '' explicitly lives under Projects.
+      const sessionSectionOf = id => {
+        if (!Object.prototype.hasOwnProperty.call(sessionSectionById, id)) return null
+        const groupId = sessionSectionById[id]
+        if (groupId === '' || workspaceGroupIds.has(groupId)) return groupId
+        return null
+      }
       const expandedMap = useStore ? (useStore(s => s.expanded) || {}) : {}
       const sessionsExpandedMap = useStore ? (useStore(s => s.sessionsExpanded) || {}) : {}
       const sessionGroupsMap = useStore ? (useStore(s => s.sessionGroups) || {}) : {}
       const prefsMap = useStore ? (useStore(s => s.prefs) || {}) : {}
       const stylingMap = useStore ? (useStore(s => s.styling) || {}) : {}
       const compactChains = prefsMap.compactChains !== false
-      // Legacy sortMode (0.1.0 dev builds) maps onto the view model: manual →
-      // projects view; latest/oldest → time view with that direction.
-      const viewStateOf = (prefs) => {
-        const p = prefs || {}
-        const legacy = p.sortMode
-        const mode = p.viewMode === 'time' || (p.viewMode === undefined && (legacy === 'latest' || legacy === 'oldest'))
-          ? 'time'
-          : 'projects'
-        const dir = p.timeDirection === 'oldest' || (p.timeDirection === undefined && legacy === 'oldest')
-          ? 'oldest'
-          : 'latest'
-        return { mode, dir }
-      }
-      const { mode: viewMode, dir: timeDirection } = viewStateOf(prefsMap)
+      const { mode: viewMode, dir: timeDirection, sortOrder, archivedFilter } = viewStateOf(prefsMap)
       const timeSorted = viewMode === 'time'
+      const automaticSort = timeSorted || sortOrder === 'latest'
+      const groupedView = viewMode === 'projects' || viewMode === 'workspaces'
       const pinnedList = useStore ? (useStore(s => s.pinned) || []) : []
       const statusPulse = prefsMap.statusPulse !== false
-      const archivedSet = React.useMemo(() => new Set(archivedSessionIds), [archivedSessionIds])
+      const archivedSet = new Set(archivedSessionIds)
       const subCounts = React.useMemo(() => subagentRunningCounts(list ? list.byId : {}), [list ? list.byId : null])
       // Pinned membership set + workspace lookup for the global pinned tray.
-      const pinnedSet = React.useMemo(() => new Set(pinnedList.map(String)), [pinnedList])
+      const pinnedSet = new Set(pinnedList.map(String).filter(id => !archivedSet.has(id)))
       const workspaceTitleOf = (workspaceId) => {
         const workspace = (items || []).find(w => w.workspaceId === workspaceId)
         if (!workspace) return ''
@@ -1594,9 +1876,37 @@ window.__ModuleLoader__.load({
       const [flowParent, setFlowParent] = React.useState('') // parent path prefill for the add-workspace flow (context menu entry)
       const [dialog, setDialog] = React.useState(null) // { kind, ... }
       const [ctx, setCtx] = React.useState(null) // context menu { kind, payload, x, y }
+      const [ctxSubmenu, setCtxSubmenu] = React.useState(null)
       const [customize, setCustomize] = React.useState(null) // { kind, entryKey, name }
       const [errorText, setErrorText] = React.useState(null)
       const [drag, setDrag] = React.useState(null) // { kind: 'workspace'|'session', source, over } | null
+      const [deleteAvailable, setDeleteAvailable] = React.useState(typeof deleteSession === 'function' && !checkDelete)
+      const [deleting, setDeleting] = React.useState(false)
+      const deletingRef = React.useRef(false)
+      const [notice, setNotice] = React.useState(null)
+      const ownMenuRoot = React.useRef(null)
+      React.useEffect(() => {
+        // The installed context-menu plugin listens at document capture. Mark
+        // our rows handled at window capture, then let React open their menu.
+        const ownContextMenu = event => {
+          if (!event.target || typeof event.target.closest !== 'function') return
+          const row = event.target.closest('[data-bw-context]')
+          if (row && ownMenuRoot.current && ownMenuRoot.current.contains(row)) event.preventDefault()
+        }
+        window.addEventListener('contextmenu', ownContextMenu, true)
+        return () => window.removeEventListener('contextmenu', ownContextMenu, true)
+      }, [])
+      React.useEffect(() => {
+        if (!ctx || ctx.kind !== 'session' || typeof checkDelete !== 'function') return
+        let alive = true
+        Promise.resolve().then(checkDelete).then(available => { if (alive) setDeleteAvailable(available === true) }).catch(() => { if (alive) setDeleteAvailable(false) })
+        return () => { alive = false }
+      }, [ctx, checkDelete])
+      React.useEffect(() => {
+        if (!notice) return
+        const timer = setTimeout(() => setNotice(null), 2500)
+        return () => clearTimeout(timer)
+      }, [notice])
       // Workspace drags arm their state one frame LATE (see workspaceDragEvents):
       // arming synchronously re-renders during the dragstart dispatch, the chain
       // expansion inserts rows above the drag source, the cursor leaves the
@@ -1718,8 +2028,13 @@ window.__ModuleLoader__.load({
       }, [list, pinnedList])
       const normalizedQuery = query.trim().toLowerCase()
       const now = Date.now()
+      React.useEffect(() => {
+        if (wsDragArmTimer.current !== null) { clearTimeout(wsDragArmTimer.current); wsDragArmTimer.current = null }
+        setDrag(null)
+        return () => { if (wsDragArmTimer.current !== null) clearTimeout(wsDragArmTimer.current) }
+      }, [viewMode, sortOrder, archivedFilter, normalizedQuery])
 
-      const fail = (text) => { setFlowOpen(false); setDialog(null); setErrorText(String(text || 'unknown error')) }
+      const fail = (text) => { setFlowOpen(false); setDialog(null); setNotice(null); setErrorText(String(text || 'unknown error')) }
 
       const styleEntry = (key) => stylingMap[key] || null
       const rowStyleOf = (key) => {
@@ -1754,12 +2069,15 @@ window.__ModuleLoader__.load({
       for (const workspace of items || []) for (const id of workspace.sessionIds || []) { accounted.add(id); workspaceIndexOf.set(id, workspace.workspaceId) }
       const sessionRowOf = (id) => {
         const summary = list && list.byId ? list.byId[id] : undefined
-        if (!sessionVisible(summary, list ? list.current : undefined, archivedSet)) return null
+        if (!sessionVisible(summary, list ? list.current : undefined, archivedSet, archivedFilter)) return null
+        const workspace = (items || []).find(item => item.workspaceId === workspaceIndexOf.get(id))
         return {
           id,
+          cwd: summary.cwd || (workspace && workspace.path) || '',
           title: sessionTitleOf(summary, t),
           leaf: sessionTitleOf(summary, t),
           blank: !!summary.blank,
+          archived: archivedSet.has(id),
           running: !!summary.running,
           completed: summary.completed === true,
           hasActiveSchedule: hasActiveScheduleOf(summary),
@@ -1780,6 +2098,7 @@ window.__ModuleLoader__.load({
         // own members in the time views).
         ungrouped.sort((a, b) => b.updatedAt - a.updatedAt)
       }
+      const sectionedSessions = ((list && list.ids) || []).filter(id => sessionSectionOf(id) !== null).map(sessionRowOf).filter(Boolean)
 
       // While a workspace drag is active, single-child chains render UNCOMPRESSED:
       // a merged "group/workspace" row hides every folder level of the chain inside
@@ -1789,19 +2108,29 @@ window.__ModuleLoader__.load({
       // drag ends, the chains merge back. Session drags keep the merged view —
       // their drop targets live inside workspace rows, which compression merges.
       const draggingWorkspace = drag !== null && drag.kind === 'workspace'
-      const tree = React.useMemo(() => {
-        const built = buildTree(items, storeFolders)
+      const workspaceRecency = new Map()
+      const visibleItems = (items || []).filter(workspace => {
+        const rows = (workspace.sessionIds || []).filter(id => sessionSectionOf(id) === null).map(sessionRowOf).filter(Boolean)
+        workspaceRecency.set(workspace.workspaceId, rows.reduce((latest, row) => Math.max(latest, row.updatedAt), 0))
+        return archivedFilter !== 'only' || rows.length > 0
+      })
+      const recency = sortOrder === 'latest' ? workspaceRecency : undefined
+      const projectItems = visibleItems.filter(workspace => !workspaceGroupOf(workspace.workspaceId))
+      const tree = (() => {
+        if (viewMode === 'workspaces') return buildWorkspaceList(projectItems, recency)
+        const built = buildTree(projectItems, archivedFilter === 'only' ? [] : storeFolders, recency)
         if (!compactChains || draggingWorkspace) return built
         return { ...built, folders: built.folders.map((f) => materializeChain(compressTree(f))), workspaces: built.workspaces }
-      }, [items, storeFolders, compactChains, draggingWorkspace])
+      })()
 
-      const sessionsOf = (workspace) => {
+      const sessionsOf = (workspace, includeSectioned = false) => {
         const rows = []
         for (const id of workspace.sessionIds || []) {
+          if (!includeSectioned && sessionSectionOf(id) !== null) continue
           const row = sessionRowOf(id)
           if (row) rows.push(row)
         }
-        return rows
+        return orderRows(rows, sortOrder)
       }
 
       const searchAgent = (agent) => {
@@ -1879,6 +2208,7 @@ window.__ModuleLoader__.load({
 
       const openCtx = (kind, payload, e) => {
         if (e) e.preventDefault()
+        setCtxSubmenu(null)
         setCtx({ kind, payload, x: e.clientX, y: e.clientY })
       }
 
@@ -1904,7 +2234,9 @@ window.__ModuleLoader__.load({
         return event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
       }
       const dragMatches = (kind) => drag !== null && drag.kind === kind
-      const canDragWorkspace = typeof insertWorkspaceBefore === 'function'
+      const canReorderWorkspaces = !automaticSort && groupedView && typeof insertWorkspaceBefore === 'function'
+      const canMoveWorkspaceGroup = groupedView && workspaceGroups.length > 0
+      const canDragWorkspace = canReorderWorkspaces || canMoveWorkspaceGroup
       // Session REORDER needs the host insertSessionBefore action; dragging a
       // session onto a sub-group row (a pure rename) stays available without it.
       const canReorderSessions = typeof insertSessionBefore === 'function'
@@ -1912,7 +2244,7 @@ window.__ModuleLoader__.load({
       /* --------------------- workspace drag & drop -------------------- */
 
       const wsDropHalf = (workspaceId) => {
-        if (!dragMatches('workspace')) return null
+        if (!dragMatches('workspace') || !canReorderWorkspaces) return null
         const over = drag.over
         return over && over.kind === 'workspace' && over.target === workspaceId ? over.half : null
       }
@@ -1949,7 +2281,8 @@ window.__ModuleLoader__.load({
           setDrag(null)
         },
         onDragOver: (event) => {
-          if (!dragMatches('workspace')) return
+          if (!dragMatches('workspace') || !canDragWorkspace || searching) return
+          if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return
           event.preventDefault()
           event.stopPropagation()
           try { event.dataTransfer.dropEffect = 'move' } catch { }
@@ -1959,7 +2292,8 @@ window.__ModuleLoader__.load({
             : (current ? { ...current, over: { kind: 'workspace', target: workspace.workspaceId, half } } : current))
         },
         onDrop: (event) => {
-          if (!dragMatches('workspace')) return
+          if (!dragMatches('workspace') || !canDragWorkspace || searching) return
+          if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return
           event.preventDefault()
           event.stopPropagation()
           const half = drag.over && drag.over.kind === 'workspace' && drag.over.target === workspace.workspaceId ? drag.over.half : rowHalf(event)
@@ -1968,7 +2302,7 @@ window.__ModuleLoader__.load({
       })
       const folderDropEvents = (path) => ({
         onDragOver: (event) => {
-          if (!dragMatches('workspace')) return
+          if (!dragMatches('workspace') || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return
           event.preventDefault()
           event.stopPropagation()
           try { event.dataTransfer.dropEffect = 'move' } catch { }
@@ -1977,26 +2311,41 @@ window.__ModuleLoader__.load({
             : (current ? { ...current, over: { kind: 'folder', target: path } } : current))
         },
         onDrop: (event) => {
-          if (!dragMatches('workspace')) return
+          if (!dragMatches('workspace') || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return
           event.preventDefault()
           event.stopPropagation()
           commitWorkspaceMoveInto(path)
         },
       })
       const nextWorkspaceAfter = (folderPath, workspaceId) => {
+        const groupId = workspaceGroupOf(workspaceId)
+        if (groupId) {
+          const rows = buildWorkspaceList(visibleItems.filter(workspace => workspaceGroupOf(workspace.workspaceId) === groupId), recency).workspaces
+          const index = rows.findIndex(workspace => workspace.workspaceId === workspaceId)
+          return rows[index + 1] && rows[index + 1].workspaceId
+        }
+        if (viewMode === 'workspaces') {
+          const index = tree.workspaces.findIndex(workspace => workspace.workspaceId === workspaceId)
+          return tree.workspaces[index + 1] && tree.workspaces[index + 1].workspaceId
+        }
         const node = findTreeNode(tree, folderPath)
         if (!node) return undefined
         const index = node.workspaces.findIndex(w => w.workspaceId === workspaceId)
         return index === -1 ? undefined : (node.workspaces[index + 1] ? node.workspaces[index + 1].workspaceId : undefined)
       }
       const commitWorkspaceDrop = (targetWorkspace, half) => {
+        if (!drag || !canDragWorkspace || searching) { setDrag(null); return }
         const source = drag.source
         setDrag(null)
         if (source.workspaceId === targetWorkspace.workspaceId) return
-        const sameFolder = (targetWorkspace.folderPath || '') === source.folderPath
+        const sourceGroup = workspaceGroupOf(source.workspaceId)
+        const targetGroup = workspaceGroupOf(targetWorkspace.workspaceId)
         const anchor = half === 'after'
           ? nextWorkspaceAfter(targetWorkspace.folderPath || '', targetWorkspace.workspaceId)
           : targetWorkspace.workspaceId
+        if (sourceGroup !== targetGroup) assignWorkspaceGroup(source.workspaceId, targetGroup)
+        if (!canReorderWorkspaces) return
+        const sameFolder = sourceGroup !== targetGroup || !!targetGroup || viewMode === 'workspaces' || (targetWorkspace.folderPath || '') === source.folderPath
         const chain = sameFolder
           ? Promise.resolve()
           : Promise.resolve().then(() => {
@@ -2008,6 +2357,7 @@ window.__ModuleLoader__.load({
           .catch(fail)
       }
       const commitWorkspaceMoveInto = (folderPath) => {
+        if (!drag || !canReorderWorkspaces || searching || viewMode !== 'projects' || workspaceGroupOf(drag.source.workspaceId)) { setDrag(null); return }
         const source = drag.source
         setDrag(null)
         if (source.folderPath === folderPath) return
@@ -2017,6 +2367,26 @@ window.__ModuleLoader__.load({
           .then(() => insertWorkspaceBefore(source.workspaceId))
           .catch(fail)
       }
+      const workspaceGroupDropEvents = groupId => ({
+        onDragOver: event => {
+          if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup || searching) return
+          event.preventDefault()
+          event.stopPropagation()
+          try { event.dataTransfer.dropEffect = 'move' } catch {}
+          setDrag(current => {
+            if (!current || (current.over && current.over.kind === 'wgroup' && current.over.target === groupId)) return current
+            return { ...current, over: { kind: 'wgroup', target: groupId } }
+          })
+        },
+        onDrop: event => {
+          if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup || searching) return
+          event.preventDefault()
+          event.stopPropagation()
+          if (drag.kind === 'session') assignSessionSection(drag.source.sessionId, groupId)
+          else assignWorkspaceGroup(drag.source.workspaceId, groupId)
+          setDrag(null)
+        },
+      })
 
       /* ---------------------- session drag & drop --------------------- */
 
@@ -2024,16 +2394,19 @@ window.__ModuleLoader__.load({
         // Time views and pinned rows never anchor a reorder: their visual
         // position is derived (recency / pin order), not the host manual
         // order, so a committed drop there would silently reorder nothing.
-        if (!dragMatches('session') || timeSorted) return null
+        if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView) return null
         const over = drag.over
         return over && over.kind === 'session' && over.target === sessionId ? over.half : null
       }
-      const sgroupDropInto = (workspaceId, path) => dragMatches('session') && drag.over && drag.over.kind === 'sgroup' && drag.over.target === path
-      // Pinned rows float by projection and time views carry no sub-groups,
-      // so neither is a meaningful drag source; plain manual-order rows keep
-      // both reorder and group-move drops, exactly as before.
-      const sessionDraggable = (session) => !searching && !timeSorted && !pinnedSet.has(session.id)
-      const sessionDragEvents = (session, workspaceId) => ({
+      const sgroupDropInto = (workspaceId, path) => !automaticSort && dragMatches('session') && !drag.source.sectioned && drag.source.workspaceId === workspaceId && drag.over && drag.over.kind === 'sgroup' && drag.over.target === path
+      // Section moves are local and allow pins and archives. Legacy title
+      // grouping and host reorder targets retain their stricter guards.
+      const sessionDraggable = session => {
+        if (searching || !groupedView || session.blank) return false
+        if (workspaceGroups.length > 0) return true
+        return !automaticSort && !session.archived && !pinnedSet.has(session.id)
+      }
+      const sessionDragEvents = (session, workspaceId, sectioned = false) => ({
         draggable: sessionDraggable(session),
         onDragStart: (event) => {
           if (searching || !sessionDraggable(session)) return
@@ -2042,15 +2415,16 @@ window.__ModuleLoader__.load({
             event.dataTransfer.effectAllowed = 'move'
             event.dataTransfer.setData('text/plain', session.id)
           } catch { }
-          setDrag({ kind: 'session', source: { sessionId: session.id, workspaceId, title: session.title, leaf: session.leaf || session.title }, over: null })
+          setDrag({ kind: 'session', source: { sessionId: session.id, workspaceId, sectioned, title: session.title, leaf: session.leaf || session.title }, over: null })
         },
         onDragEnd: () => setDrag(null),
         onDragOver: (event) => {
           // Pinned rows are not reorder anchors (visible position ≠ host
           // order); drop targets stay plain rows only. Belt-and-braces: the
           // source side already refuses to arm for pinned rows.
-          if (!dragMatches('session') || !canReorderSessions || timeSorted
+          if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching
             || drag.source.workspaceId !== workspaceId
+            || session.archived || archivedSet.has(drag.source.sessionId)
             || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return
           event.preventDefault()
           event.stopPropagation()
@@ -2061,8 +2435,9 @@ window.__ModuleLoader__.load({
             : (current ? { ...current, over: { kind: 'session', target: session.id, half } } : current))
         },
         onDrop: (event) => {
-          if (!dragMatches('session') || !canReorderSessions || timeSorted
+          if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching
             || drag.source.workspaceId !== workspaceId
+            || session.archived || archivedSet.has(drag.source.sessionId)
             || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return
           event.preventDefault()
           event.stopPropagation()
@@ -2072,7 +2447,8 @@ window.__ModuleLoader__.load({
       })
       const sgroupDropEvents = (workspaceId, path) => ({
         onDragOver: (event) => {
-          if (!dragMatches('session') || drag.source.workspaceId !== workspaceId) return
+          if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView || searching
+            || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return
           event.preventDefault()
           event.stopPropagation()
           try { event.dataTransfer.dropEffect = 'move' } catch { }
@@ -2081,18 +2457,21 @@ window.__ModuleLoader__.load({
             : (current ? { ...current, over: { kind: 'sgroup', target: path } } : current))
         },
         onDrop: (event) => {
-          if (!dragMatches('session') || drag.source.workspaceId !== workspaceId) return
+          if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView || searching
+            || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return
           event.preventDefault()
           event.stopPropagation()
           commitSessionMoveInto(workspaceId, path)
         },
       })
       const commitSessionDrop = (workspaceId, targetSessionId, half) => {
+        if (!drag) return
         const source = drag.source
         setDrag(null)
         // Same guards as the drop handlers (time views / pinned rows are not
         // reorder surfaces) — a stale drag never commits an invisible move.
-        if (!canReorderSessions || timeSorted) return
+        if (!canReorderSessions || automaticSort || !groupedView || searching) return
+        if (archivedSet.has(source.sessionId) || archivedSet.has(targetSessionId)) return
         if (pinnedSet.has(source.sessionId) || pinnedSet.has(targetSessionId)) return
         if (source.sessionId === targetSessionId) return
         const workspace = (items || []).find(w => w.workspaceId === workspaceId)
@@ -2107,6 +2486,7 @@ window.__ModuleLoader__.load({
           .catch(fail)
       }
       const commitSessionMoveInto = (workspaceId, groupPath) => {
+        if (!drag || automaticSort || !groupedView || searching || archivedSet.has(drag.source.sessionId)) { setDrag(null); return }
         const source = drag.source
         setDrag(null)
         const newTitle = groupPath !== '' ? groupPath + '/' + source.leaf : source.leaf
@@ -2117,6 +2497,47 @@ window.__ModuleLoader__.load({
       }
 
       /* --------------------------- actions --------------------------- */
+
+      const assignWorkspaceGroup = (workspaceId, groupId) => {
+        const workspace = (items || []).find(workspace => workspace.workspaceId === workspaceId)
+        if (!workspace) return
+        if (groupId && !workspaceGroupIds.has(groupId)) return
+        actions.assignWorkspaceGroup(workspaceId, groupId)
+        for (const sessionId of workspace.sessionIds || []) actions.assignSessionSection(sessionId, null)
+        if (groupId) actions.setExpanded('workspace-group:' + groupId, true)
+      }
+      const assignSessionSection = (sessionId, groupId) => {
+        if (!list || !list.byId || !list.byId[sessionId]) return
+        if (groupId && !workspaceGroupIds.has(groupId)) return
+        actions.assignSessionSection(sessionId, groupId)
+        if (groupId) actions.setExpanded('workspace-group:' + groupId, true)
+        if (groupId === null) {
+          const workspaceId = workspaceIndexOf.get(sessionId)
+          const workspaceGroup = workspaceGroupOf(workspaceId)
+          if (workspaceGroup) actions.setExpanded('workspace-group:' + workspaceGroup, true)
+          if (workspaceId) actions.setSessionsExpanded(workspaceId, true)
+        }
+      }
+      const submitWorkspaceGroup = (target, rawName) => {
+        const name = String(rawName || '').trim()
+        if (!name) { setErrorText(t('wgroup.error.empty')); return }
+        if (workspaceGroups.some(group => group.id !== target.groupId && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+          setErrorText(t('wgroup.error.exists')); return
+        }
+        if (target.groupId) actions.renameWorkspaceGroup(target.groupId, name)
+        else {
+          const groupId = crypto.randomUUID()
+          const workspaceId = (items || []).some(workspace => workspace.workspaceId === target.workspaceId) ? target.workspaceId : undefined
+          actions.createWorkspaceGroup(groupId, name, workspaceId)
+          if (workspaceId) {
+            const workspace = (items || []).find(workspace => workspace.workspaceId === workspaceId)
+            for (const sessionId of workspace.sessionIds || []) actions.assignSessionSection(sessionId, null)
+          }
+          if (target.sessionId && list && list.byId && list.byId[target.sessionId]) actions.assignSessionSection(target.sessionId, groupId)
+          actions.setExpanded('workspace-group:' + groupId, true)
+        }
+        setDialog(null)
+      }
 
       const submitWorkspaceRename = (workspace, nextTitle) => {
         const title = String(nextTitle || '').trim()
@@ -2141,6 +2562,35 @@ window.__ModuleLoader__.load({
           .then(() => renameByUser(session.id, title))
           .then(() => setDialog(null))
           .catch(fail)
+      }
+      const submitSessionDelete = async (session) => {
+        if (deletingRef.current || !deleteAvailable || typeof deleteSession !== 'function' || session.blank) return
+        deletingRef.current = true
+        setDeleting(true)
+        try {
+          const result = await deleteSession(session.id)
+          actions.assignSessionSection(session.id, null)
+          if (pinnedList.includes(session.id)) actions.togglePin(session.id)
+          setDialog(null)
+          setNotice(t('session.delete.done'))
+          try {
+            if (typeof refreshSessions === 'function') await refreshSessions()
+          } catch (error) {
+            setErrorText(t('session.delete.cleanupWarning') + '\n' + messageOf(error))
+          }
+          if (result && Array.isArray(result.warnings) && result.warnings.length > 0) setErrorText(t('session.delete.cleanupWarning'))
+        } catch (error) {
+          fail(messageOf(error))
+        } finally {
+          deletingRef.current = false
+          setDeleting(false)
+        }
+      }
+      const copySessionText = async (text, successKey) => {
+        try {
+          if (!await writeClipboardText(text)) throw new Error(t('copy.failed'))
+          setNotice(t(successKey))
+        } catch (error) { fail(messageOf(error)) }
       }
 
       /** Rename one session sub-group: rewrite the title prefix of every member. */
@@ -2201,7 +2651,7 @@ window.__ModuleLoader__.load({
         const hasChildren = node ? countWorkspaces(node) > 0 : false
         const prefix = oldPath + '/'
         const affected = hasChildren
-          ? (items || []).filter(w => String(w.title || '').startsWith(prefix))
+          ? (items || []).filter(w => !workspaceGroupOf(w.workspaceId) && String(w.title || '').startsWith(prefix))
           : []
         Promise.resolve()
           .then(async () => {
@@ -2226,22 +2676,29 @@ window.__ModuleLoader__.load({
       /**
        * Session list of ONE workspace in the projects view: pinned rows are
        * hidden (tray-only display — unpinning restores them) and the rest
-       * render as the "/" title grouping tree in host order (drag-reorder
-       * anchors stay valid). Search mode overrides the split: the tree shows
-       * every match in place (pinned rows included). The time view never
+       * render as the "/" title grouping tree in manual or recency order.
+       * Search expands matching groups; pins remain tray-only. The time view never
        * routes here — the global timeline in the bodyRows assembly replaces
        * the workspace scaffolding entirely.
        */
+      const matchesSession = (row) => {
+        if (!searching) return true
+        const workspaceId = workspaceIndexOf.get(row.id)
+        const workspace = (items || []).find(item => item.workspaceId === workspaceId)
+        const sectionId = sessionSectionOf(row.id)
+        const groupId = sectionId === null ? workspaceGroupOf(workspaceId) : sectionId
+        const group = workspaceGroups.find(group => group.id === groupId)
+        return (row.title + ' ' + (workspace ? workspace.title : '') + ' ' + (group ? group.name : '')).toLowerCase().includes(normalizedQuery)
+      }
       const renderSessionTree = (workspace, depth) => {
         // Folder semantics: a closed workspace shows no sessions at all (the
         // list keeps its count badge); an open one shows the full session tree.
         if (!searching && !sessionsOpenOf(workspace.workspaceId)) return []
         const rows = sessionsOf(workspace)
         if (rows.length === 0) return []
-        if (searching) return renderSessionNode(buildSessionTree(rows), workspace.workspaceId, depth)
         const unpinned = rows.filter(r => !pinnedSet.has(r.id))
         if (unpinned.length === 0) return []
-        return renderSessionNode(buildSessionTree(unpinned), workspace.workspaceId, depth)
+        return renderSessionNode(buildSessionTree(unpinned, sortOrder), workspace.workspaceId, depth)
       }
 
       /** Recency buckets over un-pinned rows; empty buckets stay hidden. */
@@ -2252,7 +2709,8 @@ window.__ModuleLoader__.load({
         const direction = timeDirection === 'oldest' ? 1 : -1
         const prefix = workspaceId || 'timeline'
         const out = []
-        for (const key of BUCKET_ORDER) {
+        const bucketKeys = timeDirection === 'oldest' ? BUCKET_ORDER.slice().reverse() : BUCKET_ORDER
+        for (const key of bucketKeys) {
           const bucketRows = buckets.get(key)
           if (bucketRows.length === 0) continue
           out.push(E('div', { key: 'bucket-' + prefix + '-' + key, className: 'bw-bucket-header' }, t('bucket.' + key)))
@@ -2272,7 +2730,7 @@ window.__ModuleLoader__.load({
           const hit = searchSessionNode(group)
           if (hit) groups.push(hit)
         }
-        const sessions = node.sessions.filter(s => ((s.leaf || s.title) + ' ' + s.title).toLowerCase().includes(normalizedQuery))
+        const sessions = node.sessions.filter(matchesSession)
         if (groups.length === 0 && sessions.length === 0) return null
         return { path: node.path, name: node.name, groups, sessions }
       }
@@ -2311,6 +2769,10 @@ window.__ModuleLoader__.load({
        * in-workspace sibling. Pin button hidden when the store lacks the
        * action (older host wiring).
        */
+      const restoreSession = (id) => {
+        if (typeof unarchiveSession !== 'function') return
+        Promise.resolve().then(() => unarchiveSession(id)).catch(fail)
+      }
       const renderSessionRow = (session, depth, workspaceId, opts) => {
         const o = opts || {}
         const pinned = o.pinned === true || pinnedSet.has(session.id)
@@ -2322,14 +2784,15 @@ window.__ModuleLoader__.load({
           depth,
           current: list && list.current === session.id,
           now,
-          onOpen: (id) => open(id),
+          onOpen: (id) => { if (session.archived) setErrorText(t('session.archivedHint')); else open(id) },
           onContextMenu: (e) => openCtx('session', session, e),
-          dropHalf: workspaceId && !pinned ? sessDropHalf(session.id) : null,
-          dragEvents: (workspaceId && !pinned && !inTray && !timeSorted) ? sessionDragEvents(session, workspaceId) : undefined,
+          dropHalf: workspaceId && !pinned && !o.sectioned ? sessDropHalf(session.id) : null,
+          dragEvents: sessionDraggable(session) && (canMoveWorkspaceGroup || (workspaceId && !o.sectioned)) ? sessionDragEvents(session, workspaceId, o.sectioned === true) : undefined,
           custStyle: rowStyleOf('session:' + session.id),
           breathing: statusPulse,
           pinned,
-          onTogglePin: togglePin,
+          onTogglePin: session.archived ? undefined : togglePin,
+          onUnarchive: typeof unarchiveSession === 'function' ? restoreSession : undefined,
           workspaceTag: o.workspaceTag,
           tagOnHover: o.tagOnHover === true,
           tooltip: o.tooltip === true,
@@ -2427,102 +2890,151 @@ window.__ModuleLoader__.load({
 
       // Global pinned tray: every pinned session that is visible right now,
       // across workspaces and ungrouped, in pin-recency order (store order).
-      // Archived or hard-deleted pins stay stored but render nothing. During
+      // Archived pins stay stored and appear as ordinary archive rows. During
       // search the tray filters like any other row.
       const pinnedTray = []
       if (Array.isArray(pinnedList) && pinnedList.length > 0 && list) {
         for (const rawId of pinnedList) {
           const id = String(rawId)
           const row = sessionRowOf(id)
-          if (!row) continue
-          if (searching && !((row.leaf || row.title) + ' ' + row.title).toLowerCase().includes(normalizedQuery)) continue
+          if (!row || row.archived) continue
+          if (!matchesSession(row)) continue
           const wsId = workspaceIndexOf.get(id)
           row.workspaceTag = wsId !== undefined ? workspaceTitleOf(wsId) : ''
           pinnedTray.push(row)
         }
       }
 
+      const sectionRowsOf = groupId => orderRows(sectionedSessions.filter(row => sessionSectionOf(row.id) === groupId && !pinnedSet.has(row.id) && matchesSession(row)), sortOrder)
+      const renderSectionedSession = row => renderSessionRow(row, 0, workspaceIndexOf.get(row.id), {
+        sectioned: true, workspaceTag: workspaceTitleOf(workspaceIndexOf.get(row.id)), tooltip: true,
+      })
+      const renderCustomWorkspaceGroups = () => {
+        const rows = []
+        for (const group of workspaceGroups) {
+          const members = visibleItems.filter(workspace => workspaceGroupOf(workspace.workspaceId) === group.id)
+          const looseRows = sectionRowsOf(group.id)
+          if (archivedFilter === 'only' && members.length === 0 && looseRows.length === 0) continue
+          const groupTree = buildWorkspaceList(members, recency)
+          const groupMatch = searching && group.name.toLowerCase().includes(normalizedQuery)
+          const hit = searching && !groupMatch ? searchAgent(groupTree) : null
+          if (searching && !groupMatch && !hit && looseRows.length === 0) continue
+          const expanded = searching || expandedMap['workspace-group:' + group.id] !== false
+          rows.push(E(WorkspaceGroupRow, {
+            key: 'workspace-group-' + group.id, group, expanded,
+            onToggle: () => { if (!searching) actions.setExpanded('workspace-group:' + group.id, !expanded) },
+            onContextMenu: event => openCtx('wgroup', group, event),
+            dropInto: drag !== null && drag.over && drag.over.kind === 'wgroup' && drag.over.target === group.id,
+            dragEvents: workspaceGroupDropEvents(group.id),
+          }))
+          if (expanded) {
+            const entries = hit ? hit.workspaces : groupTree.workspaces.map(workspace => ({ workspace }))
+            if (!searching || groupMatch || hit) {
+              for (const entry of entries) rows.push(...renderWorkspaceEntry(entry, 0, wsPulseOf(entry.workspace)))
+            }
+            for (const row of looseRows) rows.push(renderSectionedSession(row))
+          }
+        }
+        return rows
+      }
+      const renderProjectsHeader = () => {
+        const looseRows = sectionRowsOf('')
+        if (workspaceGroups.length === 0 && looseRows.length === 0) return []
+        if (searching && !searched && looseRows.length === 0) return []
+        if (archivedFilter === 'only' && projectItems.length === 0 && looseRows.length === 0) return []
+        const group = { id: '', name: t('wgroup.projects') }
+        return [E(WorkspaceGroupRow, {
+          key: 'workspace-group-projects', group,
+          onContextMenu: event => openCtx('wgroup', group, event),
+          dropInto: drag !== null && drag.over && drag.over.kind === 'wgroup' && drag.over.target === '',
+          dragEvents: workspaceGroupDropEvents(''),
+        })]
+      }
       let bodyRows = []
-      if (searching) {
-        // Search is a locator: it always renders through the projects tree
-        // (results in place) regardless of the active view.
+      if (searching && groupedView) {
+        // Grouped search preserves project provenance and expands matches.
         if (pinnedTray.length > 0) bodyRows.push(renderPinnedSection(pinnedTray))
+        bodyRows.push(...renderCustomWorkspaceGroups(), ...renderProjectsHeader())
         if (searched) {
           for (const child of searched.folders) bodyRows.push(...renderSearchedFolder(child, 0))
           for (const entry of searched.workspaces) bodyRows.push(...renderWorkspaceEntry(entry, 0))
         }
-      } else if (timeSorted) {
-        // Global timeline: ONE recency stream across every project. The
-        // workspace/folder scaffolding disappears entirely — time is the
-        // first level, project membership degrades to a row tag. Pinned
-        // sessions live in the tray above and never duplicate here.
+        for (const row of sectionRowsOf('')) bodyRows.push(renderSectionedSession(row))
+      } else if (timeSorted || viewMode === 'flat') {
+        // Start from host accounts, not compressed tree nodes: a compressed
+        // folder may be a workspace leaf and has no folders/workspaces arrays.
         const timelineRows = []
-        const collectWorkspace = (workspace) => {
-          for (const s of sessionsOf(workspace)) {
-            if (pinnedSet.has(s.id)) continue
-            const wsId = workspaceIndexOf.get(s.id)
-            s.workspaceTag = wsId !== undefined ? workspaceTitleOf(wsId) : ''
-            timelineRows.push(s)
-          }
+        const included = new Set()
+        const append = (row) => {
+          if (included.has(row.id) || pinnedSet.has(row.id) || !matchesSession(row)) return
+          included.add(row.id)
+          const workspaceId = workspaceIndexOf.get(row.id)
+          row.workspaceTag = workspaceId !== undefined ? workspaceTitleOf(workspaceId) : ''
+          timelineRows.push(row)
         }
-        const collectFolder = (node) => {
-          for (const child of node.folders) collectFolder(child)
-          for (const workspace of node.workspaces) collectWorkspace(workspace)
-        }
-        for (const folder of tree.folders) collectFolder(folder)
-        for (const workspace of tree.workspaces) collectWorkspace(workspace)
-        for (const s of ungrouped) {
-          if (pinnedSet.has(s.id)) continue
-          timelineRows.push(s)
-        }
+        for (const workspace of items || []) for (const row of sessionsOf(workspace, true)) append(row)
+        for (const row of ungrouped) append(row)
         if (pinnedTray.length > 0) bodyRows.push(renderPinnedSection(pinnedTray))
-        if (timelineRows.length > 0) {
+        if (timeSorted) {
           for (const row of renderTimeBuckets(timelineRows, null, 0)) bodyRows.push(row)
+        } else {
+          for (const row of orderRows(timelineRows, sortOrder)) {
+            bodyRows.push(renderSessionRow(row, 0, null, { workspaceTag: row.workspaceTag, tagOnHover: true, tooltip: true }))
+          }
         }
       } else {
         if (pinnedTray.length > 0) bodyRows.push(renderPinnedSection(pinnedTray))
+        bodyRows.push(...renderCustomWorkspaceGroups(), ...renderProjectsHeader())
         for (const folder of tree.folders) bodyRows.push(...renderPlainFolder(folder, 0))
         for (const workspace of tree.workspaces) bodyRows.push(...renderWorkspaceEntry({ workspace }, 0, wsPulseOf(workspace)))
+        for (const row of sectionRowsOf('')) bodyRows.push(renderSectionedSession(row))
         if (ungrouped.length > 0) {
-          const plainUn = ungrouped.filter(s => !pinnedSet.has(s.id))
+          const plainUn = ungrouped.filter(s => sessionSectionOf(s.id) === null && !pinnedSet.has(s.id) && matchesSession(s))
           if (plainUn.length > 0) {
             bodyRows.push(E('div', { key: 'ungrouped-label', className: 'bw-header-title', style: { padding: '10px 6px 2px' } }, t('group.ungrouped')))
           }
           for (const s of plainUn) bodyRows.push(renderSessionRow(s, 0, null))
         }
       }
+      if (searching && groupedView) {
+        const matchedUngrouped = ungrouped.filter(row => sessionSectionOf(row.id) === null && !pinnedSet.has(row.id) && matchesSession(row))
+        if (matchedUngrouped.length > 0) {
+          bodyRows.push(E('div', { key: 'ungrouped-label', className: 'bw-header-title', style: { padding: '10px 6px 2px' } }, t('group.ungrouped')))
+          for (const row of matchedUngrouped) bodyRows.push(renderSessionRow(row, 0, null))
+        }
+      }
       const isEmpty = bodyRows.length === 0
       if (isEmpty) {
-        bodyRows = [E('div', { key: 'empty', className: 'bw-empty' }, searching ? t('empty.search') : (phase === 'pending' ? '…' : t('empty')))]
+        let emptyText = t('empty.sessions')
+        if (searching) emptyText = t('empty.search')
+        else if (phase === 'pending') emptyText = '…'
+        else if (archivedFilter === 'only') emptyText = t('empty.archived')
+        else if (groupedView && visibleItems.length === 0) emptyText = t('empty')
+        bodyRows = [E('div', { key: 'empty', className: 'bw-empty' },
+          E('div', null, emptyText),
+          archivedFilter !== 'show' && phase !== 'pending' ? E(BTN, { variant: 'outline', onClick: () => actions.setArchivedFilter('show') }, t('empty.showAll')) : null,
+        )]
       }
 
       /* ------------------------- context menu ------------------------ */
 
       const ctxItems = () => {
         if (ctx === null) return []
-        // View menu: two views, and while the time view is active a sub-level
-        // direction pair (latest / oldest) rendered indented.
         if (ctx.kind === 'view') {
-          const items = [
-            {
-              id: 'view-projects', label: t('view.projects'), sub: false,
-              role: 'menuitemradio', checked: !timeSorted, leadingIcon: ListTreeIcon16,
-            },
-            {
-              id: 'view-time', label: t('view.time'), sub: false,
-              role: 'menuitemradio', checked: timeSorted, leadingIcon: CalendarDaysIcon16,
-            },
-          ]
+          const choice = (id, label, checked, disabled = false) => ({
+            id, label: t(label), role: 'menuitemradio', checked, disabled,
+            leading: checked ? icon('IconCheckOutline16', 14) : null,
+          })
+          const items = [{ heading: t('view.grouping') }]
+          for (const mode of VIEW_MODES) items.push(choice('view-' + mode, 'view.' + mode, viewMode === mode))
+          items.push({ sep: true }, { heading: t('view.sort') })
+          items.push(choice('view-sort-manual', 'view.sort.manual', !automaticSort, timeSorted))
+          items.push(choice('view-sort-latest', 'view.sort.latest', automaticSort, timeSorted))
           if (timeSorted) {
-            items.push({ sep: true })
-            for (const [dir, key] of [['latest', 'view.time.latest'], ['oldest', 'view.time.oldest']]) {
-              items.push({
-                id: 'view-dir-' + dir, label: t(key), sub: true,
-                role: 'menuitemradio', checked: timeDirection === dir,
-                leading: timeDirection === dir ? icon('IconCheckOutline16', 14) : null,
-              })
-            }
+            for (const dir of ['latest', 'oldest']) items.push(choice('view-dir-' + dir, 'view.time.' + dir, timeDirection === dir))
           }
+          items.push({ sep: true }, { heading: t('view.filter') })
+          for (const filter of ARCHIVED_FILTERS) items.push(choice('view-filter-' + filter, 'view.filter.' + filter, archivedFilter === filter))
           return items
         }
         if (ctx.kind === 'folder') {
@@ -2537,21 +3049,45 @@ window.__ModuleLoader__.load({
           return items
         }
         if (ctx.kind === 'workspace') return [
-          { id: 'rename', label: t('menu.rename') },
-          { id: 'delete', label: t('menu.delete'), danger: true },
+          { id: 'rename', label: t('menu.rename'), leading: icon('IconEditOutline16', 14) },
+          { id: 'group-workspace', label: t('wgroup.menu'), leading: icon('IconFolderOpenOutline16', 14), submenu: true },
+          { id: 'delete', label: t('menu.delete'), leading: icon('IconTrashOutline16', 14), danger: true },
           { sep: true },
-          { id: 'customize', label: t('custom.title') },
+          { id: 'customize', label: t('custom.title'), leading: icon('IconPersonalizationOutline16', 14) },
         ]
+        if (ctx.kind === 'wgroup') {
+          const items = [{ id: 'new-workspace-group', label: t('wgroup.new'), leading: icon('IconPlusOutline16', 14) }]
+          if (ctx.payload.id) items.push(
+            { sep: true },
+            { id: 'rename-workspace-group', label: t('wgroup.rename'), leading: icon('IconEditOutline16', 14) },
+            { id: 'delete-workspace-group', label: t('wgroup.delete'), leading: icon('IconTrashOutline16', 14), danger: true },
+          )
+          return items
+        }
         if (ctx.kind === 'session') {
           const isPinned = pinnedSet.has(ctx.payload.id)
-          return [
-            { id: 'pin', label: isPinned ? t('menu.unpin') : t('menu.pin'), leading: E(PinIcon16, { size: 14 }) },
-            { id: 'rename', label: t('menu.rename') },
-            { id: 'fork', label: t('menu.fork') },
-            { id: 'archive', label: t('menu.archive'), danger: true },
+          const items = []
+          if (ctx.payload.archived) items.push({ id: 'unarchive', label: t('menu.unarchive'), leading: icon('IconArchiveOutline20', 14), disabled: typeof unarchiveSession !== 'function' })
+          else items.push(
+            { id: 'rename', label: t('menu.renameSession'), leading: icon('IconEditOutline16', 14), disabled: typeof renameSession !== 'function' },
+            { id: 'archive', label: t('menu.archiveSession'), leading: icon('IconArchiveOutline20', 14), disabled: typeof archiveSession !== 'function' },
+          )
+          items.push(
+            { id: 'group-session', label: t('wgroup.menu'), leading: icon('IconListPenOutline16', 14), submenu: true },
+            { id: 'delete-session', label: t('menu.deleteSession'), leading: icon('IconTrashOutline16', 14), danger: true, disabled: !deleteAvailable || ctx.payload.blank || deleting, hint: !deleteAvailable ? t('menu.deleteUnavailable') : undefined },
             { sep: true },
-            { id: 'customize', label: t('custom.title') },
-          ]
+            { id: 'open-directory', label: t('menu.openDirectory'), leading: icon('IconFolderOpenOutline16', 14), disabled: !ctx.payload.cwd || typeof openDirectory !== 'function' },
+            { id: 'copy-directory', label: t('menu.copyDirectory'), leading: icon('IconCopyOutline16', 14), disabled: !ctx.payload.cwd },
+            { id: 'copy-id', label: t('menu.copySessionId'), leading: icon('IconLinkOutline16', 14) },
+          )
+          if (!ctx.payload.archived) items.push(
+            { sep: true },
+            { id: 'fork', label: t('menu.fork'), leading: icon('IconBranchOutline16', 14), disabled: ctx.payload.blank || typeof forkSession !== 'function' },
+            { id: 'pin', label: isPinned ? t('menu.unpin') : t('menu.pin'), leading: E(PinIcon16, { size: 14 }) },
+          )
+          items.push({ sep: true }, { id: 'customize', label: t('custom.title'), leading: icon('IconPersonalizationOutline16', 14) },
+            { sep: true }, { id: 'refresh', label: t('menu.refresh'), leading: icon('IconRefreshOutline16', 14), shortcut: 'Ctrl+R', disabled: typeof refreshPage !== 'function' })
+          return items
         }
         return [
           { id: 'rename-sgroup', label: t('menu.renameSgroup') },
@@ -2562,17 +3098,49 @@ window.__ModuleLoader__.load({
       const handleCtxPick = (id) => {
         const current = ctx
         if (current === null) return
-        if (current.kind === 'view' && id.startsWith('view-')) {
-          if (id === 'view-projects') actions.setViewMode('projects')
-          else if (id === 'view-time') actions.setViewMode('time')
-          else if (id.startsWith('view-dir-')) actions.setTimeDirection(id.slice('view-dir-'.length))
+        if (id.startsWith('assign-workspace-group:') && current.kind === 'workspace') {
+          assignWorkspaceGroup(current.payload.workspaceId, id.slice('assign-workspace-group:'.length))
+          setCtxSubmenu(null)
           setCtx(null)
+          return
+        }
+        if (id.startsWith('assign-session-section:') && current.kind === 'session') {
+          assignSessionSection(current.payload.id, id.slice('assign-session-section:'.length))
+          setCtxSubmenu(null)
+          setCtx(null)
+          return
+        }
+        if (id === 'follow-workspace' && current.kind === 'session') {
+          assignSessionSection(current.payload.id, null)
+          setCtxSubmenu(null)
+          setCtx(null)
+          return
+        }
+        if (id === 'new-workspace-group') {
+          setDialog({ kind: 'wgroup-new',
+            workspaceId: current.kind === 'workspace' ? current.payload.workspaceId : undefined,
+            sessionId: current.kind === 'session' ? current.payload.id : undefined,
+          })
+          setCtxSubmenu(null)
+          setCtx(null)
+          return
+        }
+        setCtxSubmenu(null)
+        if (current.kind === 'view' && id.startsWith('view-')) {
+          const mode = id.slice('view-'.length)
+          if (VIEW_MODES.includes(mode)) actions.setViewMode(mode)
+          else if (id.startsWith('view-dir-')) actions.setTimeDirection(id.slice('view-dir-'.length))
+          else if (id.startsWith('view-sort-') && !timeSorted) actions.setSortOrder(id.slice('view-sort-'.length))
+          else if (id.startsWith('view-filter-')) actions.setArchivedFilter(id.slice('view-filter-'.length))
+          setCtx(null)
+          setDrag(null)
           return
         }
         if (id === 'customize') {
           const payload = current.payload
-          const name = current.kind === 'workspace' ? (payload.title || payload.leaf)
-            : (current.kind === 'session' ? payload.title : payload.name)
+          let name = payload.name
+          if (current.kind === 'workspace') name = payload.title || payload.leaf
+          else if (current.kind === 'session') name = payload.title
           setCustomize({ kind: current.kind, entryKey: keyOf(current.kind, payload), name })
           setCtx(null)
           return
@@ -2585,11 +3153,19 @@ window.__ModuleLoader__.load({
         else if (kind === 'folder' && id === 'remove-folder') setDialog({ kind: 'folder-delete', path: payload.path })
         else if (kind === 'workspace' && id === 'rename') setDialog({ kind: 'ws-rename', workspace: payload })
         else if (kind === 'workspace' && id === 'delete') setDialog({ kind: 'ws-delete', workspace: payload })
+        else if (kind === 'wgroup' && id === 'rename-workspace-group') setDialog({ kind: 'wgroup-rename', groupId: payload.id, name: payload.name })
+        else if (kind === 'wgroup' && id === 'delete-workspace-group') setDialog({ kind: 'wgroup-delete', group: payload })
         else if (kind === 'sgroup' && id === 'rename-sgroup') setDialog({ kind: 'sgroup-rename', target: payload })
         else if (kind === 'session' && id === 'pin') actions.togglePin(payload.id)
         else if (kind === 'session' && id === 'rename') setDialog({ kind: 'sess-rename', session: payload })
-        else if (kind === 'session' && id === 'fork') forkSession(payload.id)
+        else if (kind === 'session' && id === 'fork') { Promise.resolve().then(() => forkSession(payload.id)).catch(error => fail(messageOf(error))) }
+        else if (kind === 'session' && id === 'unarchive') restoreSession(payload.id)
         else if (kind === 'session' && id === 'archive') { Promise.resolve().then(() => archiveSession(payload.id)).catch(fail) }
+        else if (kind === 'session' && id === 'delete-session' && deleteAvailable && !payload.blank && !deleting) setDialog({ kind: 'sess-delete', session: payload })
+        else if (kind === 'session' && id === 'open-directory' && payload.cwd) { Promise.resolve().then(() => openDirectory(payload.cwd)).catch(error => fail(messageOf(error))) }
+        else if (kind === 'session' && id === 'copy-directory' && payload.cwd) copySessionText(payload.cwd, 'copy.directory.done')
+        else if (kind === 'session' && id === 'copy-id') copySessionText(payload.id, 'copy.sessionId.done')
+        else if (kind === 'session' && id === 'refresh' && typeof refreshPage === 'function') refreshPage()
       }
 
       /* --------------------------- dialogs --------------------------- */
@@ -2608,6 +3184,16 @@ window.__ModuleLoader__.load({
 
       const dialogElement = (() => {
         if (dialog === null) return null
+        if (dialog.kind === 'wgroup-new' || dialog.kind === 'wgroup-rename') return E(TextDialog, {
+          key: dialog.kind, title: t(dialog.kind === 'wgroup-new' ? 'wgroup.new.title' : 'wgroup.rename'),
+          hint: t('wgroup.hint'), initial: dialog.name || '',
+          onConfirm: name => submitWorkspaceGroup(dialog, name), onClose: () => setDialog(null), t,
+        })
+        if (dialog.kind === 'wgroup-delete') return E(ConfirmDialog, {
+          key: 'wgroup-delete', title: t('wgroup.delete'), body: t('wgroup.delete.body', { name: dialog.group.name }),
+          onConfirm: () => { actions.deleteWorkspaceGroup(dialog.group.id); setDialog(null) },
+          onClose: () => setDialog(null), t,
+        })
         if (dialog.kind === 'ws-rename') return E(TextDialog, {
           key: 'ws-rename',
           title: t('ws.rename.title'),
@@ -2632,6 +3218,13 @@ window.__ModuleLoader__.load({
           onConfirm: (v) => submitSessionRename(dialog.session, v),
           onClose: () => setDialog(null),
           t,
+        })
+        if (dialog.kind === 'sess-delete') return E(ConfirmDialog, {
+          key: 'sess-delete', title: t('session.delete.title'),
+          body: t('session.delete.body', { name: dialog.session.title }),
+          confirmLabel: t(deleting ? 'session.delete.busy' : 'session.delete.confirm'), danger: true, busy: deleting,
+          onConfirm: () => submitSessionDelete(dialog.session),
+          onClose: () => { if (!deletingRef.current) setDialog(null) }, t,
         })
         if (dialog.kind === 'sgroup-rename') return E(TextDialog, {
           key: 'sgroup-rename',
@@ -2681,7 +3274,69 @@ window.__ModuleLoader__.load({
         onError: fail,
       }
 
-      return E('div', { className: 'bw-root' },
+      const viewGlyph = () => {
+        if (viewMode === 'time') return E(CalendarDaysIcon16, { size: 15 })
+        if (viewMode === 'flat') return E(ListIcon16, { size: 15 })
+        if (viewMode === 'workspaces') return icon('IconFolderClose16', 15)
+        return E(ListTreeIcon16, { size: 15 })
+      }
+      const renderCtxItem = (item, index) => {
+        if (item.sep) return E('div', { key: 'sep-' + index, className: 'bw-ctx-sep' })
+        if (item.heading) return E('div', { key: 'heading-' + index, className: 'bw-ctx-heading' }, item.heading)
+        let checked
+        if (item.checked !== undefined) checked = String(item.checked)
+        let leading = null
+        const iconClass = item.role === 'menuitemradio' ? 'bw-sort-menu-check' : cls('bw-menu-icon', item.id === 'pin' && 'bw-menu-pin')
+        if (item.leading !== undefined) leading = E('span', { className: iconClass, 'aria-hidden': true }, item.leading)
+        else if (item.leadingIcon) leading = E('span', { className: iconClass, 'aria-hidden': true }, E(item.leadingIcon, { size: 14 }))
+        return E('button', {
+          key: item.id, type: 'button',
+          className: cls('bw-ctx-item', item.danger && 'bw-ctx-danger', item.sub && 'bw-ctx-subitem'),
+          role: item.role || 'menuitem', 'aria-checked': checked, disabled: item.disabled === true, title: item.hint,
+          'aria-haspopup': item.submenu ? 'menu' : undefined,
+          'aria-expanded': item.submenu ? ctxSubmenu !== null : undefined,
+          onMouseEnter: event => { if (item.submenu) openSectionMenu(event); else if (!item.groupChoice) setCtxSubmenu(null) },
+          onKeyDown: event => { if (item.submenu && event.key === 'ArrowRight') { event.preventDefault(); openSectionMenu(event) } },
+          onClick: event => { if (item.submenu) openSectionMenu(event); else handleCtxPick(item.id) },
+        }, leading, E('span', { className: 'bw-menu-label' }, item.label), item.submenu ? icon('IconChevronRightOutline14', 14) : null, item.shortcut ? E('span', { className: 'bw-menu-shortcut' }, item.shortcut) : null)
+      }
+      const openSectionMenu = event => {
+        const rect = event.currentTarget.getBoundingClientRect()
+        let x = rect.right + 4
+        if (x + 280 > window.innerWidth - 8) x = rect.left - 284
+        setCtxSubmenu({ x: Math.max(8, x), y: rect.top })
+      }
+      const sectionMenuItems = () => {
+        if (!ctx || (ctx.kind !== 'workspace' && ctx.kind !== 'session')) return []
+        const isSession = ctx.kind === 'session'
+        let currentGroup = workspaceGroupOf(ctx.payload.workspaceId)
+        let followsWorkspace = false
+        if (isSession) {
+          currentGroup = sessionSectionOf(ctx.payload.id)
+          followsWorkspace = currentGroup === null && workspaceIndexOf.has(ctx.payload.id)
+          if (currentGroup === null && !followsWorkspace) currentGroup = ''
+        }
+        const choice = group => ({
+          id: (isSession ? 'assign-session-section:' : 'assign-workspace-group:') + group.id, label: group.name, groupChoice: true,
+          role: 'menuitemradio', checked: currentGroup === group.id,
+          leading: currentGroup === group.id ? icon('IconCheckOutline16', 14) : null,
+        })
+        const items = [
+          ...workspaceGroups.map(choice),
+          choice({ id: '', name: t('wgroup.unassigned') }),
+        ]
+        if (isSession && workspaceIndexOf.has(ctx.payload.id)) items.push({
+          id: 'follow-workspace', label: t('wgroup.followWorkspace'), groupChoice: true, role: 'menuitemradio', checked: followsWorkspace,
+          leading: followsWorkspace ? icon('IconCheckOutline16', 14) : null,
+        })
+        items.push({ sep: true }, { id: 'new-workspace-group', label: t('wgroup.new'), groupChoice: true, leading: icon('IconPlusOutline16', 14) })
+        return items
+      }
+      let menuHeight = 240
+      if (ctx && ctx.kind === 'view') menuHeight = 450
+      else if (ctx && ctx.kind === 'session') menuHeight = 400
+
+      return E('div', { className: 'bw-root', ref: ownMenuRoot },
         StyleNode(),
         E('div', { className: 'bw-header' },
           E('div', { className: 'bw-header-title' }, t('title')),
@@ -2699,7 +3354,7 @@ window.__ModuleLoader__.load({
             type: 'button', className: 'bw-icon-btn', 'aria-label': t('view.label'), title: t('view.label'),
             'aria-haspopup': 'menu', 'aria-expanded': ctx !== null && ctx.kind === 'view',
             onClick: (e) => { e.preventDefault(); setCtx({ kind: 'view', payload: {}, x: e.clientX, y: e.clientY }) },
-          }, timeSorted ? E(CalendarDaysIcon16, { size: 15 }) : E(ListTreeIcon16, { size: 15 })),
+          }, viewGlyph()),
           E('button', { type: 'button', className: 'bw-icon-btn', 'aria-label': t('search.placeholder'), onClick: () => setSearchOpen(v => !v) }, icon('IconSearchOutline16')),
           E('button', { type: 'button', className: 'bw-icon-btn', 'aria-label': t('add'), onClick: () => { setFlowParent(''); setFlowOpen(true) } }, icon('IconProjectAddOutline16')),
         ),
@@ -2720,34 +3375,27 @@ window.__ModuleLoader__.load({
           t,
         }),
         dialogElement,
+        notice ? E('div', { className: 'bw-notice', role: 'status', 'aria-live': 'polite' }, notice) : null,
         ctx !== null ? E('div', {
           className: 'bw-ctx-overlay',
           onMouseDown: () => setCtx(null),
           onContextMenu: (e) => e.preventDefault(),
+          onKeyDown: event => { if (event.key === 'Escape') { setCtx(null); setCtxSubmenu(null) } },
         },
           E('div', {
             className: 'bw-ctx-menu',
-            style: { left: Math.min(ctx.x, window.innerWidth - 190), top: Math.min(ctx.y, window.innerHeight - 240) },
+            role: 'menu', 'aria-label': ctx.kind === 'view' ? t('view.label') : undefined,
+            style: { left: Math.max(8, Math.min(ctx.x, window.innerWidth - 250)), top: Math.max(8, Math.min(ctx.y, window.innerHeight - menuHeight)) },
             onMouseDown: (e) => e.stopPropagation(),
             onContextMenu: (e) => e.preventDefault(),
           },
-            ctxItems().map((item, index) => item.sep
-              ? E('div', { key: 'sep-' + index, className: 'bw-ctx-sep' })
-              : E('button', {
-                key: item.id,
-                type: 'button',
-                className: cls('bw-ctx-item', item.danger && 'bw-ctx-danger', item.sub && 'bw-ctx-subitem'),
-                role: item.role || 'menuitem',
-                'aria-checked': item.checked === undefined ? undefined : (item.checked ? 'true' : 'false'),
-                onClick: () => handleCtxPick(item.id),
-              },
-                item.leading !== undefined
-                  ? E('span', { className: 'bw-sort-menu-check' }, item.leading)
-                  : (item.leadingIcon ? E('span', { className: 'bw-sort-menu-check' }, E(item.leadingIcon, { size: 14 })) : null),
-                item.label,
-              ),
-            ),
+            ctxItems().map(renderCtxItem),
           ),
+          (ctx.kind === 'workspace' || ctx.kind === 'session') && ctxSubmenu ? E('div', {
+            className: 'bw-ctx-menu bw-ctx-submenu', role: 'menu', 'aria-label': t('wgroup.menu'),
+            style: { left: ctxSubmenu.x, top: Math.max(8, Math.min(ctxSubmenu.y, window.innerHeight - (sectionMenuItems().length * 28 + 12))) },
+            onMouseDown: event => event.stopPropagation(), onContextMenu: event => event.preventDefault(),
+          }, sectionMenuItems().map(renderCtxItem)) : null,
         ) : null,
         E(CustomizeDialog, {
           open: customize !== null,
@@ -2820,13 +3468,12 @@ window.__ModuleLoader__.load({
       }
       const openSessionCompat = (sessionId) => {
         // 0.1.7: sessions.open 已移除；官方入口为 uiWorkspace.openSession（旧版 harness 回退保留）
-        if (uiWorkspace && typeof uiWorkspace.openSession === 'function') { uiWorkspace.openSession(sessionId); return }
-        if (typeof sessions.open === 'function') sessions.open(sessionId)
+        if (uiWorkspace && typeof uiWorkspace.openSession === 'function') return uiWorkspace.openSession(sessionId)
+        if (typeof sessions.open === 'function') return sessions.open(sessionId)
       }
       const forkSession = (sessionId) => {
-        sessions.fork({ sessionId, increaseTitle: true })
+        return sessions.fork({ sessionId, increaseTitle: true })
           .then((childId) => openSessionCompat(childId))
-          .catch(() => { /* keep current selection */ })
       }
 
       const browserInjected = () => ({
@@ -2836,6 +3483,11 @@ window.__ModuleLoader__.load({
         searchResultLimit: sessions.searchResultLimit !== undefined ? sessions.searchResultLimit : 20,
         renameSession,
         forkSession,
+        deleteSession: deleteSessionRecord,
+        checkSessionDelete,
+        openDirectory: openSessionDirectory,
+        refreshSessions: typeof sessions.refresh === 'function' ? () => sessions.refresh() : undefined,
+        refreshPage: () => window.location.reload(),
         renameWorkspace: (workspaceId, title) => workspaces.rename(workspaceId, title),
         deleteWorkspace: (workspaceId) => workspaces.delete(workspaceId),
         insertWorkspaceBefore: typeof workspaces.insertBefore === 'function'
@@ -2848,6 +3500,9 @@ window.__ModuleLoader__.load({
           ? (workspaceId, sessionId, beforeSessionId) => workspaces.insertSessionBefore(workspaceId, sessionId, beforeSessionId)
           : undefined,
         archiveSession: (sessionId) => uiWorkspace.archiveSession(sessionId),
+        unarchiveSession: typeof uiWorkspace.unarchiveSession === 'function'
+          ? (sessionId) => uiWorkspace.unarchiveSession(sessionId)
+          : undefined,
         createWorkspace: (input) => workspaces.create(input),
         pickDirectory: () => uiWorkspace.pickDirectory(),
         hooks: {

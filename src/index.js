@@ -21,9 +21,8 @@ export function apply(ctx) {
   // namespaces and settings.plugin.item cards, and `settings` is a
   // cross-cutting service that may appear after this plugin's apply — so the
   // registration waits for its injection (the same pattern dsh-context uses).
-  // The dsh-settings and zod modules resolve only through the dsh Loader; the
-  // smoke test imports this file in plain Node with a logger-only ctx and
-  // never reaches this path.
+  // The dsh-settings and zod modules resolve only through the dsh Loader; a
+  // plain-Node import (logger-only ctx) never reaches this path.
   ctx.inject(['settings'], (sctx) => {
     log('[dsh-workspace-plus] settings inject fired')
     // The settings service calls the schema AS A FUNCTION to resolve a value

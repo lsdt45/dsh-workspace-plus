@@ -63,13 +63,14 @@ window.__ModuleLoader__.load({
       'menu.copyDirectory': '复制工作目录',
       'menu.copySessionId': '复制会话 ID',
       'menu.refresh': '刷新',
-      'menu.deleteUnavailable': '删除会话需要启用“更好的右键”插件',
+      'menu.deleteUnavailable': '删除会话服务不可用',
       'session.delete.title': '永久删除会话？',
       'session.delete.body': '确定删除「{name}」？会话记录与附件将永久删除，运行中的任务也会停止。此操作无法恢复。',
       'session.delete.confirm': '确定删除',
       'session.delete.busy': '正在删除…',
       'session.delete.done': '会话已删除',
       'session.delete.cleanupWarning': '会话文件已删除，但列表同步未完成，请刷新页面。',
+      'session.delete.failed': '删除会话失败：{reason}',
       'copy.directory.done': '已复制工作目录',
       'copy.sessionId.done': '已复制会话 ID',
       'copy.failed': '复制失败，请检查剪贴板权限',
@@ -214,13 +215,14 @@ window.__ModuleLoader__.load({
       'menu.copyDirectory': 'Copy working directory',
       'menu.copySessionId': 'Copy session ID',
       'menu.refresh': 'Refresh',
-      'menu.deleteUnavailable': 'Session deletion requires the Better Context Menu plugin',
+      'menu.deleteUnavailable': 'Session deletion service is unavailable',
       'session.delete.title': 'Permanently delete session?',
       'session.delete.body': 'Delete "{name}"? Session records and attachments will be permanently deleted, and running tasks will stop. This cannot be undone.',
       'session.delete.confirm': 'Delete',
       'session.delete.busy': 'Deleting…',
       'session.delete.done': 'Session deleted',
       'session.delete.cleanupWarning': 'Session files were deleted, but list synchronization is incomplete. Please refresh the page.',
+      'session.delete.failed': 'Session deletion failed: {reason}',
       'copy.directory.done': 'Working directory copied',
       'copy.sessionId.done': 'Session ID copied',
       'copy.failed': 'Copy failed. Check clipboard permissions.',
@@ -334,9 +336,10 @@ window.__ModuleLoader__.load({
     const cls = (...xs) => xs.filter(Boolean).join(' ')
     const messageOf = (reason) => (reason instanceof Error ? reason.message : String(reason))
 
-    // DSH exposes archive, but no permanent-delete RPC. Reuse the installed
-    // Better Context Menu backend, which owns stopping agents and safe cleanup.
-    const SESSION_DELETE_ROUTE = '/dsh-session-context-menu/delete'
+    // DSH exposes archive, but no permanent-delete RPC: this plugin's own host
+    // half owns the delete route (stop the agent, detach the live session, then
+    // remove only a verified session directory). No third-party plugin needed.
+    const SESSION_DELETE_ROUTE = '/dsh-workspace-plus/delete-session'
     const checkSessionDelete = async () => {
       const response = await fetch(SESSION_DELETE_ROUTE, { method: 'GET' })
       if (response.status !== 405) return false
@@ -348,9 +351,15 @@ window.__ModuleLoader__.load({
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ sessionId }),
       })
-      if (!response.ok) throw new Error('Session deletion failed (HTTP ' + response.status + ')')
-      const result = await response.json()
-      if (result.ok !== true || result.removed !== true) throw new Error(result.error || 'Session deletion was not confirmed')
+      // The host reports the failing step (phase) and the reason (detail);
+      // surface those instead of a bare status code.
+      const result = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error((result && (result.detail || result.error)) || ('HTTP ' + response.status))
+      }
+      if (!result || result.ok !== true || result.removed !== true) {
+        throw new Error((result && (result.detail || result.error)) || 'not-confirmed')
+      }
       return result
     }
     const writeClipboardText = async (text) => {
@@ -379,9 +388,9 @@ window.__ModuleLoader__.load({
      *
      * The label is GENERATED CONTENT (`data-tag` + the `.bw-pinned-ws-tag::after`
      * rule in the stylesheet), never a text child:
-     * @baihejiangnan/dsh-session-context-menu classifies a [role=treeitem] row as
-     * a WORKSPACE row as soon as any leaf span/button/div inside it trims to a
-     * workspace title (treeItemWorkspace), and a real text child made every
+     * A third-party session context-menu plugin classifies a [role=treeitem] row
+     * as a WORKSPACE row as soon as any leaf span/button/div inside it trims to a
+     * workspace title, and a real text child made every
      * tagged session row open the workspace menu (new session / rename
      * workspace / …) instead of this plugin's session menu. Keep the text in a
      * data attribute; `title` carries the native tooltip.
@@ -2580,7 +2589,7 @@ window.__ModuleLoader__.load({
           }
           if (result && Array.isArray(result.warnings) && result.warnings.length > 0) setErrorText(t('session.delete.cleanupWarning'))
         } catch (error) {
-          fail(messageOf(error))
+          fail(t('session.delete.failed', { reason: messageOf(error) }))
         } finally {
           deletingRef.current = false
           setDeleting(false)

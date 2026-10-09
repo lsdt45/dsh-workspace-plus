@@ -131,7 +131,7 @@ Workspace context menus offer rename, delete and customize. Folder menus offer n
 
 Session menus offer rename, archive, permanent deletion, open in the file manager, copy working directory, copy session ID, fork, pin, customize and page refresh. Forking opens the new branch. Directory actions prefer the target session's `cwd`, falling back to its workspace path; unassigned sessions can use their own directory. Archived sessions offer restore, delete, directory and copy actions.
 
-Permanent deletion uses the host endpoint supplied by Better Context Menu (`@baihejiangnan/dsh-session-context-menu`), which must be enabled in the same DSH profile; otherwise deletion is disabled. A confirmation is required before stopping running tasks and permanently removing session records and attachments. Successful deletion clears the plugin's pin entry and refreshes the session list. Missing directories or unavailable host actions disable the corresponding menu items.
+Permanent deletion is implemented by this plugin's own host half (`POST /dsh-workspace-plus/delete-session`; DSH ships archive but no delete RPC), so no third-party plugin is required. After the confirmation the host stops a running task, detaches the live session, and removes only a directory that sits under `DSH_HOME/sessions` and is named exactly after the session id, then cleans the projection cache and workspace accounting. Successful deletion clears the plugin's pin entry and refreshes the session list; a refusal (missing directory, subagent session, no persistence service, out-of-root path) reports the failing step and reason.
 
 ## Install
 

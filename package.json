@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-plus",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "DSH web plugin: a hierarchical workspace tree for the sidebar with time-bucket sorting and session pinning. Workspace titles containing \"/\" group into virtual folders (web/前端 · web/后端); sessions sort by recency buckets (today/yesterday/7d/30d/earlier) or pin to the top of the sidebar.",
   "type": "module",
   "repository": {

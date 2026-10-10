@@ -1,5 +1,7 @@
 # dsh-workspace-plus
 
+[English](./README_EN.md) | **简体中文**
+
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)

@@ -129,9 +129,26 @@ A toggle in the settings card (on by default): a level with exactly one child me
 
 ### Context menu
 
+<table>
+<tr>
+<td align="center" width="40%"><img src="docs/screenshots/5-context-menu.png" alt="Session context menu"/></td>
+<td valign="top" width="60%">
+  <b>Session context menu</b><br/>
+  Context menus organize operations into structured sections:
+  <ul>
+    <li><b>Session lifecycle</b>: Rename, archive, partition (move to section / create section / follow workspace), delete session (permanent deletion with red highlight and confirmation).</li>
+    <li><b>Paths & files</b>: Open in file manager, copy working directory, copy session ID.</li>
+    <li><b>Fork & persistence</b>: Fork session (opens the new branch immediately), pin (quick toggle to the pinned section).</li>
+    <li><b>Custom appearance</b>: Customize appearance (per-session color, text glow, font weight, and text shadow).</li>
+    <li><b>Utilities</b>: Refresh (supports <code>Ctrl+R</code> shortcut).</li>
+  </ul>
+</td>
+</tr>
+</table>
+
 Workspace context menus offer rename, delete and customize. Folder menus offer new subfolder, new workspace here, rename group (updates all descendant workspaces), delete empty group and customize. Session groups offer rename and customize.
 
-Session menus offer rename, archive, permanent deletion, open in the file manager, copy working directory, copy session ID, fork, pin, customize and page refresh. Forking opens the new branch. Directory actions prefer the target session's `cwd`, falling back to its workspace path; unassigned sessions can use their own directory. Archived sessions offer restore, delete, directory and copy actions.
+Directory actions prefer the target session's `cwd`, falling back to its workspace path; unassigned sessions can use their own directory. Archived sessions offer restore, delete, directory and copy actions.
 
 Permanent deletion is implemented by this plugin's own host half (`POST /dsh-workspace-plus/delete-session`; DSH ships archive but no delete RPC), so no third-party plugin is required. After the confirmation the host stops a running task, detaches the live session, and removes only a directory that sits under `DSH_HOME/sessions` and is named exactly after the session id, then cleans the projection cache and workspace accounting. Successful deletion clears the plugin's pin entry and refreshes the session list; a refusal (missing directory, subagent session, no persistence service, out-of-root path) reports the failing step and reason.
 

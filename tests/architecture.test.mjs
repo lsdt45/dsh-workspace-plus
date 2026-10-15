@@ -144,11 +144,12 @@ test('cross-module references are imported', () => {
       if (otherPath === path) continue
       for (const exported of names) {
         if (own.has(exported)) continue
-        const pattern = new RegExp('\\b' + exported + '\\b\\s*:')
-        const plain = new RegExp('\\b' + exported + '\\b')
-        // An object key (name:) is not a reference to the binding.
-        const keyOnly = body.split('\n').every((line) => !plain.test(line) || pattern.test(line))
-        if (!keyOnly) {
+        // A member access (row.icon) and an object key (icon:) are not references.
+        const hits = [...body.matchAll(new RegExp('\\b' + exported + '\\b', 'g'))].filter((match) => {
+          if (body[match.index - 1] === '.') return false
+          return !/^\s*:/.test(body.slice(match.index + exported.length))
+        })
+        if (hits.length > 0) {
           problems.push(name + ' uses ' + exported + ' (from ' + nameOf(otherPath) + ') without importing it')
         }
       }

@@ -228,6 +228,23 @@ npm pack          # 出 tarball 后可本地安装验证(prepack 会先构建并
 
 **不要手改 `src/client.js`**;改源码后至少跑一次 `npm run dev` 或 `npm run build`。
 
+### 产物一致性守卫
+
+产物是提交物,所以有两道防线防止「改了源码忘构建」把旧产物发出去:
+
+- **本地 pre-commit 钩子**(`.githooks/pre-commit`,随仓库版本化):提交时跑 `npm run check`,产物与源码不一致就**阻止提交**并打印修复命令;
+  未安装依赖(没有 esbuild)时只提示并跳过,不会卡住全新 clone。每个 clone 启用一次:
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+  紧急绕过:`git commit --no-verify`;停用:`git config --unset core.hooksPath`。
+
+- **CI**(`.github/workflows/verify.yml`,push / PR):`npm install` → `npm run check`(**在任何构建之前**比对已提交产物)→ `npm test`。
+
+两道防线只覆盖产物同步与测试;完整本地校验仍是 `npm run verify`。
+
 ### 模块地图
 
 | 路径 | 职责 |

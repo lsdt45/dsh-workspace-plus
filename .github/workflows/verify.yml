@@ -1,0 +1,25 @@
+# Continuous verification for the committed browser bundle.
+#
+# The artifact src/client.js is committed (git/tarball installs must stay
+# build-free), so CI's job is to prove it still matches src/client/**: run
+# `npm run check` BEFORE anything builds, then the test suite.
+name: verify
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # No lockfile is committed; esbuild is the only devDependency.
+      - run: npm install --no-audit --no-fund
+      # Must run before any build: it compares the committed artifact to the sources.
+      - run: npm run check
+      - run: npm test

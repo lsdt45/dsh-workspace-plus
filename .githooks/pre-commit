@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Reject a commit whose generated browser bundle is out of sync with src/client/**.
+#
+# Why only this check: src/client.js is committed so that git/tarball installs stay
+# build-free (see README「构建」), which means a forgotten `npm run build` silently
+# ships the previous code. The test suite stays in CI (.github/workflows/verify.yml)
+# and in `npm run verify`, so a work-in-progress commit is still allowed.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Bypass in an emergency:  git commit --no-verify
+set -u
+
+cd "$(dirname "$0")/.." || exit 0
+
+output=$(node scripts/build-client.mjs --check 2>&1)
+status=$?
+
+if [ "$status" -eq 0 ]; then
+  exit 0
+fi
+
+# No devDependencies installed (fresh clone, or esbuild resolved outside the repo):
+# warn instead of blocking — CI covers this commit.
+case "$output" in
+  *"ERR_MODULE_NOT_FOUND"*|*"Cannot find module 'esbuild'"*|*"Cannot find package 'esbuild'"*)
+    echo "[pre-commit] 跳过产物校验：未安装 esbuild（运行 npm install 后本钩子生效）" >&2
+    exit 0
+    ;;
+esac
+
+echo "$output" >&2
+cat >&2 <<'MESSAGE'
+
+[pre-commit] 已阻止提交：src/client.js 与 src/client/** 不一致。
+
+  修复：
+      npm run build
+      git add src/client.js src/client.js.map
+      git commit   # 再试一次
+
+  只跑测试：npm test        完整校验：npm run verify
+  紧急绕过：git commit --no-verify
+MESSAGE
+exit 1

@@ -229,6 +229,25 @@ npm pack          # tarball for local install verification (prepack builds and c
 
 **Never edit `src/client.js` by hand** — edit `src/client/**` and run `npm run dev` (or `npm run build`).
 
+### Stale-artifact guards
+
+Because the artifact is committed, two guards stop a forgotten build from shipping old code:
+
+- **Local pre-commit hook** (`.githooks/pre-commit`, versioned with the repo): runs `npm run check` on commit and
+  **blocks the commit** when the artifact no longer matches `src/client/**`, printing the fix. With no installed
+  dependencies (no esbuild) it warns and skips instead of blocking a fresh clone. Enable once per clone:
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+  Emergency bypass: `git commit --no-verify`. Disable: `git config --unset core.hooksPath`.
+
+- **CI** (`.github/workflows/verify.yml`, push / PR): `npm install` → `npm run check` (**before any build**, comparing
+  the committed artifact) → `npm test`.
+
+Both guards cover sync and tests only; `npm run verify` remains the full local check.
+
 ### Module map
 
 | Path | Responsibility |

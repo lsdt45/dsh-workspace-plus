@@ -4,6 +4,8 @@ export const VIEW_MODES = ['workspaces', 'projects', 'flat', 'time']
 
 export const ARCHIVED_FILTERS = ['hide', 'show', 'only']
 
+    // Shared by both controls; persisted hydration replaces defaults wholesale.
+    // Legacy sortMode selected a view, so the new independent key is sortOrder.
 export const viewStateOf = (prefs) => {
   const p = prefs || {}
   const legacy = p.sortMode
@@ -20,6 +22,8 @@ export const viewStateOf = (prefs) => {
   }
 }
 
+    // Subagent children stay in their parent catalog; only the current blank
+    // is visible. Archive filtering is identical in all views and search.
 export const sessionVisible = (summary, current, archivedSet, archivedFilter = 'hide') => {
   if (!summary || summary.origin === 'subagent' || (summary.blank && summary.id !== current)) return false
   const archived = archivedSet.has(summary.id)
@@ -46,11 +50,25 @@ export const sessionTitleOf = (summary, t) => {
   return String(summary.displayTitle || summary.title || '')
 }
 
+/**
+ * Active-schedule marker, mirroring the official tree's
+ * hasActiveSchedule(): the list projection carries one entry per active
+ * Schedule record, and a non-empty projection is the badge's only gate.
+ * Defensive shapes (missing/mis-typed projection) degrade to false.
+ */
 export const hasActiveScheduleOf = (summary) => !!(summary
   && summary.projectionValues
   && Array.isArray(summary.projectionValues.schedule)
   && summary.projectionValues.schedule.length > 0)
 
+/**
+ * Running subagent descendants per session (light lineage walk over
+ * parent links) — a parent row keeps its "ongoing" ring while a spawned
+ * subagent is still working. The client SessionSummary exposes the
+ * parent as parentId (the session controller maps parentSessionId to
+ * parentId on the wire); the old parentSessionId spelling is kept as a
+ * fallback for profiles serving the pre-rename shape.
+ */
 export const subagentRunningCounts = (byId) => {
   const children = new Map()
   for (const id of Object.keys(byId || {})) {

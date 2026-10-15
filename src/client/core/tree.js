@@ -3,6 +3,11 @@
 import { splitTitleSegs, normPath, basename } from './text.js'
 import { orderRows } from './view.js'
 
+/**
+ * Session nesting inside one workspace: same "/" convention as workspace
+ * titles. Groups are virtual (projection of names). Rows keep the Host
+ * workspace.sessionIds (manual) order — drag-to-reorder must be visible.
+ */
 export function buildSessionTree(rows, sortOrder = 'manual') {
   const root = { path: '', name: '', groups: [], sessions: [] }
   const byPath = new Map([['', root]])
@@ -61,6 +66,12 @@ export const findSessionGroup = (node, path) => {
   return null
 }
 
+/**
+ * Build the folder tree. Folders are virtual: they exist where workspace
+ * titles contain "/", plus the explicit empty folders the user created.
+ * Returns { path, name, folders, workspaces } with workspaces carrying
+ * their leaf display name.
+ */
 export function buildTree(items, explicitFolders, recency) {
   const root = { path: '', name: '', folders: [], workspaces: [] }
   const byPath = new Map([['', root]])
@@ -111,6 +122,8 @@ export function buildTree(items, explicitFolders, recency) {
   return root
 }
 
+    // Preserve title and folderPath: changing the view must never rename a
+    // workspace, including when a drag reorders the flat workspace list.
 export const buildWorkspaceList = (items, recency) => {
   const tree = buildTree(items, [], recency)
   const byId = new Map()
@@ -135,6 +148,22 @@ export const materializeChain = (chain) => chain.kind === 'ws'
   }
   : { kind: 'folder', path: chain.path, name: chain.segs.join('/'), folders: chain.folders, workspaces: chain.workspaces }
 
+/**
+ * VS Code-style single-child chain compression (preference-controlled):
+ * a folder level holding exactly ONE child and nothing else merges into a
+ * single display row; a chain ending in one workspace becomes that
+ * workspace row with the merged label. Only presentation changes; the
+ * underlying workspace/title data is untouched.
+ *
+ * The merged label is the chain RELATIVE to the first un-compressed
+ * ancestor (VS Code explorer behaviour): a chain a/b/c holding only
+ * workspace W shows "a/b/c/W" at the root, but the same chain nested
+ * inside a populated folder "a" shows "b/c/W". Labels are therefore
+ * assembled from RELATIVE segments (segs + pure leaf name) and only
+ * materialised into a display node at the chain's top — the pre-0.8 code
+ * prefixed each recursion level with the FULL node.path, so nested chains
+ * rendered duplicated prefixes like "1/2/1/2/3/A".
+ */
 export function compressTree(node) {
   const folders = (node.folders || []).map(compressTree)
   const workspaces = node.workspaces || []

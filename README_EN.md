@@ -27,9 +27,14 @@ dsh-model-config
 </tr>
 </table>
 
-### Add flow: pick a folder, then pick a group
+### Add flow: pick a folder, then click a section and a group
 
-After you pick a directory for a new workspace, a small dialog asks for the parent group — type one (`web`), pick an existing level from the datalist, or leave it empty for the root. The plugin creates the workspace and writes the prefix into its title, so it lands on the right branch of the tree. The empty-state "Add workspace" menu in the conversation uses the same interaction with the same group popup.
+After you pick a directory, the small dialog offers two destinations that are both **clicked out of a real list** — no typing-only native datalist:
+
+- **Section**: the trigger opens the section list, one click selects one (including "No section (Projects)"), and "New section…" creates one inline with the workspace — cancelling the dialog never leaves an empty section behind.
+- **Name-path group**: free text (e.g. `web`) with clickable suggestions for existing levels, a "New group “…”" row, and a "No nesting (root)" row.
+
+Both controls now share one shape — a box with the chevron INSIDE its right edge — and both lists are floating panels: the dialog keeps its height while one is open, the modal card's rounded clip cannot crop them, and the bottom "name-path group" field opens upward when space is tight so the footer buttons stay visible. With a list open, Escape closes only that list; a click or ↑/↓/Home/End selects. A live preview under the fields shows the resulting title and whether the workspace joins a section. On confirm the plugin creates the workspace, writes the group prefix into its title, and places it in the chosen section. The conversation empty-state "Add workspace" menu uses the same interaction.
 
 ### Folder create/delete via context menu
 
@@ -198,7 +203,9 @@ Restart DSH after removal. For web profiles, use `--profile web`.
 
 The sidebar browsing region is the public `sidebar.workspaces` slot; this plugin registers the same slot with a lower priority and replaces the shipped browser with the tree. All data flows through the slot's standard snapshot hooks and injected host actions — no private APIs.
 
-The add flow lands in the seam dsh designed for third parties: the two `directoryFlow` holes. The trigger, busy semantics, and error dialog stay official; this plugin owns everything between the trigger and the adopted path — exactly enough room for pick → group popup → create → prefixed rename.
+The add flow lands in the seam dsh designed for third parties: the two `directoryFlow` holes. The trigger, busy semantics, and error dialog stay official; this plugin owns everything between the trigger and the adopted path — exactly enough room for pick → section/group popup → create → prefixed rename → section placement.
+
+Both hosts must reach the section and group data: besides passing the store directly whenever this plugin occupies `sidebar.workspaces`, each directory-flow seat now declares the same store seat (`store: viewStore`, all at root scope, so the renderer reuses one instance per handle+scope). A flow hosted by the official shell therefore still lists sections and existing groups.
 
 View state (folder collapse, session expansion, explicit empty folders), custom styling and plugin settings persist browser-side via the dsh client store (`dsh.betterWorkspace.view.v1`). Note: that store's hydration replaces the whole value without merging defaults — after an upgrade, a stale state keeps its old shape and missing keys fall back to defaults.
 

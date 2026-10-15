@@ -145,8 +145,22 @@ window.__ModuleLoader__.load({
       'settings.off': '关',
       'flow.title': '添加工作区',
       'flow.picked': '所选文件夹',
+      'flow.section': '所属分区',
+      'flow.section.none': '不分区（项目）',
+      'flow.section.heading': '分区',
+      'flow.section.new': '新建分区…',
+      'flow.section.name': '分区名称',
+      'flow.section.empty': '分区名称不能为空',
+      'flow.section.exists': '分区已存在',
+      'flow.section.hint': '直接点选分区，新工作区创建后即并入该分区；随时可在右键菜单中调整',
       'flow.parent': '所属分组',
-      'flow.parentHint': '输入或下拉选择分组路径,留空表示根分组;多级用 / 分隔',
+      'flow.parentHint': '在“项目”区域按名称路径嵌套，例如 web/frontend；留空表示不嵌套',
+      'flow.parent.root': '不嵌套（根级）',
+      'flow.parent.heading': '已有分组',
+      'flow.parent.new': '新建分组「{path}」',
+      'flow.parent.empty': '还没有分组，直接输入路径即可新建',
+      'flow.preview': '标题：{title}',
+      'flow.preview.section': '标题：{title} · 并入分区「{name}」',
       'flow.creating': '正在创建…',
       'error.title': '出错了',
       'cancel': '取消',
@@ -297,8 +311,22 @@ window.__ModuleLoader__.load({
       'settings.off': 'Off',
       'flow.title': 'Add workspace',
       'flow.picked': 'Chosen folder',
-      'flow.parent': 'Parent group',
-      'flow.parentHint': 'Type or pick a group path; empty means root. Nest with /',
+      'flow.section': 'Section',
+      'flow.section.none': 'No section (Projects)',
+      'flow.section.heading': 'Sections',
+      'flow.section.new': 'New section…',
+      'flow.section.name': 'Section name',
+      'flow.section.empty': 'Section name cannot be empty',
+      'flow.section.exists': 'That section already exists',
+      'flow.section.hint': 'Pick a section here and the new workspace joins it right away; change it later from the context menu.',
+      'flow.parent': 'Name-path group',
+      'flow.parentHint': 'Nests inside the Projects area by name path, e.g. web/frontend; leave empty for no nesting',
+      'flow.parent.root': 'No nesting (root)',
+      'flow.parent.heading': 'Existing groups',
+      'flow.parent.new': 'New group “{path}”',
+      'flow.parent.empty': 'No groups yet — type a path to create one',
+      'flow.preview': 'Title: {title}',
+      'flow.preview.section': 'Title: {title} · joins section “{name}”',
       'flow.creating': 'Creating…',
       'error.title': 'Something went wrong',
       'cancel': 'Cancel',
@@ -1002,6 +1030,45 @@ window.__ModuleLoader__.load({
       '.bw-btn:disabled{opacity:.5;cursor:default}',
       '.bw-error-text{font-size:12.5px;color:var(--dsw-alias-state-error-primary,#f85149);word-break:break-all;max-width:380px}',
       '.bw-dialog-input-row{display:flex;gap:6px;align-items:center}',
+      // Add-workspace destination pickers: a real click-to-select list (the
+      // native <datalist> popup the field used before rendered outside the
+      // dialog, needed typing, and covered the footer buttons). The list is
+      // in-flow under its trigger and scrolls inside a fixed max-height, so
+      // the dialog stays clear of the viewport.
+      // The name-path control carries its chevron INSIDE the box, exactly like
+      // the section trigger above it: one control shape per dialog, no second
+      // outlined button sitting beside the field.
+      '.bw-picker{position:relative}',
+      '.bw-field-row{position:relative;min-width:0}',
+      '.bw-field-row .bw-input{display:block;width:100%;padding-right:26px}',
+      '.bw-field-caret{position:absolute;right:3px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:grid;place-items:center;padding:0;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}',
+      '.bw-field-caret:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+      '.bw-field-caret:disabled{opacity:.5;cursor:default}',
+      '.bw-picker-trigger{display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;height:26px;padding:0 8px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:6px;background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.1));color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit;font-size:12px;text-align:left;cursor:pointer}',
+      '.bw-picker-trigger:hover{border-color:var(--dsw-alias-border-l2,rgba(127,127,127,.4))}',
+      '.bw-picker-trigger[aria-expanded="true"]{border-color:var(--dsw-alias-brand-primary,#5b8def)}',
+      '.bw-picker-trigger:disabled{opacity:.5;cursor:default}',
+      '.bw-picker-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bw-picker-value-muted{color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
+      '.bw-picker-caret{flex:none;display:grid;place-items:center;color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
+      // The raised list surface: the dialog itself sits on bg-layer-2, so the list uses the overlay surface plus its own border/shadow to separate from the card underneath.
+      // It is a FIXED popover (geometry written inline by PickerList): the
+      // dialog keeps its height while a list is open, and the modal card's
+      // overflow:hidden cannot crop it.
+      '.bw-picker-list{position:fixed;z-index:1100;display:flex;flex-direction:column;overflow-y:auto;padding:4px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:8px;background:var(--dsw-alias-bg-overlay,rgba(127,127,127,.08));box-shadow:0 6px 18px rgba(0,0,0,.16)}',
+      '.bw-picker-row{display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;min-height:26px;padding:0 6px;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit;font-size:12px;text-align:left;cursor:pointer}',
+      '.bw-picker-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15))}',
+      '.bw-picker-row:disabled{opacity:.5;cursor:default}',
+      '.bw-picker-row-on{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#5b8def) 14%,transparent)}',
+      '.bw-picker-check{flex:none;width:14px;display:grid;place-items:center;color:var(--dsw-alias-brand-primary,#5b8def)}',
+      '.bw-picker-row-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.bw-picker-heading{padding:6px 6px 2px;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+      '.bw-picker-empty{padding:4px 6px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+      '.bw-picker-new{display:flex;align-items:center;gap:6px;padding:4px 2px 2px}',
+      '.bw-picker-new .bw-input{flex:1;min-width:0}',
+      '.bw-picker-error{padding:4px 6px 0;font-size:11px;color:var(--dsw-alias-state-error-primary,#f85149)}',
+      '.bw-btn-sm{height:24px;padding:0 10px;font-size:12px}',
+      '.bw-preview-line{font-size:11px;color:var(--dsw-alias-label-tertiary,#9a9a9a);word-break:break-all}',
       '.bw-glow-row{display:flex;align-items:center;gap:10px}',
       '.bw-slider{flex:1;accent-color:var(--dsw-alias-brand-primary,#5b8def);height:22px}',
       '.bw-glow-value{min-width:44px;text-align:right;font-size:12px;color:var(--dsw-alias-label-secondary,#b8b8b8);font-variant-numeric:tabular-nums}',
@@ -1208,6 +1275,73 @@ window.__ModuleLoader__.load({
     }
 
     /**
+     * Dropdown panel shared by both destination pickers.
+     *
+     * It renders as a FIXED popover anchored to its control. Two reasons:
+     * an in-flow list grew the whole dialog every time it opened, and the
+     * modal card carries `overflow: hidden`, which would crop a merely
+     * absolute panel. Fixed positioning escapes both — no portal, which a
+     * client plugin cannot open (react-dom is not a seeded module).
+     * The panel flips above its anchor when the viewport bottom is too close.
+     */
+    const PICKER_LIST_MAX = 168
+
+    function PickerList({ anchorRef, label, preferAbove = false, onKeyDown, children }) {
+      const listRef = React.useRef(null)
+      const [box, setBox] = React.useState(null)
+      const place = () => {
+        const anchor = anchorRef.current
+        const list = listRef.current
+        if (!anchor || !list) return
+        const rect = anchor.getBoundingClientRect()
+        const gap = 4
+        const margin = 8
+        const content = Math.min(list.scrollHeight, PICKER_LIST_MAX)
+        const spaceBelow = window.innerHeight - rect.bottom - margin - gap
+        const spaceAbove = rect.top - margin - gap
+        const fitsBelow = spaceBelow >= content
+        const fitsAbove = spaceAbove >= content
+        // Both fit: honour the control's preference (the LAST field opens up so
+        // the panel never sits on the footer buttons). Only one fits: use it.
+        // Neither: take the roomier side.
+        const below = fitsBelow && fitsAbove ? !preferAbove : fitsBelow ? true : fitsAbove ? false : spaceBelow >= spaceAbove
+        const maxHeight = Math.max(72, Math.min(content, below ? spaceBelow : spaceAbove))
+        const height = Math.min(content, maxHeight)
+        const next = {
+          left: Math.round(rect.left),
+          top: Math.round(below ? rect.bottom + gap : rect.top - gap - height),
+          width: Math.round(rect.width),
+          maxHeight: Math.round(maxHeight),
+        }
+        setBox(prev => (prev !== null && prev.left === next.left && prev.top === next.top && prev.width === next.width && prev.maxHeight === next.maxHeight ? prev : next))
+      }
+      // Runs after every render: filtering the rows changes the panel height,
+      // and `setBox` keeps its identity while the geometry is unchanged.
+      React.useLayoutEffect(() => { place() })
+      React.useEffect(() => {
+        const onMove = () => place()
+        window.addEventListener('resize', onMove)
+        window.addEventListener('scroll', onMove, true)
+        return () => {
+          window.removeEventListener('resize', onMove)
+          window.removeEventListener('scroll', onMove, true)
+        }
+      }, [])
+      return E('div', {
+        ref: listRef,
+        className: 'bw-picker-list',
+        role: 'listbox',
+        'aria-label': label,
+        // First paint stays invisible until the anchor is measured (the layout
+        // effect runs before paint, so nothing flickers).
+        style: box === null
+          ? { position: 'fixed', left: 0, top: 0, width: 240, maxHeight: PICKER_LIST_MAX, visibility: 'hidden' }
+          : { position: 'fixed', left: box.left, top: box.top, width: box.width, maxHeight: box.maxHeight },
+        onKeyDown,
+      }, children)
+    }
+
+    /**
      * The add-workspace picking interaction: native directory pick, then a
      * small parent-group popup, then create + rename with the chosen prefix.
      * Works as a directoryFlow occupant (owner conversation props) and as the
@@ -1220,16 +1354,48 @@ window.__ModuleLoader__.load({
       const [phase, setPhase] = React.useState('idle') // idle | picking | picked | submitting
       const [pickedPath, setPickedPath] = React.useState('')
       const [parentInput, setParentInput] = React.useState('')
+      // Destination state. The 分区 (section) is CLICKED out of the store's
+      // section list — the field used to be a native <datalist>, whose popup
+      // the browser renders outside the dialog: it needed typing before it
+      // showed anything and covered the footer buttons. The name-path group
+      // keeps its free-text semantics and now suggests the same way.
+      const [sectionPick, setSectionPick] = React.useState(null) // null | { id, name } | { name, isNew: true }
+      const [sectionOpen, setSectionOpen] = React.useState(false)
+      const [sectionNewOpen, setSectionNewOpen] = React.useState(false)
+      const [sectionDraft, setSectionDraft] = React.useState('')
+      const [sectionError, setSectionError] = React.useState('')
+      const [pathOpen, setPathOpen] = React.useState(false)
+      const sectionBoxRef = React.useRef(null)
+      const pathBoxRef = React.useRef(null)
+      // Anchors the fixed dropdown panels are positioned against.
+      const sectionTriggerRef = React.useRef(null)
+      const pathAnchorRef = React.useRef(null)
       // All hooks run before any early return: the flow unmounts its dialog
       // while closed, but its hook sequence must stay stable.
       const snapshotItems = typeof useWorkspaces === 'function' ? useWorkspaces(s => s.items) : []
       const storeFolders = typeof useStore === 'function' ? (useStore(s => s.folders) || []) : []
+      const storedSections = typeof useStore === 'function' ? (useStore(s => s.workspaceGroups) || []) : []
+      const sections = React.useMemo(() => (
+        Array.isArray(storedSections)
+          ? storedSections.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'zh'))
+          : []
+      ), [storedSections])
+      // Sections are written through the view store's actions; without that
+      // seat (a host that mounts this flow alone) the field is hidden rather
+      // than shown dead.
+      const canAssignSection = !!(actions && typeof actions.assignWorkspaceGroup === 'function')
 
       React.useEffect(() => {
         if (!open) {
           setPhase('idle')
           setPickedPath('')
           setParentInput('')
+          setSectionPick(null)
+          setSectionOpen(false)
+          setSectionNewOpen(false)
+          setSectionDraft('')
+          setSectionError('')
+          setPathOpen(false)
           return
         }
         let alive = true
@@ -1251,6 +1417,22 @@ window.__ModuleLoader__.load({
         return () => { alive = false }
       }, [open])
 
+      // One document-level pointerdown closes whichever picker is open; both
+      // lists live INSIDE their field box, so a row click never closes first.
+      React.useEffect(() => {
+        if (!open) return
+        const onPointerDown = (event) => {
+          const node = event.target
+          if (!(node instanceof Node)) return
+          if (sectionBoxRef.current && sectionBoxRef.current.contains(node)) return
+          if (pathBoxRef.current && pathBoxRef.current.contains(node)) return
+          setSectionOpen(false)
+          setPathOpen(false)
+        }
+        document.addEventListener('pointerdown', onPointerDown)
+        return () => document.removeEventListener('pointerdown', onPointerDown)
+      }, [open])
+
       if (!open || (phase !== 'picked' && phase !== 'submitting')) return null
 
       const folderOptions = (() => {
@@ -1262,11 +1444,94 @@ window.__ModuleLoader__.load({
         return Array.from(set).sort((a, b) => a.localeCompare(b, 'zh'))
       })()
 
+      const submitting = phase === 'submitting' || busy === true
+      const previewTitle = (() => {
+        const prefix = normPath(parentInput)
+        const base = basename(pickedPath)
+        return prefix !== '' ? prefix + '/' + base : base
+      })()
+      const typedPath = normPath(parentInput)
+      const pathFilter = parentInput.trim().toLocaleLowerCase()
+      const visibleFolders = (pathFilter === ''
+        ? folderOptions
+        : folderOptions.filter(option => option.toLocaleLowerCase().indexOf(pathFilter) !== -1)).slice(0, 60)
+      const canCreatePath = typedPath !== '' && folderOptions.indexOf(typedPath) === -1
+
+      /** Escape inside a picker closes that list, never the dialog behind it. */
+      const consumeEscape = (event, close) => {
+        if (event.key !== 'Escape') return
+        event.preventDefault()
+        event.stopPropagation()
+        close()
+      }
+
+      /**
+       * Arrow keys are the affordance a native select had: on a trigger/caret
+       * they open the list (or step into its first row), and inside a list they
+       * walk its rows. Text inputs keep their own caret keys.
+       */
+      const openListKeys = (event, isOpen, open) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+        event.preventDefault()
+        if (isOpen) {
+          const box = event.currentTarget.closest('.bw-field')
+          const row = box ? box.querySelector('button.bw-picker-row:not(:disabled)') : null
+          if (row) row.focus()
+          return
+        }
+        open()
+      }
+
+      /** Walk the rows of the list that owns the keyboard. */
+      const walkListKeys = (event) => {
+        if (event.target && event.target.tagName === 'INPUT') return
+        if (['ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(event.key) === -1) return
+        const rows = event.currentTarget.querySelectorAll('button.bw-picker-row:not(:disabled)')
+        if (rows.length === 0) return
+        event.preventDefault()
+        const current = Array.prototype.indexOf.call(rows, event.target)
+        const next = event.key === 'Home' ? 0
+          : event.key === 'End' ? rows.length - 1
+            : current === -1 ? (event.key === 'ArrowDown' ? 0 : rows.length - 1)
+              : (current + (event.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length
+        rows[next].focus()
+      }
+
+      /** One selectable row of either picker; a checked row carries the glyph. */
+      const pickerRow = (key, label, active, onPick, glyph) => E('button', {
+        key, type: 'button', role: 'option', 'aria-selected': active === true, disabled: submitting,
+        className: cls('bw-picker-row', active && 'bw-picker-row-on'),
+        onClick: onPick,
+      },
+        E('span', { className: 'bw-picker-check', 'aria-hidden': true }, active ? icon('IconCheckOutline14', 12) : (glyph || null)),
+        E('span', { className: 'bw-picker-row-label' }, label),
+      )
+
+      /**
+       * A section typed here is only a PENDING pick: it is created together
+       * with the workspace on 创建, so cancelling the dialog never leaves an
+       * empty section behind.
+       */
+      const commitNewSection = () => {
+        const name = sectionDraft.trim()
+        if (name === '') { setSectionError(t('flow.section.empty')); return }
+        if (sections.some(group => String(group.name || '').toLocaleLowerCase() === name.toLocaleLowerCase())) {
+          setSectionError(t('flow.section.exists'))
+          return
+        }
+        setSectionPick({ name, isNew: true })
+        setSectionNewOpen(false)
+        setSectionDraft('')
+        setSectionError('')
+        setSectionOpen(false)
+      }
+
       const confirm = () => {
         if (phase === 'submitting') return
         const prefix = normPath(parentInput)
         const base = basename(pickedPath)
         const fullTitle = prefix !== '' ? prefix + '/' + base : base
+        const section = canAssignSection ? sectionPick : null
         setPhase('submitting')
         Promise.resolve()
           .then(() => createWorkspace({ path: pickedPath }))
@@ -1278,7 +1543,26 @@ window.__ModuleLoader__.load({
               onCancel()
               return
             }
-            if (prefix !== '' && actions && typeof actions.addFolder === 'function') actions.addFolder(prefix)
+            try {
+              if (prefix !== '' && actions && typeof actions.addFolder === 'function') actions.addFolder(prefix)
+              // The section write lands after the host workspace exists; the
+              // tree places the row by section id, so this IS the "add to
+              // section" the dialog offers.
+              if (section) {
+                if (section.isNew) {
+                  const groupId = crypto.randomUUID()
+                  actions.createWorkspaceGroup(groupId, section.name, workspace.workspaceId)
+                  actions.setExpanded('workspace-group:' + groupId, true)
+                } else {
+                  actions.assignWorkspaceGroup(workspace.workspaceId, section.id)
+                  actions.setExpanded('workspace-group:' + section.id, true)
+                }
+              }
+            } catch (assignError) {
+              // The workspace exists by now; a failed destination write must
+              // surface without pretending the creation itself failed.
+              onError(messageOf(assignError))
+            }
             onCancel()
           })
           .catch((reason) => {
@@ -1287,31 +1571,125 @@ window.__ModuleLoader__.load({
           })
       }
 
-      const submitting = phase === 'submitting' || busy === true
-      const datalistId = 'bw-folder-options'
       const body = E('div', { className: 'bw-modal-body' },
         E('div', { className: 'bw-field' },
           t('flow.picked'),
           E('div', { className: 'bw-path-echo' }, pickedPath),
         ),
-        E('div', { className: 'bw-field' },
-          t('flow.parent'),
-          E('div', { className: 'bw-dialog-input-row' },
-            E('input', {
-              className: 'bw-input',
-              list: datalistId,
-              value: parentInput,
-              autoFocus: true,
-              placeholder: 'web/frontend',
-              disabled: submitting,
-              onChange: (e) => setParentInput(e.target.value),
-              onKeyDown: (e) => { if (e.key === 'Enter') confirm() },
-            }),
-            E('datalist', { id: datalistId },
-              folderOptions.map((option) => E('option', { key: option, value: option })),
+        canAssignSection ? E('div', {
+          className: 'bw-field',
+          ref: sectionBoxRef,
+          // Escape belongs to the OPEN LIST, wherever the keyboard sits inside
+          // this field (trigger, list, inline name input) — the dialog's own
+          // Escape must not fire while a list is open.
+          onKeyDown: (event) => { if (sectionOpen) consumeEscape(event, () => setSectionOpen(false)) },
+        },
+          t('flow.section'),
+          E('div', { className: 'bw-picker' },
+            E('button', {
+              type: 'button', className: 'bw-picker-trigger', disabled: submitting, ref: sectionTriggerRef,
+              'aria-haspopup': 'listbox', 'aria-expanded': sectionOpen,
+              onClick: () => {
+                setSectionOpen(v => !v)
+                setSectionNewOpen(false)
+                setSectionDraft('')
+                setSectionError('')
+                setPathOpen(false)
+              },
+              onKeyDown: (event) => openListKeys(event, sectionOpen, () => setSectionOpen(true)),
+            },
+              E('span', { className: cls('bw-picker-value', sectionPick === null && 'bw-picker-value-muted') },
+                sectionPick === null ? t('flow.section.none') : sectionPick.name),
+              E('span', { className: 'bw-picker-caret', 'aria-hidden': true }, icon('IconChevronDownOutline14', 12)),
             ),
+            sectionOpen ? E(PickerList, {
+              anchorRef: sectionTriggerRef, label: t('flow.section'), onKeyDown: walkListKeys,
+            },
+              pickerRow('section:none', t('flow.section.none'), sectionPick === null,
+                () => { setSectionPick(null); setSectionOpen(false) }),
+              sections.length > 0
+                ? E('div', { key: 'section:heading', className: 'bw-picker-heading' }, t('flow.section.heading'))
+                : null,
+              sections.map(group => pickerRow('section:' + group.id, group.name,
+                sectionPick !== null && sectionPick.id === group.id,
+                () => { setSectionPick({ id: group.id, name: group.name }); setSectionOpen(false) })),
+              sectionNewOpen
+                ? E('div', { key: 'section:new-row', className: 'bw-picker-new' },
+                  E('input', {
+                    className: 'bw-input', value: sectionDraft, placeholder: t('flow.section.name'),
+                    disabled: submitting, autoFocus: true,
+                    onChange: (event) => { setSectionDraft(event.target.value); setSectionError('') },
+                    onKeyDown: (event) => {
+                      if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); commitNewSection(); return }
+                      consumeEscape(event, () => { setSectionNewOpen(false); setSectionDraft(''); setSectionError('') })
+                    },
+                  }),
+                  E('button', {
+                    type: 'button', className: 'bw-btn bw-btn-primary bw-btn-sm',
+                    disabled: submitting, onClick: commitNewSection,
+                  }, t('confirm')),
+                )
+                : pickerRow('section:new', t('flow.section.new'), sectionPick !== null && sectionPick.isNew === true,
+                  () => { setSectionNewOpen(true); setSectionDraft('') }, icon('IconPlusOutline14', 12)),
+              sectionError !== '' ? E('div', { key: 'section:error', className: 'bw-picker-error' }, sectionError) : null,
+            ) : null,
+          ),
+          E('div', { className: 'bw-hint' }, t('flow.section.hint')),
+        ) : null,
+        E('div', {
+          className: 'bw-field',
+          ref: pathBoxRef,
+          // Escape belongs to the OPEN LIST, wherever the keyboard sits inside
+          // this field; with no list open it stays the dialog's own Escape.
+          onKeyDown: (event) => { if (pathOpen) consumeEscape(event, () => setPathOpen(false)) },
+        },
+          t('flow.parent'),
+          E('div', { className: 'bw-picker' },
+            E('div', { className: 'bw-field-row', ref: pathAnchorRef },
+              E('input', {
+                className: 'bw-input',
+                value: parentInput,
+                autoFocus: true,
+                placeholder: 'web/frontend',
+                disabled: submitting,
+                onChange: (event) => { setParentInput(event.target.value); setPathOpen(true) },
+                // Suggestions open when the field is actually used (typing, a
+                // click, or the caret) — an autofocus must not grow the dialog.
+                onPointerDown: () => setPathOpen(true),
+                onKeyDown: (event) => { if (event.key === 'Enter') { event.preventDefault(); confirm() } },
+              }),
+              E('button', {
+                type: 'button', className: 'bw-field-caret', disabled: submitting,
+                'aria-label': t('flow.parent'), 'aria-expanded': pathOpen,
+                onClick: () => { setPathOpen(v => !v); setSectionOpen(false) },
+                onKeyDown: (event) => openListKeys(event, pathOpen, () => { setPathOpen(true); setSectionOpen(false) }),
+              }, icon('IconChevronDownOutline14', 12)),
+            ),
+            pathOpen ? E(PickerList, {
+              anchorRef: pathAnchorRef, label: t('flow.parent'), preferAbove: true, onKeyDown: walkListKeys,
+            },
+              pickerRow('path:root', t('flow.parent.root'), typedPath === '',
+                () => { setParentInput(''); setPathOpen(false) }),
+              folderOptions.length > 0
+                ? E('div', { key: 'path:heading', className: 'bw-picker-heading' }, t('flow.parent.heading'))
+                : null,
+              visibleFolders.map(option => pickerRow('path:' + option, option, typedPath === option,
+                () => { setParentInput(option); setPathOpen(false) })),
+              canCreatePath
+                ? pickerRow('path:new', t('flow.parent.new', { path: typedPath }), false,
+                  () => setPathOpen(false), icon('IconPlusOutline14', 12))
+                : null,
+              folderOptions.length === 0 && !canCreatePath
+                ? E('div', { key: 'path:empty', className: 'bw-picker-empty' }, t('flow.parent.empty'))
+                : null,
+            ) : null,
           ),
           E('div', { className: 'bw-hint' }, t('flow.parentHint')),
+        ),
+        E('div', { className: 'bw-preview-line' },
+          sectionPick !== null && canAssignSection
+            ? t('flow.preview.section', { title: previewTitle, name: sectionPick.name })
+            : t('flow.preview', { title: previewTitle }),
         ),
       )
       const footer = E('div', { className: 'bw-modal-actions' },
@@ -3537,24 +3915,29 @@ window.__ModuleLoader__.load({
         }
       }
 
+      // One shared store handle: the browser, the settings page and both
+      // add-workspace flows must see the same persisted state (expansion,
+      // folder list, sections, prefs, styling). Every seat below mounts it at
+      // root scope — one handle, one scope — so the renderer hands them ONE
+      // instance (resolveStore keys it by handle + scope).
+      const viewStore = createViewStore()
+
       // 1+2. the two directory-flow holes (hero picker, shipped sidebar browser).
       // Since dsh 0.1.2-alpha.1 the shell's own directory picker occupies each
       // hole at priority 0, so shadow at -1 (ascending, lowest renders) exactly
-      // like the sidebar.workspaces browser below.
+      // like the sidebar.workspaces browser below. The store seat is what lets
+      // the dialog offer sections/folders even when the shell hosts the flow
+      // (it passes only the hole's owner props, never our browser's).
       slots.inject('conversation.hero.workspace.directoryFlow', guarded(
         'conversation.hero.workspace.directoryFlow',
-        { name: 'conversation.hero.workspace.directoryFlow', inject: flowInjected('conversation.hero.workspace.directoryFlow'), locale: NS, priority: -1 },
+        { name: 'conversation.hero.workspace.directoryFlow', store: viewStore, inject: flowInjected('conversation.hero.workspace.directoryFlow'), locale: NS, priority: -1 },
         BetterFlow,
       ))
       slots.inject('sidebar.workspaces.directoryFlow', guarded(
         'sidebar.workspaces.directoryFlow',
-        { name: 'sidebar.workspaces.directoryFlow', inject: flowInjected('sidebar.workspaces.directoryFlow'), locale: NS, priority: -1 },
+        { name: 'sidebar.workspaces.directoryFlow', store: viewStore, inject: flowInjected('sidebar.workspaces.directoryFlow'), locale: NS, priority: -1 },
         BetterFlow,
       ))
-
-      // One shared store handle: the browser and the settings page must see the
-      // same persisted state (expansion, folder list, prefs, styling).
-      const viewStore = createViewStore()
 
       // Settings → Plugins card only (the tab dispatches the intersection of
       // served namespaces — registered host-side — and settings.plugin.item

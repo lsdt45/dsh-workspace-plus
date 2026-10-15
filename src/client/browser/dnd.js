@@ -6,7 +6,7 @@ import { splitTitleSegs } from '../core/text.js'
 
 export function createDnd(input) {
   const {
-    archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, searching, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
+    archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, fail, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, searching, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
   } = input
 
 /* ------------------------- drag & drop -------------------------- */

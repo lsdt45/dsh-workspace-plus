@@ -211,9 +211,54 @@ View state (folder collapse, session expansion, explicit empty folders), custom 
 
 ## Develop
 
+### Build
+
+The browser half's sources live in `src/client/**` (`src/client/index.js` is the bundle entry); `src/client.js` is the
+**esbuild-generated single-file artifact**. The DSH client module table accepts exactly one bundle per package
+(`exports["./client"]`, flat module graph), so split sources must be bundled back into one artifact. Artifact and
+sourcemap are committed, which keeps git/tarball installs build-free.
+
 ```bash
-npm pack        # tarball for local install verification
+npm run build     # sources -> src/client.js (+ .map), atomic replace
+npm run dev       # watch src/client/**, repackage on change (the host polls the artifact; HMR reloads the plugin)
+npm run check     # fail when the committed artifact is out of sync with the sources
+npm test          # node --test: pure-logic units + artifact contract + render smoke + architecture guards
+npm run verify    # build + check + test
+npm pack          # tarball for local install verification (prepack builds and checks first)
 ```
+
+**Never edit `src/client.js` by hand** — edit `src/client/**` and run `npm run dev` (or `npm run build`).
+
+### Module map
+
+| Path | Responsibility |
+|---|---|
+| `src/client/index.js` | bundle entry + the `BetterBrowser` component (probes, state, wiring); destructures each module factory's result back into the previous names |
+| `src/client/platform.js` | **the only platform boundary**: `installPlatform(hostRequire)` installs react / client-store / ui-primitives; every other module imports the handles from here |
+| `src/client/core/*` | pure logic (text splitting, time buckets, view rules, virtual tree + chain compression), no React/DOM, unit-tested directly |
+| `src/client/browser/*` | `model`, `dnd`, `actions`, `tree-view`, `menu`, `layout` — all `createX(input)` factories whose dependencies arrive through an explicit input object |
+| `src/client/{store,host,icons,styles}.js`, `ui/*`, `rows.js`, `customize.js`, `settings.js` | view store, host calls, icons, stylesheet, row components, appearance and settings |
+| `src/index.js` | host half (Node): the permanent session-delete route and the settings namespace |
+
+`tests/architecture.test.mjs` guards those boundaries (only the entry/platform layer may request platform modules;
+core/i18n/styles/host may not touch platform handles; cross-module references need an import; component-scope names must
+arrive through `input`). `tests/browser.render.test.mjs` really renders the sidebar with a stub React — all four views,
+the archive filter, the pinned tray, sections and custom styling — so a module that lost an input fails here immediately.
+
+### Local verification
+
+Install the tarball into a profile, or link the repository path directly:
+
+```bash
+dsh plugin --profile web add /absolute/path/to/dsh-workspace-plus   # linked directory: source edits apply after a restart
+```
+
+Checklist: hierarchy tree, add-workspace dialog, rename with instant re-sort, new group, time buckets, pinned tray,
+drag reordering, context menus, appearance customisation, settings toggles, the permanent session delete round-trip, and
+the fallback to the shipped browser after uninstall.
+
+> Note: a profile that installed this plugin as a **copy** (rather than a `link:`) keeps serving that copy — only a
+> `link:` install picks up freshly built artifacts.
 
 ## License
 

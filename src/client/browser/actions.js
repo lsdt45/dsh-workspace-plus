@@ -7,7 +7,7 @@ import { ui } from '../platform.js'
 
 export function createActions(input) {
   const {
-    actions, deleteAvailable, deleteSession, deleteWorkspace, deletingRef, items, list, pinnedList, refreshSessions, renameByUser, renameWorkspace, sessionsOf, setDeleting, setDialog, setErrorText, setNotice, storeFolders, t, tree, workspaceGroupIds, workspaceGroupOf, workspaceGroups, workspaceIndexOf
+    actions, deleteAvailable, deleteSession, deleteWorkspace, deletingRef, fail, items, list, pinnedList, refreshSessions, renameByUser, renameWorkspace, sessionsOf, setDeleting, setDialog, setErrorText, setNotice, storeFolders, t, tree, workspaceGroupIds, workspaceGroupOf, workspaceGroups, workspaceIndexOf
   } = input
 
 /* --------------------------- actions --------------------------- */

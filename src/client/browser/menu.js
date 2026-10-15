@@ -7,7 +7,7 @@ import { messageOf } from '../host.js'
 
 export function createMenu(input) {
   const {
-    actions, archiveSession, archivedFilter, assignSessionSection, assignWorkspaceGroup, automaticSort, copySessionText, ctx, deleteAvailable, deleting, forkSession, keyOf, openDirectory, pinnedSet, refreshPage, renameSession, restoreSession, setCtx, setCtxSubmenu, setCustomize, setDialog, setDrag, setFlowOpen, setFlowParent, storeFolders, t, timeDirection, timeSorted, unarchiveSession, viewMode
+    actions, archiveSession, archivedFilter, assignSessionSection, assignWorkspaceGroup, automaticSort, copySessionText, ctx, deleteAvailable, deleting, fail, forkSession, items, keyOf, openDirectory, pinnedSet, refreshPage, renameSession, restoreSession, setCtx, setCtxSubmenu, setCustomize, setDialog, setDrag, setFlowOpen, setFlowParent, storeFolders, t, timeDirection, timeSorted, unarchiveSession, viewMode
   } = input
 
 /* ------------------------- context menu ------------------------ */

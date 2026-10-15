@@ -211,11 +211,51 @@ DSH 的侧边栏浏览区是一个公开插槽 `sidebar.workspaces`(single),官�
 
 ## 开发
 
+### 构建
+
+浏览器侧源码在 `src/client/**`(`src/client/index.js` 为 bundle 入口),`src/client.js` 是 **esbuild 生成的单文件产物**
+(DSH 客户端模块表每个包只接受一个 bundle:`exports["./client"]`,模块图扁平,拆分源码必须打包回单一产物)。
+产物与 sourcemap 一并提交进仓库,**从 git / tarball 安装依旧零构建**。
+
 ```bash
-npm pack        # 出 tarball 后可本地安装验证
+npm run build     # 源码 → src/client.js(+ .map),原子替换
+npm run dev       # 监听 src/client/**,改动即重打包(宿主每 500ms 轮询产物,HMR 自动重载插件)
+npm run check     # 校验已提交产物与源码一致(不同步则失败)
+npm test          # node --test:纯逻辑单测 + 产物契约 + 渲染冒烟 + 架构守卫
+npm run verify    # build + check + test
+npm pack          # 出 tarball 后可本地安装验证(prepack 会先构建并校验)
 ```
 
-本地验证:把 `npm pack` 产出的 tarball 装进 web profile 并手动挂载(见上),重启 DSH,验证:层级树渲染、添加工作区弹窗、重命名即时重排、新建分组、卸载后回到原浏览器。
+**不要手改 `src/client.js`**;改源码后至少跑一次 `npm run dev` 或 `npm run build`。
+
+### 模块地图
+
+| 路径 | 职责 |
+|---|---|
+| `src/client/index.js` | bundle 入口 + `BetterBrowser` 组件(探针、状态、装配);把各模块工厂的返回值解构回原名 |
+| `src/client/platform.js` | **唯一平台边界**:`installPlatform(hostRequire)` 注入 react / client-store / ui-primitives,其余模块从它 import |
+| `src/client/core/*` | 纯逻辑(文本切分、时间分桶、视图规则、虚拟树与单链压缩),零 React/DOM,可直接单测 |
+| `src/client/browser/*` | `model`(派生模型)、`dnd`、`actions`、`tree-view`、`menu`、`layout`:都是 `createX(input)` 工厂,依赖经 `input` 显式注入 |
+| `src/client/{store,host,icons,styles}.js`、`ui/*`、`rows.js`、`customize.js`、`settings.js` | 视图状态、宿主调用、图标、样式、行组件、外观与设置 |
+| `src/index.js` | 宿主半(Node):会话永久删除路由 + 设置命名空间 |
+
+`tests/architecture.test.mjs` 守卫这些边界:只有入口/平台层能拿平台模块、core/i18n/styles/host 不得引用平台句柄、
+跨模块引用必须 import、组件作用域的名字必须经 `input` 注入;`tests/browser.render.test.mjs` 用 stub React 真正渲染侧栏
+(四种视图、归档筛选、置顶托盘、分组与自定义外观),拆分中漏接输入会立刻以 ReferenceError 暴露。
+
+### 本地验证
+
+把 `npm pack` 产出的 tarball 装进 profile,或直接把仓库路径 link 进 profile:
+
+```bash
+dsh plugin --profile web add /absolute/path/to/dsh-workspace-plus   # 目录以 link 方式加入,改源码重启即生效
+```
+
+验证清单:层级树渲染、添加工作区弹窗、重命名即时重排、新建分组、时间视图分桶、置顶托盘、拖拽重排、右键菜单、
+外观自定义、设置页开关、永久删除会话往返、卸载后回到原浏览器。
+
+> 注意:`desktop` profile 若以 **拷贝** 方式安装(而非 `link:`),运行中的 DSH 读的是 profile 里的旧副本;
+> 用 `link:` 安装才能让构建产物即时生效。
 
 ## License
 

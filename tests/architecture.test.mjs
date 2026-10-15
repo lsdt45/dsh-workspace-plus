@@ -63,18 +63,31 @@ function codeOf(source) {
 
 const code = new Map([...sources].map(([path, source]) => [path, codeOf(source)]))
 
+/** Names a module exposes to the rest of the bundle. */
 function exportsOf(path, source) {
   const names = [...source.matchAll(/^export\s+(?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1])
   if (nameOf(path) === 'index.js') {
-    // The entry keeps its own factory-scope declarations: a module leaning on
-    // one of them is exactly the leak this rule exists for.
-    for (const match of source.matchAll(/^    (?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)) names.push(match[1])
+    // The entry owns the factory scope AND the component scope: a browser module
+    // leaning on a name from either one is exactly the leak this rule exists for
+    // (component-scope names must be injected through the module's input object).
+    for (const match of source.matchAll(/^ {4,6}(?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)) names.push(match[1])
+    for (const match of source.matchAll(/^ {4,6}const\s*[\[{]([^}\]]*)[\}\]]/gm)) {
+      for (const part of match[1].split(',')) {
+        const name = part.split(':').pop().trim().replace(/^\[\.\.\./, '').replace(/=.*$/, '').trim()
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) names.push(name)
+      }
+    }
   }
   return names
 }
 function importsOf(source) {
   const names = []
   for (const match of source.matchAll(/^import\s*\{([^}]*)\}/gm)) {
+    for (const name of match[1].split(',')) if (name.trim() !== '') names.push(name.trim())
+  }
+  // Factory inputs: every browser module receives its dependencies as one object
+  // and destructures what it needs, which counts as a local declaration.
+  for (const match of source.matchAll(/^\s*const\s*\{([^}]*)\}\s*=\s*input\b/gm)) {
     for (const name of match[1].split(',')) if (name.trim() !== '') names.push(name.trim())
   }
   return names
@@ -114,15 +127,28 @@ test('cross-module references are imported', () => {
     const name = nameOf(path)
     if (name === 'index.js') continue // the entry imports every module it uses
     const body = code.get(path)
-    // Own declarations at ANY indent: a class/binding declared inside a function
-  // in this module is not a cross-module reference.
+    // Own declarations at ANY indent plus every parameter name: a binding or
+  // parameter of this module is never a cross-module reference.
   const local = [...source.matchAll(/^\s*(?:const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1])
+  for (const match of source.matchAll(/\(([^()]*)\)/g)) {
+    for (const name of match[1].matchAll(/[A-Za-z_$][\w$]*/g)) local.push(name[0])
+  }
+  for (const match of source.matchAll(/(?:const|let|var)\s*[\[{]([^}\]]*)[\}\]]/g)) {
+    for (const part of match[1].split(',')) {
+      const name = part.split(':').pop().trim().replace(/^\[\.\.\./, '').replace(/=.*$/, '').trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(name)) local.push(name)
+    }
+  }
   const own = new Set([...exportedBy.get(path), ...importsOf(source), ...local])
     for (const [otherPath, names] of exportedBy) {
       if (otherPath === path) continue
       for (const exported of names) {
         if (own.has(exported)) continue
-        if (new RegExp('\\b' + exported + '\\b').test(body)) {
+        const pattern = new RegExp('\\b' + exported + '\\b\\s*:')
+        const plain = new RegExp('\\b' + exported + '\\b')
+        // An object key (name:) is not a reference to the binding.
+        const keyOnly = body.split('\n').every((line) => !plain.test(line) || pattern.test(line))
+        if (!keyOnly) {
           problems.push(name + ' uses ' + exported + ' (from ' + nameOf(otherPath) + ') without importing it')
         }
       }

@@ -2027,7 +2027,7 @@
       viewMode,
       visibleItems,
       workspaceGroupOf,
-      workspaceGroups: workspaceGroups2,
+      workspaceGroups,
       wsDragArmTimer
     } = input;
     React.useEffect(() => {
@@ -2052,7 +2052,7 @@
     };
     const dragMatches = (kind) => drag !== null && drag.kind === kind;
     const canReorderWorkspaces = !automaticSort && groupedView && typeof insertWorkspaceBefore === "function";
-    const canMoveWorkspaceGroup = groupedView && workspaceGroups2.length > 0;
+    const canMoveWorkspaceGroup = groupedView && workspaceGroups.length > 0;
     const canDragWorkspace = canReorderWorkspaces || canMoveWorkspaceGroup;
     const canReorderSessions = typeof insertSessionBefore === "function";
     const wsDropHalf = (workspaceId) => {
@@ -2204,7 +2204,7 @@
     const sgroupDropInto = (workspaceId, path) => !automaticSort && dragMatches("session") && !drag.source.sectioned && drag.source.workspaceId === workspaceId && drag.over && drag.over.kind === "sgroup" && drag.over.target === path;
     const sessionDraggable = (session) => {
       if (searching || !groupedView || session.blank) return false;
-      if (workspaceGroups2.length > 0) return true;
+      if (workspaceGroups.length > 0) return true;
       return !automaticSort && !session.archived && !pinnedSet.has(session.id);
     };
     const sessionDragEvents = (session, workspaceId, sectioned = false) => ({
@@ -2311,7 +2311,7 @@
       tree,
       workspaceGroupIds,
       workspaceGroupOf,
-      workspaceGroups: workspaceGroups2,
+      workspaceGroups,
       workspaceIndexOf
     } = input;
     const assignWorkspaceGroup = (workspaceId, groupId) => {
@@ -2340,7 +2340,7 @@
         setErrorText(t("wgroup.error.empty"));
         return;
       }
-      if (workspaceGroups2.some((group) => group.id !== target.groupId && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      if (workspaceGroups.some((group) => group.id !== target.groupId && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
         setErrorText(t("wgroup.error.exists"));
         return;
       }
@@ -2559,7 +2559,7 @@
       workspaceDragEvents,
       workspaceGroupDropEvents,
       workspaceGroupOf,
-      workspaceGroups: workspaceGroups2,
+      workspaceGroups,
       workspaceIndexOf,
       workspaceTitleOf,
       wsDropHalf,
@@ -2572,7 +2572,7 @@
       const workspace = (items || []).find((item) => item.workspaceId === workspaceId);
       const sectionId = sessionSectionOf(row.id);
       const groupId = sectionId === null ? workspaceGroupOf(workspaceId) : sectionId;
-      const group = workspaceGroups2.find((group2) => group2.id === groupId);
+      const group = workspaceGroups.find((group2) => group2.id === groupId);
       return (row.title + " " + (workspace ? workspace.title : "") + " " + (group ? group.name : "")).toLowerCase().includes(normalizedQuery);
     };
     const renderSessionTree = (workspace, depth) => {
@@ -2782,7 +2782,7 @@
     });
     const renderCustomWorkspaceGroups = () => {
       const rows = [];
-      for (const group of workspaceGroups2) {
+      for (const group of workspaceGroups) {
         const members = visibleItems.filter((workspace) => workspaceGroupOf(workspace.workspaceId) === group.id);
         const looseRows = sectionRowsOf(group.id);
         if (archivedFilter === "only" && members.length === 0 && looseRows.length === 0) continue;
@@ -2814,7 +2814,7 @@
     };
     const renderProjectsHeader = () => {
       const looseRows = sectionRowsOf("");
-      if (workspaceGroups2.length === 0 && looseRows.length === 0) return [];
+      if (workspaceGroups.length === 0 && looseRows.length === 0) return [];
       if (searching && !searched && looseRows.length === 0) return [];
       if (archivedFilter === "only" && projectItems.length === 0 && looseRows.length === 0) return [];
       const group = { id: "", name: t("wgroup.projects") };
@@ -3403,6 +3403,7 @@
       viewMode,
       wide,
       workspaceGroupOf,
+      workspaceGroups,
       workspaceIndexOf
     } = input;
     function render() {
@@ -3876,10 +3877,10 @@
         const list = useSessions((s) => s);
         const pending = useSessionPendingInteraction ? useSessionPendingInteraction((s) => s) : null;
         const storeFolders = useStore ? useStore((s) => s.folders) || [] : [];
-        const workspaceGroups2 = useStore ? useStore((s) => s.workspaceGroups) || [] : [];
+        const workspaceGroups = useStore ? useStore((s) => s.workspaceGroups) || [] : [];
         const workspaceGroupById = useStore ? useStore((s) => s.workspaceGroupById) || {} : {};
         const sessionSectionById = useStore ? useStore((s) => s.sessionSectionById) || {} : {};
-        const workspaceGroupIds = new Set(workspaceGroups2.map((group) => group.id));
+        const workspaceGroupIds = new Set(workspaceGroups.map((group) => group.id));
         const workspaceGroupOf = (id) => workspaceGroupIds.has(workspaceGroupById[id]) ? workspaceGroupById[id] : "";
         const sessionSectionOf = (id) => {
           if (!Object.prototype.hasOwnProperty.call(sessionSectionById, id)) return null;
@@ -4165,7 +4166,7 @@
           tree,
           workspaceGroupIds,
           workspaceGroupOf,
-          workspaceGroups: workspaceGroups2,
+          workspaceGroups,
           workspaceIndexOf
         });
         const {
@@ -4213,7 +4214,7 @@
           viewMode,
           visibleItems,
           workspaceGroupOf,
-          workspaceGroups: workspaceGroups2,
+          workspaceGroups,
           wsDragArmTimer
         });
         const {
@@ -4289,7 +4290,7 @@
           workspaceDragEvents,
           workspaceGroupDropEvents,
           workspaceGroupOf,
-          workspaceGroups: workspaceGroups2,
+          workspaceGroups,
           workspaceIndexOf,
           workspaceTitleOf,
           wsDropHalf,
@@ -4383,6 +4384,7 @@
           viewMode,
           wide,
           workspaceGroupOf,
+          workspaceGroups,
           workspaceIndexOf
         });
         return renderLayout();

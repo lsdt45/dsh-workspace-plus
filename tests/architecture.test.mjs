@@ -145,8 +145,14 @@ test('cross-module references are imported', () => {
       for (const exported of names) {
         if (own.has(exported)) continue
         // A member access (row.icon) and an object key (icon:) are not references.
+        // A SPREAD is: the dots of a member access must follow an identifier,
+        // `)`, `]` or `?` — so `...workspaceGroups` (dots after a separator) is
+        // still a reference. Skipping every dot-preceded hit hid exactly the
+        // 0.2.1 regression where the layout factory lost one input and threw
+        // ReferenceError the moment its context submenu rendered.
         const hits = [...body.matchAll(new RegExp('\\b' + exported + '\\b', 'g'))].filter((match) => {
-          if (body[match.index - 1] === '.') return false
+          const before = body.slice(0, match.index)
+          if (/(?:[A-Za-z_$][\w$]*|\)|\]|\?)\.+$/.test(before)) return false
           return !/^\s*:/.test(body.slice(match.index + exported.length))
         })
         if (hits.length > 0) {

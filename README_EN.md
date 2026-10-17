@@ -74,7 +74,7 @@ Workspaces and sessions have separate ID-based membership without changing names
   <b>One-click view switching</b><br/>
   The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; Settings → Plugins → Configuration exposes the same choices.<br/><br/>
   <b>Time view (Global timeline)</b><br/>
-  ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with an official Tooltip popup.
+  ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with a popup bubble styled like the official Tooltip; the plugin owns that bubble, so it withdraws the moment the pointer leaves, the row re-sorts away or the list scrolls.
 </td>
 </tr>
 </table>

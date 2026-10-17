@@ -6,6 +6,7 @@ import { timeLabel } from './core/time.js'
 import { countWorkspaces } from './core/tree.js'
 import { icon, PinIcon16 } from './icons.js'
 import { renderWsTag } from './ui/base.js'
+import { useHoverTip } from './ui/tooltip.js'
 
 
 /** Folder glyph variants from the primitives family (solid / outline / hidden). */
@@ -168,9 +169,11 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
       return meta !== '' ? title + '\n' + meta : title
     }
     : null
-  const nativeTitle = hasHoverLabel && typeof ui.Tooltip !== 'function'
-    ? hoverLabel()
-    : undefined
+  // The plugin owns this bubble (see ui/tooltip.js): the host primitives
+  // Tooltip withdraws only on the anchor's mouseleave, and a row that re-sorts
+  // or scrolls out from under the pointer never gets one — the bubble stayed on
+  // screen until that exact row was hovered and left again.
+  const tip = useHoverTip({ label: hoverLabel, delayMs: 300, gap: 8, maxWidth: 320 })
   const renderActions = () => {
     let button
     if (node.archived) {
@@ -191,7 +194,7 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
   const row = E('div', {
     className: cls('bw-row', 'bw-session-row', node.archived && 'bw-session-row-archived', current && 'bw-row-current', pinned && 'bw-session-row-pinned', workspaceTag && !tagOnHover && 'bw-tray-row', dropHalf === 'before' && 'bw-drop-before', dropHalf === 'after' && 'bw-drop-after'),
     'data-bw-context': 'session',
-    title: nativeTitle,
+    ...(hasHoverLabel ? tip.attach : null),
     style: { paddingLeft: 8 + depth * 12, ...(custStyle || {}) },
     onClick: () => onOpen(node.id),
     onContextMenu: onContextMenu,
@@ -217,14 +220,9 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
       : null,
     E('span', { className: 'bw-row-time' }, timeLabel(node.updatedAt, now, t, ui.relativeTime)),
     renderActions(),
+    // Out of flow (position:fixed), so it adds no flex item to the row.
+    hasHoverLabel ? tip.bubble : null,
   )
-  // The official primitives Tooltip replaces the native title when the
-  // runtime ships it: same bubble as every dsh surface, anchored UNDER
-  // the session row (side bottom centers it on the row and the built-in
-  // viewport fit slides it back inside the edges).
-  if (hasHoverLabel && typeof ui.Tooltip === 'function') {
-    return E(ui.Tooltip, { label: hoverLabel, side: 'bottom', delayMs: 300, maxWidth: 320 }, row)
-  }
   return row
 }
 

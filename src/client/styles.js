@@ -29,6 +29,13 @@ export const CSS_TEXT = [
   '.bw-row-actions{flex:none;display:none;align-items:center;gap:2px}',
   '.bw-row:hover .bw-row-actions{display:flex}',
   '.bw-row:hover .bw-row-time,.bw-row:hover .bw-row-count,.bw-row:hover .bw-schedule-badge{display:none}',
+  // Session-row hover bubble (ui/tooltip.js). Metrics and tokens mirror the
+  // host primitives bubble, so the plugin-owned tip is visually identical.
+  '.bw-tip{display:inline-flex;align-items:center;gap:8px;position:fixed;z-index:100;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,rgba(24,24,28,.95));color:var(--dsw-static-neutral-bluish-00,#fff);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;animation:bw-tip-in 150ms var(--ds-ease-in-out,ease)}',
+  '.bw-tip[data-side="bottom"]{transform:translateX(-50%)}',
+  '.bw-tip[data-side="top"]{transform:translate(-50%,-100%)}',
+  '@keyframes bw-tip-in{from{opacity:0}}',
+  '@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}',
   '.bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}',
   '.bw-session-row{font-size:12.5px;color:var(--dsw-alias-label-secondary,#b8b8b8);min-height:26px}',
   '.bw-sgroup-row{font-size:12.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);min-height:24px}',

@@ -909,6 +909,13 @@
     ".bw-row-actions{flex:none;display:none;align-items:center;gap:2px}",
     ".bw-row:hover .bw-row-actions{display:flex}",
     ".bw-row:hover .bw-row-time,.bw-row:hover .bw-row-count,.bw-row:hover .bw-schedule-badge{display:none}",
+    // Session-row hover bubble (ui/tooltip.js). Metrics and tokens mirror the
+    // host primitives bubble, so the plugin-owned tip is visually identical.
+    ".bw-tip{display:inline-flex;align-items:center;gap:8px;position:fixed;z-index:100;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,rgba(24,24,28,.95));color:var(--dsw-static-neutral-bluish-00,#fff);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;animation:bw-tip-in 150ms var(--ds-ease-in-out,ease)}",
+    '.bw-tip[data-side="bottom"]{transform:translateX(-50%)}',
+    '.bw-tip[data-side="top"]{transform:translate(-50%,-100%)}',
+    "@keyframes bw-tip-in{from{opacity:0}}",
+    "@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}",
     ".bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}",
     ".bw-session-row{font-size:12.5px;color:var(--dsw-alias-label-secondary,#b8b8b8);min-height:26px}",
     ".bw-sgroup-row{font-size:12.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);min-height:24px}",
@@ -1631,6 +1638,165 @@
     }, closeLabel: t("close"), title: t("flow.title"), footer }, body, StyleNode());
   }
 
+  // src/client/ui/tooltip.js
+  var TIP_EDGE = 12;
+  var TIP_TICK_MS = 120;
+  var pointInRect = (rect, point) => !!rect && !!point && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+  var placeTip = (anchor, size, viewport, gap = 8) => {
+    const lo = TIP_EDGE + size.width / 2;
+    const hi = viewport.width - TIP_EDGE - size.width / 2;
+    const left = Math.max(lo, Math.min(anchor.left + anchor.width / 2, hi));
+    const below = anchor.bottom + gap;
+    const above = anchor.top - gap - size.height;
+    const fitsBelow = below + size.height <= viewport.height - TIP_EDGE;
+    const fitsAbove = above >= TIP_EDGE;
+    const flipped = !fitsBelow && fitsAbove;
+    return { left, top: flipped ? above : below, side: flipped ? "top" : "bottom" };
+  };
+  function useHoverTip(options) {
+    const opts = options || {};
+    const label = opts.label === void 0 ? null : opts.label;
+    const delayMs = opts.delayMs === void 0 ? 300 : opts.delayMs;
+    const gap = opts.gap === void 0 ? 8 : opts.gap;
+    const maxWidth = opts.maxWidth === void 0 ? 320 : opts.maxWidth;
+    const anchorRef = React.useRef(null);
+    const pointerRef = React.useRef(null);
+    const timerRef = React.useRef(null);
+    const bubbleRef = React.useRef(null);
+    const hoverAwareRef = React.useRef(false);
+    const [anchor, setAnchor] = React.useState(null);
+    const [size, setSize] = React.useState(null);
+    const open = anchor !== null;
+    const clearTimer = () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    const hide = () => {
+      clearTimer();
+      pointerRef.current = null;
+      setAnchor(null);
+      setSize(null);
+    };
+    const measure = () => {
+      const el = anchorRef.current;
+      if (!el || el.isConnected === false) return null;
+      const rect = el.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+    };
+    const show = () => {
+      clearTimer();
+      const rect = measure();
+      if (rect) setAnchor(rect);
+    };
+    const attach = {
+      ref: anchorRef,
+      onMouseEnter: (event) => {
+        if (label === null) return;
+        pointerRef.current = { x: event.clientX, y: event.clientY };
+        clearTimer();
+        if (delayMs > 0) timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          show();
+        }, delayMs);
+        else show();
+      },
+      onMouseLeave: () => hide()
+    };
+    React.useEffect(() => {
+      if (!open) return void 0;
+      const step = () => {
+        const el = anchorRef.current;
+        if (!el || el.isConnected === false) {
+          hide();
+          return;
+        }
+        if (typeof el.matches === "function") {
+          if (el.matches(":hover")) hoverAwareRef.current = true;
+          else if (hoverAwareRef.current) {
+            hide();
+            return;
+          }
+        }
+        const point = pointerRef.current;
+        if (!point) {
+          hide();
+          return;
+        }
+        const rect = el.getBoundingClientRect();
+        if (!pointInRect({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }, point)) {
+          hide();
+          return;
+        }
+        setAnchor((prev) => prev && prev.left === rect.left && prev.top === rect.top && prev.right === rect.right && prev.bottom === rect.bottom ? prev : { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height });
+      };
+      const onMove = (event) => {
+        pointerRef.current = { x: event.clientX, y: event.clientY };
+        step();
+      };
+      const onKey = (event) => {
+        if (event.key === "Escape") hide();
+      };
+      const onVisibility = () => {
+        if (document.visibilityState === "hidden") hide();
+      };
+      const onWindowOut = (event) => {
+        if (!event.relatedTarget) hide();
+      };
+      const passive = { capture: true, passive: true };
+      const tick = setInterval(step, TIP_TICK_MS);
+      document.addEventListener("pointermove", onMove, passive);
+      document.addEventListener("mousemove", onMove, passive);
+      document.addEventListener("scroll", step, passive);
+      document.addEventListener("mouseout", onWindowOut, passive);
+      document.addEventListener("pointerdown", hide, true);
+      document.addEventListener("pointercancel", hide, true);
+      document.addEventListener("dragstart", hide, true);
+      document.addEventListener("keydown", onKey, true);
+      document.addEventListener("visibilitychange", onVisibility);
+      document.addEventListener("mouseleave", hide, true);
+      window.addEventListener("blur", hide);
+      return () => {
+        clearInterval(tick);
+        document.removeEventListener("pointermove", onMove, passive);
+        document.removeEventListener("mousemove", onMove, passive);
+        document.removeEventListener("scroll", step, passive);
+        document.removeEventListener("mouseout", onWindowOut, passive);
+        document.removeEventListener("pointerdown", hide, true);
+        document.removeEventListener("pointercancel", hide, true);
+        document.removeEventListener("dragstart", hide, true);
+        document.removeEventListener("keydown", onKey, true);
+        document.removeEventListener("visibilitychange", onVisibility);
+        document.removeEventListener("mouseleave", hide, true);
+        window.removeEventListener("blur", hide);
+      };
+    }, [open]);
+    React.useEffect(() => {
+      if (!open) {
+        setSize(null);
+        return;
+      }
+      const el = bubbleRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setSize((prev) => prev && prev.width === rect.width && prev.height === rect.height ? prev : { width: rect.width, height: rect.height });
+    }, [open, anchor, label]);
+    const text = open && label !== null ? typeof label === "function" ? label() : String(label) : null;
+    let bubble = null;
+    if (text) {
+      const placement = anchor && size ? placeTip(anchor, size, { width: window.innerWidth, height: window.innerHeight }, gap) : { left: 0, top: 0, side: "bottom" };
+      bubble = E("span", {
+        ref: bubbleRef,
+        className: "bw-tip",
+        "data-side": placement.side,
+        role: "tooltip",
+        style: { left: placement.left, top: placement.top, visibility: size ? "visible" : "hidden", maxWidth }
+      }, text);
+    }
+    return { attach, bubble };
+  }
+
   // src/client/rows.js
   var iconOf = (mode, expanded) => {
     if (!mode || mode === "none") return null;
@@ -1754,7 +1920,7 @@
       const title = node.leaf || node.title;
       return meta !== "" ? title + "\n" + meta : title;
     } : null;
-    const nativeTitle = hasHoverLabel && typeof ui.Tooltip !== "function" ? hoverLabel() : void 0;
+    const tip = useHoverTip({ label: hoverLabel, delayMs: 300, gap: 8, maxWidth: 320 });
     const renderActions = () => {
       let button;
       if (node.archived) {
@@ -1789,7 +1955,7 @@
       {
         className: cls("bw-row", "bw-session-row", node.archived && "bw-session-row-archived", current && "bw-row-current", pinned && "bw-session-row-pinned", workspaceTag && !tagOnHover && "bw-tray-row", dropHalf === "before" && "bw-drop-before", dropHalf === "after" && "bw-drop-after"),
         "data-bw-context": "session",
-        title: nativeTitle,
+        ...hasHoverLabel ? tip.attach : null,
         style: { paddingLeft: 8 + depth * 12, ...custStyle || {} },
         onClick: () => onOpen(node.id),
         onContextMenu,
@@ -1808,11 +1974,10 @@
       workspaceTag ? renderWsTag(workspaceTag, tagOnHover) : null,
       node.hasActiveSchedule ? E("span", { className: "bw-schedule-badge", role: "img", "aria-label": t("schedule.active"), title: t("schedule.active") }, icon("IconAlarmClockOutline16", 14)) : null,
       E("span", { className: "bw-row-time" }, timeLabel(node.updatedAt, now, t, ui.relativeTime)),
-      renderActions()
+      renderActions(),
+      // Out of flow (position:fixed), so it adds no flex item to the row.
+      hasHoverLabel ? tip.bubble : null
     );
-    if (hasHoverLabel && typeof ui.Tooltip === "function") {
-      return E(ui.Tooltip, { label: hoverLabel, side: "bottom", delayMs: 300, maxWidth: 320 }, row);
-    }
     return row;
   }
   function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, t }) {

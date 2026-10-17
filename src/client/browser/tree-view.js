@@ -60,8 +60,8 @@ const renderTimeBuckets = (rows, workspaceId, depth) => {
     // Rows render without a workspace context: no drag surfaces here
     // (the timeline is a derived view, not a reorder surface). The
     // relative time is the tail label by default; the workspace tag
-    // reveals on hover and the native tooltip carries the full title,
-    // project and absolute timestamp.
+    // reveals on hover and the plugin's own bubble (ui/tooltip.js) carries
+    // the full title, project and absolute timestamp.
     for (const s of sorted) out.push(renderSessionRow(s, depth, null, { workspaceTag: s.workspaceTag, tagOnHover: true, tooltip: true }))
   }
   return out

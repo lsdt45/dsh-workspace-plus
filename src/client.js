@@ -70,6 +70,12 @@
     "menu.unarchive": "\u53D6\u6D88\u5F52\u6863",
     "session.archived": "\u5DF2\u5F52\u6863",
     "session.archivedHint": "\u8BF7\u5148\u53D6\u6D88\u5F52\u6863\uFF0C\u518D\u6253\u5F00\u6B64\u4F1A\u8BDD\u3002",
+    "menu.openTab": "\u5728\u65B0\u6807\u7B7E\u9875\u6253\u5F00",
+    "tabs.label": "\u4F1A\u8BDD\u6807\u7B7E\u9875",
+    "tabs.close": "\u5173\u95ED\u6807\u7B7E\u9875",
+    "tabs.ongoing": "\u8FD0\u884C\u4E2D",
+    "tabs.done": "\u5DF2\u5B8C\u6210\u672A\u8BFB",
+    "tabs.warning": "\u7B49\u5F85\u4F60\u5904\u7406",
     "menu.newSubfolder": "\u65B0\u589E\u5B50\u5206\u7EC4",
     "menu.newSubWorkspace": "\u65B0\u589E\u5B50\u5DE5\u4F5C\u533A",
     "menu.renameFolder": "\u91CD\u547D\u540D\u5206\u7EC4",
@@ -237,6 +243,12 @@
     "menu.unarchive": "Unarchive",
     "session.archived": "Archived",
     "session.archivedHint": "Unarchive this session before opening it.",
+    "menu.openTab": "Open in a new tab",
+    "tabs.label": "Session tabs",
+    "tabs.close": "Close tab",
+    "tabs.ongoing": "Running",
+    "tabs.done": "Finished, unread",
+    "tabs.warning": "Waiting for you",
     "menu.newSubfolder": "New subfolder",
     "menu.newSubWorkspace": "New workspace here",
     "menu.renameFolder": "Rename folder",
@@ -464,6 +476,15 @@
     const p = status && status.pendingInteraction;
     if (!p) return void 0;
     return p.kind || p.status || p.type || "pending";
+  };
+  var currentSessionIdOf = (list) => {
+    const byId = list && list.byId;
+    if (!byId) return null;
+    for (const summary of Object.values(byId)) {
+      if (!summary || !summary.retainedBy) continue;
+      if ((summary.retainedBy.mainView || 0) > 0) return String(summary.id);
+    }
+    return null;
   };
   var sessionTitleOf = (summary, t) => {
     if (!summary) return "";
@@ -923,6 +944,41 @@
     "@keyframes bw-tip-in{from{opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}",
     ".bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}",
+    // The session title repeats what the active tab already says, so hide just that
+    // line — the shell's own header layout stays untouched (re-gridding it made the
+    // session's chips and utilities disappear). The crumbs line is the only element
+    // carrying the title; the status chips and right-hand controls are siblings of it
+    // inside the session header and stay where they are.
+    'header[data-window-drag] [class*="_crumbs"]{display:none}',
+    // The session's own chips (agent team / PTC mode / subagents) share the view
+    // navigation row instead of the tab row: the nav row is the last line of the
+    // header, so pinning them to its bottom-right corner puts them after the
+    // view chips with no extra header height. Absolute positioning keeps the
+    // shell's own header layout untouched.
+    "header[data-window-drag]{position:relative}",
+    // z-index lifts the block above the view-nav row it is pinned onto: without it
+    // the row paints over the chips and swallows their clicks.
+    // left comes from useChipsAfterNav(): the measured end of the view-nav row.
+    // Until it lands (first paint, markup drift) the rule falls back to the old
+    // right-aligned spot.
+    'header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+    // Session tab strip: compact chips in the conversation header, one per open
+    // session. The chip's dot is .bw-state-dot, so the three states stay identical.
+    // Session tab strip, modelled on the reference: dot + label chips with a
+    // thick active underline, no fill or border, and a quiet close cross.
+    ".bw-tabs{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;overflow-x:auto;scrollbar-width:none;-webkit-app-region:no-drag;app-region:no-drag}",
+    ".bw-tabs::-webkit-scrollbar{display:none}",
+    ".bw-tab{display:flex;align-items:center;gap:6px;flex:none;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
+    ".bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}",
+    ".bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
+    ".bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}",
+    ".bw-tab-active .bw-tab-label{color:var(--dsw-alias-brand-primary,#5b8def);font-weight:600}",
+    ".bw-tab-dragging{opacity:.45}",
+    ".bw-tab-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:18px}",
+    ".bw-tab-dot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-label-caption,#8a8a8a);opacity:.55}",
+    ".bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}",
+    ".bw-tab:hover .bw-tab-close{opacity:1}",
+    ".bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}",
     // The plugin-drawn status dot (all three states): geometry only, the colour is
     // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
     // display:inline-block is load-bearing — the dot sits inside the .bw-pulse
@@ -1970,7 +2026,8 @@
         "data-bw-context": "session",
         ...hasHoverLabel ? tip.attach : null,
         style: { paddingLeft: 8 + depth * 12, ...custStyle || {} },
-        onClick: () => onOpen(node.id),
+        // The event carries Shift, which the browser turns into "open a new tab".
+        onClick: (event) => onOpen(node.id, event),
         onContextMenu,
         role: "treeitem",
         "aria-current": current || void 0,
@@ -2039,6 +2096,7 @@
       sessionsExpandedMap,
       sessionGroupsMap
     } = input;
+    const currentSessionId = currentSessionIdOf(list);
     const accounted = /* @__PURE__ */ new Set();
     const workspaceIndexOf = /* @__PURE__ */ new Map();
     for (const workspace of items || []) for (const id of workspace.sessionIds || []) {
@@ -2048,7 +2106,7 @@
     const statusOf = (id) => statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
     const sessionRowOf = (id) => {
       const summary = list && list.byId ? list.byId[id] : void 0;
-      if (!sessionVisible(summary, list ? list.current : void 0, archivedSet, archivedFilter)) return null;
+      if (!sessionVisible(summary, currentSessionId, archivedSet, archivedFilter)) return null;
       const status = statusOf(id);
       const workspace = (items || []).find((item) => item.workspaceId === workspaceIndexOf.get(id));
       return {
@@ -2130,7 +2188,7 @@
     };
     const searched = normalizedQuery ? searchAgent(tree) : null;
     const searching = normalizedQuery !== "";
-    const viewedSessionId = list && list.current !== void 0 && list.current !== null ? String(list.current) : null;
+    const viewedSessionId = currentSessionId;
     const nodePulseOf = (sessionNode) => {
       let best = null;
       for (const group of sessionNode.groups || []) {
@@ -2469,6 +2527,67 @@
     };
     return { canDragWorkspace, canMoveWorkspaceGroup, canReorderSessions, canReorderWorkspaces, commitSessionDrop, commitSessionMoveInto, commitWorkspaceDrop, commitWorkspaceMoveInto, dragMatches, folderDropEvents, nextWorkspaceAfter, rowHalf, sessDropHalf, sessionDragEvents, sessionDraggable, sgroupDropEvents, sgroupDropInto, workspaceDragEvents, workspaceGroupDropEvents, wsDropHalf, wsDropInto };
   }
+  function useTabReorder({ onReorder }) {
+    const [dragId, setDragId] = React.useState(null);
+    const [overId, setOverId] = React.useState(null);
+    const lastOverRef = React.useRef(null);
+    React.useEffect(() => {
+      if (dragId === null) return void 0;
+      const accept = (event) => {
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      };
+      const acceptDrop = (event) => {
+        event.preventDefault();
+      };
+      document.addEventListener("dragover", accept);
+      document.addEventListener("drop", acceptDrop);
+      return () => {
+        document.removeEventListener("dragover", accept);
+        document.removeEventListener("drop", acceptDrop);
+      };
+    }, [dragId === null]);
+    const eventsFor = (id) => ({
+      draggable: true,
+      onDragStart: (event) => {
+        lastOverRef.current = null;
+        setDragId(id);
+        try {
+          event.dataTransfer.setData("text/plain", id);
+          event.dataTransfer.effectAllowed = "move";
+        } catch {
+        }
+      },
+      onDragOver: (event) => {
+        if (!dragId || dragId === id) return;
+        event.preventDefault();
+        try {
+          event.dataTransfer.dropEffect = "move";
+        } catch {
+        }
+        if (lastOverRef.current === id) return;
+        lastOverRef.current = id;
+        setOverId(id);
+        if (typeof onReorder === "function") onReorder(dragId, id);
+      },
+      onDragLeave: () => {
+        if (lastOverRef.current === id) lastOverRef.current = null;
+        setOverId((current) => current === id ? null : current);
+      },
+      onDrop: (event) => {
+        event.preventDefault();
+        lastOverRef.current = null;
+        setDragId(null);
+        setOverId(null);
+      },
+      onDragEnd: () => {
+        lastOverRef.current = null;
+        setDragId(null);
+        setOverId(null);
+      }
+    });
+    return { draggingId: dragId, overId, eventsFor };
+  }
 
   // src/client/browser/actions.js
   function createActions(input) {
@@ -2687,10 +2806,132 @@
     return { assignSessionSection, assignWorkspaceGroup, copySessionText, findTreeNode, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename };
   }
 
+  // src/client/tabs.js
+  var MAX_TABS = 12;
+  var STORAGE_KEY = "dsh.betterWorkspace.tabs.v1";
+  var tabIdOf = (value) => value === void 0 || value === null ? "" : String(value);
+  function normalizeTabs(value) {
+    const list = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const entry of Array.isArray(value) ? value : []) {
+      const id = tabIdOf(entry);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      list.push(id);
+      if (list.length >= MAX_TABS) break;
+    }
+    return list;
+  }
+  function openTab(tabs, sessionId) {
+    const id = tabIdOf(sessionId);
+    const list = normalizeTabs(tabs);
+    if (!id || list.includes(id)) return list;
+    list.push(id);
+    return list.length > MAX_TABS ? list.slice(list.length - MAX_TABS) : list;
+  }
+  function replaceTab(tabs, previousId, nextId) {
+    const prev = tabIdOf(previousId);
+    const next = tabIdOf(nextId);
+    const list = normalizeTabs(tabs);
+    if (!next) return list;
+    if (!list.length) return [next];
+    const at = prev ? list.indexOf(prev) : -1;
+    if (at < 0) return list.includes(next) ? list : openTab(list, next);
+    if (list.includes(next)) return list.filter((id) => id !== prev);
+    const copy = list.slice();
+    copy[at] = next;
+    return copy;
+  }
+  function reconcileTabs(tabs, currentId, previousId, options = {}) {
+    const current = tabIdOf(currentId);
+    if (!current) return normalizeTabs(tabs);
+    const isBlank = typeof options.isBlank === "function" ? options.isBlank : () => false;
+    const isArchived = typeof options.isArchived === "function" ? options.isArchived : () => false;
+    const kept = normalizeTabs(tabs).filter((id) => id === current || !isBlank(id) && !isArchived(id));
+    if (kept.includes(current)) return kept;
+    return isBlank(current) ? openTab(kept, current) : replaceTab(kept, previousId, current);
+  }
+  function moveTab(tabs, fromId, toId) {
+    const from = tabIdOf(fromId);
+    const to = tabIdOf(toId);
+    const list = normalizeTabs(tabs);
+    const at = list.indexOf(from);
+    const target = list.indexOf(to);
+    if (at < 0 || target < 0 || at === target) return list;
+    const copy = list.slice();
+    const [moved] = copy.splice(at, 1);
+    copy.splice(Math.min(target, copy.length), 0, moved);
+    return copy;
+  }
+  function closeTab(tabs, sessionId, activeSessionId) {
+    const id = tabIdOf(sessionId);
+    const list = normalizeTabs(tabs);
+    const at = list.indexOf(id);
+    if (at < 0) return { tabs: list, next: null };
+    const rest = list.filter((entry) => entry !== id);
+    const wasActive = tabIdOf(activeSessionId) === id;
+    const next = wasActive ? rest[Math.min(at, rest.length - 1)] || null : null;
+    return { tabs: rest, next };
+  }
+  function loadTabs() {
+    try {
+      const raw = globalThis.localStorage ? globalThis.localStorage.getItem(STORAGE_KEY) : null;
+      return raw ? normalizeTabs(JSON.parse(raw)) : [];
+    } catch {
+      return [];
+    }
+  }
+  var tabList = loadTabs();
+  var activeTab = null;
+  var listeners = /* @__PURE__ */ new Set();
+  function tabsSnapshot() {
+    return tabList.slice();
+  }
+  function tabsActive() {
+    return activeTab;
+  }
+  function setActiveTab(value) {
+    const next = tabIdOf(value) || null;
+    if (next === activeTab) return activeTab;
+    activeTab = next;
+    for (const listener of [...listeners]) {
+      try {
+        listener();
+      } catch {
+      }
+    }
+    return activeTab;
+  }
+  function saveTabs(value) {
+    const next = normalizeTabs(value);
+    const same = next.length === tabList.length && next.every((id, index) => id === tabList[index]);
+    tabList = next;
+    if (!same) {
+      try {
+        if (globalThis.localStorage) globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+      }
+      for (const listener of [...listeners]) {
+        try {
+          listener();
+        } catch {
+        }
+      }
+    }
+    return tabList.slice();
+  }
+  function subscribeTabs(listener) {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }
+
   // src/client/browser/tree-view.js
   function createTreeView(input) {
     const {
       actions,
+      tabs,
       archivedFilter,
       canMoveWorkspaceGroup,
       drag,
@@ -2750,6 +2991,7 @@
       wsDropInto,
       wsPulseOf
     } = input;
+    const currentSessionId = currentSessionIdOf(list);
     const matchesSession = (row) => {
       if (!searching) return true;
       const workspaceId = workspaceIndexOf.get(row.id);
@@ -2837,11 +3079,18 @@
         depth,
         // Ids compare as strings so the row and the collapse relay (model.js)
         // agree on which session is on screen whatever the host hands over.
-        current: !!list && list.current !== void 0 && list.current !== null && String(list.current) === String(session.id),
+        current: currentSessionId !== null && currentSessionId === String(session.id),
         now,
-        onOpen: (id) => {
-          if (session.archived) setErrorText(t("session.archivedHint"));
-          else open(id);
+        onOpen: (id, event) => {
+          if (session.archived) {
+            setErrorText(t("session.archivedHint"));
+            return;
+          }
+          const newTab = !!(event && event.shiftKey);
+          const active = tabsActive();
+          saveTabs(newTab ? openTab(tabsSnapshot(), id) : replaceTab(tabsSnapshot(), active, id));
+          setActiveTab(id);
+          open(id);
         },
         onContextMenu: (e) => openCtx("session", session, e),
         dropHalf: workspaceId && !pinned && !o.sectioned ? sessDropHalf(session.id) : null,
@@ -2869,7 +3118,7 @@
         count,
         pinCount,
         sessionsOpen: searching ? true : sessionsOpenOf(workspace.workspaceId),
-        currentInside: !!(list && list.current && (workspace.sessionIds || []).includes(list.current)),
+        currentInside: !!(currentSessionId !== null && (workspace.sessionIds || []).includes(currentSessionId)),
         onToggle: () => {
           if (!searching) actions.setSessionsExpanded(workspace.workspaceId, !sessionsOpenOf(workspace.workspaceId));
         },
@@ -3077,6 +3326,165 @@
       )];
     }
     return { bodyRows, isEmpty, matchesSession, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSearchedFolder, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, searchSessionNode, sectionRowsOf };
+  }
+
+  // src/client/tabs-strip.js
+  var tabsHost = { openSessionMenu: null };
+  function useChipsAfterNav() {
+    React.useEffect(() => {
+      if (typeof document === "undefined") return void 0;
+      const place = () => {
+        const header2 = document.querySelector("header[data-window-drag]");
+        if (!header2) return;
+        const nav2 = header2.querySelector('[class*="_tabs"]');
+        if (!nav2) return;
+        const head = header2.getBoundingClientRect();
+        const items = nav2.children && nav2.children.length ? nav2.children : [nav2];
+        const last = items[items.length - 1];
+        const row = (last || nav2).getBoundingClientRect();
+        if (!head.width || !row.width) return;
+        const offset = Math.max(24, Math.round(row.right - head.left + 18));
+        if (offset > head.width - 220) return;
+        header2.style.setProperty("--bw-chips-left", offset + "px");
+        header2.style.setProperty("--bw-chips-right", "auto");
+        const chips = header2.querySelector('[class*="_headerActions"]');
+        if (chips) {
+          const chipsHeight = chips.getBoundingClientRect().height;
+          if (chipsHeight > 0) {
+            const top = Math.round(row.top + row.height / 2 - head.top - chipsHeight / 2 - 4);
+            header2.style.setProperty("--bw-chips-top", top + "px");
+            header2.style.setProperty("--bw-chips-bottom", "auto");
+          }
+        }
+      };
+      place();
+      const header = document.querySelector("header[data-window-drag]");
+      const nav = header ? header.querySelector('[class*="_tabs"]') : null;
+      const observer = typeof ResizeObserver === "function" ? new ResizeObserver(place) : null;
+      if (observer && header) observer.observe(header);
+      if (observer && nav) observer.observe(nav);
+      window.addEventListener("resize", place);
+      return () => {
+        if (observer) observer.disconnect();
+        window.removeEventListener("resize", place);
+      };
+    }, []);
+  }
+  function useTabs() {
+    const [tabs, setTabs] = React.useState(() => tabsSnapshot());
+    React.useEffect(() => subscribeTabs(() => setTabs(tabsSnapshot())), []);
+    return tabs;
+  }
+  var NO_ARCHIVED = [];
+  function useTabSync(sessions, useWorkspaces) {
+    const workspaces = typeof useWorkspaces === "function" ? useWorkspaces((s) => s) : null;
+    const archivedIds = workspaces && Array.isArray(workspaces.archivedSessionIds) ? workspaces.archivedSessionIds : NO_ARCHIVED;
+    const previousRef = React.useRef(null);
+    React.useEffect(() => {
+      const current = currentSessionIdOf(sessions);
+      const previous = previousRef.current;
+      previousRef.current = current;
+      if (!current) return;
+      setActiveTab(current);
+      const byId = sessions && sessions.byId ? sessions.byId : null;
+      const archived = new Set(archivedIds.map(String));
+      saveTabs(reconcileTabs(tabsSnapshot(), current, previous, {
+        isBlank: (id) => !!(byId && byId[id] && byId[id].blank),
+        isArchived: (id) => archived.has(String(id))
+      }));
+    }, [sessions, archivedIds]);
+  }
+  function TabsStrip(props) {
+    const { useSessions, useSessionStatus, useWorkspaces, t, open } = props;
+    useChipsAfterNav();
+    const stored = useTabs();
+    const { draggingId, eventsFor } = useTabReorder({
+      onReorder: (fromId, toId) => {
+        saveTabs(moveTab(tabsSnapshot(), fromId, toId));
+      }
+    });
+    const sessions = typeof useSessions === "function" ? useSessions((s) => s) : null;
+    useTabSync(sessions, useWorkspaces);
+    const statuses = typeof useSessionStatus === "function" ? useSessionStatus((s) => s) : null;
+    if (sessions === null && typeof useSessions !== "function") return null;
+    const bound = props.sessionId === void 0 || props.sessionId === null ? null : String(props.sessionId);
+    const liveCurrent = currentSessionIdOf(sessions);
+    const sessionId = liveCurrent || tabsActive() || bound || null;
+    const tabs = stored.length ? stored : sessionId ? [sessionId] : [];
+    if (tabs.length === 0) return null;
+    const titleOf = (id) => {
+      const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
+      return sessionTitleOf(summary, t) || id;
+    };
+    const stateOf = (id) => {
+      const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
+      const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
+      return sessionStateOf({
+        running: status ? status.running === true : !!(summary && summary.running),
+        completed: status ? status.completionUnread === true : !!(summary && summary.completed),
+        pending: status && status.pendingInteraction ? status.pendingInteraction.kind : void 0
+      }, sessionId === id);
+    };
+    const switchTo = (id) => {
+      setActiveTab(id);
+      if (typeof open === "function" && id !== sessionId) open(id);
+    };
+    const closeOne = (event, id) => {
+      event.stopPropagation();
+      event.preventDefault();
+      const result = closeTab(tabs, id, sessionId);
+      saveTabs(result.tabs);
+      if (result.next) switchTo(result.next);
+    };
+    return E(
+      "div",
+      { className: "bw-tabs", role: "tablist", "aria-label": t("tabs.label"), "data-bw-tabs": String(tabs.length) },
+      StyleNode(),
+      tabs.map((id) => {
+        const active = sessionId === id;
+        const state = stateOf(id);
+        const title = titleOf(id);
+        const activeStyle = active ? { boxShadow: "inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)" } : void 0;
+        return E(
+          "div",
+          {
+            key: id,
+            className: cls("bw-tab", active && "bw-tab-active", draggingId === id && "bw-tab-dragging"),
+            "data-bw-active": active ? "1" : "0",
+            role: "tab",
+            tabIndex: active ? 0 : -1,
+            "aria-selected": active,
+            title,
+            draggable: true,
+            style: activeStyle,
+            onClick: () => switchTo(id),
+            onKeyDown: (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                switchTo(id);
+              }
+            },
+            onContextMenu: (event) => {
+              if (!tabsHost.openSessionMenu) return;
+              event.preventDefault();
+              event.stopPropagation();
+              tabsHost.openSessionMenu(id, event);
+            },
+            ...eventsFor(id)
+          },
+          state ? E(StatusDot, { state, label: t("tabs." + state) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }),
+          E("span", { className: "bw-tab-label", style: active ? { color: "var(--dsw-alias-brand-primary, #5b8def)", fontWeight: 600 } : void 0 }, title),
+          E("button", {
+            type: "button",
+            className: "bw-tab-close",
+            draggable: false,
+            "aria-label": t("tabs.close"),
+            title: t("tabs.close"),
+            onClick: (event) => closeOne(event, id)
+          }, "\xD7")
+        );
+      })
+    );
   }
 
   // src/client/browser/menu.js
@@ -4043,6 +4451,7 @@
           console.warn("[dsh-workspace-plus] host status store missing; session status dots fall back to the session list snapshot");
         }
         const pending = useSessionPendingInteraction ? useSessionPendingInteraction((s) => s) : null;
+        const storeTabs = useStore ? useStore((s) => s.tabs) || [] : [];
         const storeFolders = useStore ? useStore((s) => s.folders) || [] : [];
         const workspaceGroups = useStore ? useStore((s) => s.workspaceGroups) || [] : [];
         const workspaceGroupById = useStore ? useStore((s) => s.workspaceGroupById) || {} : {};
@@ -4301,6 +4710,17 @@
           sessionsExpandedMap,
           sessionGroupsMap
         });
+        React.useEffect(() => {
+          if (!tabsHost) return void 0;
+          tabsHost.openSessionMenu = (sessionId, event) => {
+            const summary = list && list.byId ? list.byId[sessionId] : void 0;
+            if (!summary) return;
+            openCtx("session", summary, event);
+          };
+          return () => {
+            tabsHost.openSessionMenu = null;
+          };
+        }, [list]);
         const openCtx = (kind, payload, e) => {
           if (e) e.preventDefault();
           setCtxSubmenu(null);
@@ -4415,6 +4835,7 @@
           sectionRowsOf
         } = createTreeView({
           actions,
+          tabs: storeTabs,
           archivedFilter,
           canMoveWorkspaceGroup,
           drag,
@@ -4695,6 +5116,17 @@
             store: viewStore
           },
           BetterWorkspaceBundleConfig
+        ));
+        slots.inject("conversation.header.leading", guarded(
+          "conversation.header.leading",
+          {
+            name: "conversation.header.leading",
+            locale: NS,
+            inject: () => ({ open: (sessionId) => {
+              openSessionCompat(sessionId);
+            } })
+          },
+          TabsStrip
         ));
         slots.inject("sidebar.workspaces", guarded(
           "sidebar.workspaces",

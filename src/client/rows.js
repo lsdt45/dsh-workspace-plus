@@ -232,7 +232,8 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
     'data-bw-context': 'session',
     ...(hasHoverLabel ? tip.attach : null),
     style: { paddingLeft: 8 + depth * 12, ...(custStyle || {}) },
-    onClick: () => onOpen(node.id),
+    // The event carries Shift, which the browser turns into "open a new tab".
+    onClick: (event) => onOpen(node.id, event),
     onContextMenu: onContextMenu,
     role: 'treeitem',
     'aria-current': current || undefined,

@@ -42,6 +42,7 @@ import { createBrowserModel } from './browser/model.js'
 import { createDnd } from './browser/dnd.js'
 import { createActions } from './browser/actions.js'
 import { createTreeView } from './browser/tree-view.js'
+import { TabsStrip, tabsHost } from './tabs-strip.js'
 import { createMenu } from './browser/menu.js'
 import { createLayout } from './browser/layout.js'
 import { iconOf, colorToRgb, rgbToHex, FolderRow, WorkspaceGroupRow, WorkspaceRow, sessionStateOf, PULSE_RANK, PULSE_COLORS, pulseRank, PulseGlow, relayStateOf, SessionRow, SessionGroupRow } from './rows.js'
@@ -98,6 +99,7 @@ window.__ModuleLoader__.load({
         console.warn('[dsh-workspace-plus] host status store missing; session status dots fall back to the session list snapshot')
       }
       const pending = useSessionPendingInteraction ? useSessionPendingInteraction(s => s) : null
+      const storeTabs = useStore ? (useStore(s => s.tabs) || []) : []
       const storeFolders = useStore ? (useStore(s => s.folders) || []) : []
       const workspaceGroups = useStore ? (useStore(s => s.workspaceGroups) || []) : []
       const workspaceGroupById = useStore ? (useStore(s => s.workspaceGroupById) || {}) : {}
@@ -356,6 +358,21 @@ window.__ModuleLoader__.load({
 
       // Highest-priority status across a whole session subtree (groups + rows).
 
+      // The tab strip lives in the conversation header but must open the very
+      // same session menu the sidebar rows do, so the opener is published here.
+      // (The strip itself keeps the tab list in sync with the session on screen:
+      // the shell records it as a mainView retention, which the header sees
+      // through its own session-store hook, so this seat only bridges the menu.)
+      React.useEffect(() => {
+        if (!tabsHost) return undefined
+        tabsHost.openSessionMenu = (sessionId, event) => {
+          const summary = list && list.byId ? list.byId[sessionId] : undefined
+          if (!summary) return
+          openCtx('session', summary, event)
+        }
+        return () => { tabsHost.openSessionMenu = null }
+      }, [list])
+
       const openCtx = (kind, payload, e) => {
         if (e) e.preventDefault()
         setCtxSubmenu(null)
@@ -377,7 +394,7 @@ window.__ModuleLoader__.load({
       const {
         bodyRows, isEmpty, matchesSession, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSearchedFolder, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, searchSessionNode, sectionRowsOf
       } = createTreeView({
-        actions, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
       })
 
       const {
@@ -543,6 +560,21 @@ window.__ModuleLoader__.load({
           store: viewStore,
         },
         BetterWorkspaceBundleConfig,
+      ))
+
+      // Browser-style session tabs: one chip per open session, rendered in the
+      // header's leading seat — the free root-scoped slot at the far left of the
+      // conversation header band, before the session title. (The shell's own
+      // session header cannot be replaced from a plugin: the occupant is not
+      // swappable, so shadowing it made the band render nothing.)
+      slots.inject('conversation.header.leading', guarded(
+        'conversation.header.leading',
+        {
+          name: 'conversation.header.leading',
+          locale: NS,
+          inject: () => ({ open: (sessionId) => { openSessionCompat(sessionId) } }),
+        },
+        TabsStrip,
       ))
 
       // 3. the browser itself — lowest priority renders, shadowing the shipped entry.

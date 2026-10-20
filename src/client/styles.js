@@ -37,6 +37,41 @@ export const CSS_TEXT = [
   '@keyframes bw-tip-in{from{opacity:0}}',
   '@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}',
   '.bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}',
+  // The session title repeats what the active tab already says, so hide just that
+  // line — the shell's own header layout stays untouched (re-gridding it made the
+  // session's chips and utilities disappear). The crumbs line is the only element
+  // carrying the title; the status chips and right-hand controls are siblings of it
+  // inside the session header and stay where they are.
+  'header[data-window-drag] [class*="_crumbs"]{display:none}',
+  // The session's own chips (agent team / PTC mode / subagents) share the view
+  // navigation row instead of the tab row: the nav row is the last line of the
+  // header, so pinning them to its bottom-right corner puts them after the
+  // view chips with no extra header height. Absolute positioning keeps the
+  // shell's own header layout untouched.
+  'header[data-window-drag]{position:relative}',
+  // z-index lifts the block above the view-nav row it is pinned onto: without it
+  // the row paints over the chips and swallows their clicks.
+  // left comes from useChipsAfterNav(): the measured end of the view-nav row.
+  // Until it lands (first paint, markup drift) the rule falls back to the old
+  // right-aligned spot.
+  'header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+  // Session tab strip: compact chips in the conversation header, one per open
+  // session. The chip's dot is .bw-state-dot, so the three states stay identical.
+  // Session tab strip, modelled on the reference: dot + label chips with a
+  // thick active underline, no fill or border, and a quiet close cross.
+  '.bw-tabs{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;overflow-x:auto;scrollbar-width:none;-webkit-app-region:no-drag;app-region:no-drag}',
+  '.bw-tabs::-webkit-scrollbar{display:none}',
+  '.bw-tab{display:flex;align-items:center;gap:6px;flex:none;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
+  '.bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}',
+  '.bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
+  '.bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}',
+  '.bw-tab-active .bw-tab-label{color:var(--dsw-alias-brand-primary,#5b8def);font-weight:600}',
+  '.bw-tab-dragging{opacity:.45}',
+  '.bw-tab-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:18px}',
+  '.bw-tab-dot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-label-caption,#8a8a8a);opacity:.55}',
+  '.bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}',
+  '.bw-tab:hover .bw-tab-close{opacity:1}',
+  '.bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}',
   // The plugin-drawn status dot (all three states): geometry only, the colour is
   // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
   // display:inline-block is load-bearing — the dot sits inside the .bw-pulse

@@ -5,7 +5,7 @@
  * The component destructures the result back into the names its render body
  * already uses.
  */
-import { sessionVisible, orderRows, pendingKindOf, statusPendingKindOf, sessionTitleOf, hasActiveScheduleOf } from '../core/view.js'
+import { sessionVisible, orderRows, pendingKindOf, statusPendingKindOf, sessionTitleOf, hasActiveScheduleOf, currentSessionIdOf } from '../core/view.js'
 import { buildSessionTree, buildTree, buildWorkspaceList, compressTree, materializeChain } from '../core/tree.js'
 import { pulseRank, relayStateOf } from '../rows.js'
 
@@ -16,6 +16,10 @@ export function createBrowserModel(input) {
     sessionSectionOf, drag, sortOrder, viewMode, storeFolders, compactChains,
     workspaceGroupOf, statusPulse, expandedMap, sessionsExpandedMap, sessionGroupsMap,
   } = input
+// The shell marks the session on screen with a mainView retention, not with a
+// list-level `current` field; deriving it once per render keeps blank-session
+// visibility (only the current blank shows) and the read-already relay correct.
+const currentSessionId = currentSessionIdOf(list)
 const accounted = new Set()
 const workspaceIndexOf = new Map()
 for (const workspace of items || []) for (const id of workspace.sessionIds || []) { accounted.add(id); workspaceIndexOf.set(id, workspace.workspaceId) }
@@ -23,7 +27,7 @@ for (const workspace of items || []) for (const id of workspace.sessionIds || []
 const statusOf = (id) => (statuses && typeof statuses.get === 'function' ? statuses.get(id) : undefined)
 const sessionRowOf = (id) => {
   const summary = list && list.byId ? list.byId[id] : undefined
-  if (!sessionVisible(summary, list ? list.current : undefined, archivedSet, archivedFilter)) return null
+  if (!sessionVisible(summary, currentSessionId, archivedSet, archivedFilter)) return null
   const status = statusOf(id)
   const workspace = (items || []).find(item => item.workspaceId === workspaceIndexOf.get(id))
   return {
@@ -121,7 +125,7 @@ const searched = normalizedQuery ? searchAgent(tree) : null
 const searching = normalizedQuery !== ''
 // The session on screen is read by definition, so a collapse relay must not
 // bubble its completion reminder either (the row suppresses it on its own).
-const viewedSessionId = list && list.current !== undefined && list.current !== null ? String(list.current) : null
+const viewedSessionId = currentSessionId
 const nodePulseOf = (sessionNode) => {
   let best = null
   for (const group of sessionNode.groups || []) {

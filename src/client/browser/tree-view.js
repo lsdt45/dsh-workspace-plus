@@ -6,14 +6,20 @@ import { E } from '../platform.js'
 import { FolderRow, SessionGroupRow, SessionRow, WorkspaceGroupRow, WorkspaceRow } from '../rows.js'
 import { PinIcon16 } from '../icons.js'
 import { buildSessionTree, buildWorkspaceList, countSessionTree } from '../core/tree.js'
-import { orderRows } from '../core/view.js'
+import { currentSessionIdOf, orderRows } from '../core/view.js'
+import { openTab, replaceTab, saveTabs, setActiveTab, tabsActive, tabsSnapshot } from '../tabs.js'
 
 export function createTreeView(input) {
   const {
-    actions, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+    actions, tabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
   } = input
 
 /* ---------------------------- rows ----------------------------- */
+
+// The shell records the session on screen as a mainView retention on its
+// summary; nothing in the list snapshot is called "current". Read once per
+// render for the row highlight and for the tab a plain click replaces.
+const currentSessionId = currentSessionIdOf(list)
 
 /**
  * Session list of ONE workspace in the projects view: pinned rows are
@@ -126,9 +132,26 @@ const renderSessionRow = (session, depth, workspaceId, opts) => {
     depth,
     // Ids compare as strings so the row and the collapse relay (model.js)
     // agree on which session is on screen whatever the host hands over.
-    current: !!list && list.current !== undefined && list.current !== null && String(list.current) === String(session.id),
+    current: currentSessionId !== null && currentSessionId === String(session.id),
     now,
-    onOpen: (id) => { if (session.archived) setErrorText(t('session.archivedHint')); else open(id) },
+    onOpen: (id, event) => {
+      if (session.archived) { setErrorText(t('session.archivedHint')); return }
+      // Shift+click opens a tab of its own; a plain click swaps the session
+      // inside the current tab (the original tab requirement). Both write the
+      // persisted list first, so the strip reflects the click immediately.
+      const newTab = !!(event && event.shiftKey)
+      // A plain click swaps the session inside the ACTIVE tab. The tab store's
+      // active id is the tab that actually owns the page (the main view can be
+      // sessionless for a beat, e.g. right after archiving), so it replaces the
+      // right one even when the shell has no current session yet.
+      const active = tabsActive()
+      saveTabs(newTab ? openTab(tabsSnapshot(), id) : replaceTab(tabsSnapshot(), active, id))
+      // Select the tab this click wrote, so the chip highlights in the same
+      // frame as the navigation instead of after the shell reports the new
+      // mainView retention.
+      setActiveTab(id)
+      open(id)
+    },
     onContextMenu: (e) => openCtx('session', session, e),
     dropHalf: workspaceId && !pinned && !o.sectioned ? sessDropHalf(session.id) : null,
     dragEvents: sessionDraggable(session) && (canMoveWorkspaceGroup || (workspaceId && !o.sectioned)) ? sessionDragEvents(session, workspaceId, o.sectioned === true) : undefined,
@@ -156,7 +179,7 @@ const renderWorkspaceEntry = (entry, depth, pulse) => {
     count,
     pinCount,
     sessionsOpen: searching ? true : sessionsOpenOf(workspace.workspaceId),
-    currentInside: !!(list && list.current && (workspace.sessionIds || []).includes(list.current)),
+    currentInside: !!(currentSessionId !== null && (workspace.sessionIds || []).includes(currentSessionId)),
     onToggle: () => { if (!searching) actions.setSessionsExpanded(workspace.workspaceId, !sessionsOpenOf(workspace.workspaceId)) },
     // Starting a session force-expands the workspace row: the user must
     // SEE the new session appear, even if the row was collapsed.

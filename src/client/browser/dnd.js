@@ -296,3 +296,74 @@ const commitSessionMoveInto = (workspaceId, groupPath) => {
 
   return { canDragWorkspace, canMoveWorkspaceGroup, canReorderSessions, canReorderWorkspaces, commitSessionDrop, commitSessionMoveInto, commitWorkspaceDrop, commitWorkspaceMoveInto, dragMatches, folderDropEvents, nextWorkspaceAfter, rowHalf, sessDropHalf, sessionDragEvents, sessionDraggable, sgroupDropEvents, sgroupDropInto, workspaceDragEvents, workspaceGroupDropEvents, wsDropHalf, wsDropInto }
 }
+
+/* --------------------- horizontal reorder (tab strip) --------------------- */
+
+/**
+ * Drag reordering for a flat horizontal list of keyed chips (the session tabs).
+ *
+ * This is the same HTML5 drag mechanism the tree rows use — `draggable` sources,
+ * `dragover`/drop targets and the document-level accept installed while a drag
+ * is armed (without it a release outside any chip cancels the gesture). It is a
+ * separate hook rather than part of `createDnd` because that one is bound to the
+ * sidebar's tree state and host-order commits, while the strip reorders local
+ * state and only needs "the moved chip takes the target's place".
+ *
+ * @param onReorder - commits the move: called with (fromId, toId) on a drop.
+ * @returns the dragging id, the current drop target, and per-chip drag events.
+ */
+export function useTabReorder({ onReorder }) {
+  const [dragId, setDragId] = React.useState(null)
+  const [overId, setOverId] = React.useState(null)
+  // Last chip the pointer entered; kept in a ref so the reorder fires once per
+  // target and never from inside a state updater (React may run those twice).
+  const lastOverRef = React.useRef(null)
+  React.useEffect(() => {
+    if (dragId === null) return undefined
+    const accept = (event) => {
+      event.preventDefault()
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+    }
+    const acceptDrop = (event) => { event.preventDefault() }
+    document.addEventListener('dragover', accept)
+    document.addEventListener('drop', acceptDrop)
+    return () => {
+      document.removeEventListener('dragover', accept)
+      document.removeEventListener('drop', acceptDrop)
+    }
+  }, [dragId === null])
+  const eventsFor = (id) => ({
+    draggable: true,
+    onDragStart: (event) => {
+      lastOverRef.current = null
+      setDragId(id)
+      try {
+        event.dataTransfer.setData('text/plain', id)
+        event.dataTransfer.effectAllowed = 'move'
+      } catch {}
+    },
+    onDragOver: (event) => {
+      if (!dragId || dragId === id) return
+      event.preventDefault()
+      try { event.dataTransfer.dropEffect = 'move' } catch {}
+      // Reorder as the pointer enters a new chip: the strip re-renders in the
+      // new order immediately, so the move is previewed live instead of only
+      // landing on drop.
+      if (lastOverRef.current === id) return
+      lastOverRef.current = id
+      setOverId(id)
+      if (typeof onReorder === 'function') onReorder(dragId, id)
+    },
+    onDragLeave: () => { if (lastOverRef.current === id) lastOverRef.current = null; setOverId((current) => (current === id ? null : current)) },
+    onDrop: (event) => {
+      // The order already followed the pointer during dragover; the drop only
+      // ends the gesture.
+      event.preventDefault()
+      lastOverRef.current = null
+      setDragId(null)
+      setOverId(null)
+    },
+    onDragEnd: () => { lastOverRef.current = null; setDragId(null); setOverId(null) },
+  })
+  return { draggingId: dragId, overId, eventsFor }
+}

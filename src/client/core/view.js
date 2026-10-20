@@ -55,6 +55,31 @@ export const statusPendingKindOf = (status) => {
   return p.kind || p.status || p.type || 'pending'
 }
 
+/**
+ * The Session the main view is showing, in the shell's own terms.
+ *
+ * The sessions list snapshot carries no `current` field: the shell records the
+ * session on screen as a `mainView` RETENTION on that summary (ui-workspace
+ * calls `sessions.retain(id, { source: 'mainView' })` inside replaceMain), and
+ * the shipped sidebar derives its own "current" highlight the same way. One
+ * session holds that retention at a time; the first hit wins so a navigation
+ * transition still names one session instead of none.
+ *
+ * Reading this field instead of a made-up `list.current` is what makes plain
+ * sidebar clicks replace the current tab, keeps the current row highlighted,
+ * and lets the New Session page (blank) appear at all: the shell shows a blank
+ * session only while it is the current one.
+ */
+export const currentSessionIdOf = (list) => {
+  const byId = list && list.byId
+  if (!byId) return null
+  for (const summary of Object.values(byId)) {
+    if (!summary || !summary.retainedBy) continue
+    if ((summary.retainedBy.mainView || 0) > 0) return String(summary.id)
+  }
+  return null
+}
+
 export const sessionTitleOf = (summary, t) => {
   if (!summary) return ''
   if (summary.blank) return t('session.new')

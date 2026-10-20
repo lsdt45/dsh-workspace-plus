@@ -124,7 +124,9 @@ const renderSessionRow = (session, depth, workspaceId, opts) => {
     key: String(session.id) + (inTray ? '-tray' : ''),
     node: session,
     depth,
-    current: list && list.current === session.id,
+    // Ids compare as strings so the row and the collapse relay (model.js)
+    // agree on which session is on screen whatever the host hands over.
+    current: !!list && list.current !== undefined && list.current !== null && String(list.current) === String(session.id),
     now,
     onOpen: (id) => { if (session.archived) setErrorText(t('session.archivedHint')); else open(id) },
     onContextMenu: (e) => openCtx('session', session, e),

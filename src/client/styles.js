@@ -37,6 +37,12 @@ export const CSS_TEXT = [
   '@keyframes bw-tip-in{from{opacity:0}}',
   '@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}',
   '.bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}',
+  // The plugin-drawn status dot (all three states): geometry only, the colour is
+  // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
+  // display:inline-block is load-bearing — the dot sits inside the .bw-pulse
+  // span, so it is NOT a grid item of the row icon, and an inline span would
+  // ignore width/height (the dot then renders at zero size: invisible).
+  '.bw-state-dot{display:inline-block;flex:none;width:6px;height:6px;border-radius:50%}',
   '.bw-session-row{font-size:12.5px;color:var(--dsw-alias-label-secondary,#b8b8b8);min-height:26px}',
   '.bw-sgroup-row{font-size:12.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);min-height:24px}',
   '.bw-sgroup-row:hover{color:var(--dsw-alias-label-secondary,#b8b8b8)}',
@@ -86,17 +92,9 @@ export const CSS_TEXT = [
   '.bw-ctx-danger{color:var(--dsw-alias-state-error-primary,#f85149)}',
   '.bw-ctx-sep{height:1px;background:var(--dsw-alias-border-l1,rgba(127,127,127,.2));margin:4px 6px}',
   '.bw-settings{display:flex;flex-direction:column;gap:6px;max-width:640px}',
-  '.bw-plugin-card{list-style:none;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18));border-radius:12px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.05));transition:border-color .16s,background .16s}',
-  '.bw-plugin-card:hover{border-color:var(--dsw-alias-label-dimmed,#7a7a7a)}',
-  '.bw-plugin-card-open{background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.1));border-color:var(--dsw-alias-label-dimmed,#7a7a7a)}',
-  '.bw-plugin-head{width:100%;appearance:none;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px}',
-  '.bw-plugin-head:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
-  '.bw-plugin-headtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}',
-  '.bw-plugin-name{font-size:15px;font-weight:600;line-height:1.4;color:var(--dsw-alias-label-primary,#e6e6e6)}',
-  '.bw-plugin-desc{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
-  '.bw-plugin-chevron{flex:none;color:var(--dsw-alias-label-tertiary,#9a9a9a);transition:transform .16s}',
-  '.bw-plugin-chevron-open{transform:rotate(180deg)}',
-  '.bw-plugin-body{border-top:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18));margin:0 16px;padding:12px 0 16px}',
+  // Settings → Plugins: the body our plugins.bundle.config slot renders on the
+  // bundle's page.
+  '.bw-plugin-config{display:flex;flex-direction:column;gap:2px;padding:4px 0 8px}',
   '.bw-setting-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-secondary,#b8b8b8)}',
   '.bw-setting-label{flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-secondary,#b8b8b8)}',
   '.bw-switch{box-sizing:border-box;position:relative;flex:0 0 auto;width:36px;height:20px;padding:2px;border:0;border-radius:10px;background:var(--dsw-alias-border-l3,rgba(127,127,127,.3));cursor:pointer;transition:background 120ms ease}',
@@ -167,7 +165,7 @@ export const CSS_TEXT = [
   '.bw-preview-icon{flex:none;display:grid;place-items:center;width:20px;height:20px;color:var(--dsw-alias-label-primary,#e6e6e6)}',
   '.bw-preview-icon svg{width:18px;height:18px}',
   '.bw-preview-label{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px}',
-  '.bw-pulse{animation:bw-breathe 1.8s ease-in-out infinite}',
+  '.bw-pulse{display:inline-flex;align-items:center;justify-content:center;animation:bw-breathe 1.8s ease-in-out infinite}',
   '@keyframes bw-breathe{0%,100%{filter:drop-shadow(0 0 1px var(--bw-pulse-color));opacity:.55}50%{filter:drop-shadow(0 0 6px var(--bw-pulse-color));opacity:1}}',
   '.bw-pulse-text{animation:bw-breathe-text 1.8s ease-in-out infinite}',
   '@keyframes bw-breathe-text{0%,100%{text-shadow:0 0 1px var(--bw-pulse-color);opacity:.65}50%{text-shadow:0 0 7px var(--bw-pulse-color);opacity:1}}',

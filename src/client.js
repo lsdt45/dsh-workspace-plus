@@ -109,7 +109,7 @@
     "settings.compactChains": "\u5355\u94FE\u5206\u7EC4\u6298\u53E0\u663E\u793A",
     "settings.compactChains.hint": "\u5355\u5C42\u94FE\u5408\u5E76\u4E3A\u4E00\u884C,\u51FA\u73B0\u591A\u4E2A\u5B50\u7EA7\u65F6\u81EA\u52A8\u5C55\u5F00\u4E3A\u6811\u72B6;\u62D6\u62FD\u5DE5\u4F5C\u533A\u671F\u95F4\u5355\u94FE\u4E34\u65F6\u5C55\u5F00\u56DE\u6587\u4EF6\u5939\u6811,\u53EF\u653E\u5165\u4EFB\u610F\u4E00\u7EA7;\u5C55\u5F00\u72B6\u6001\u4E0E\u81EA\u5B9A\u4E49\u5916\u89C2\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002",
     "settings.statusPulse": "\u72B6\u6001\u547C\u5438\u706F",
-    "settings.statusPulse.hint": "\u88AB\u6298\u53E0\u85CF\u8D77\u7684\u72B6\u6001\u706F(\u5B8C\u6210\u7EFF / \u8FD0\u884C\u84DD / \u5F85\u4EA4\u4E92\u7425\u73C0)\u6CBF\u5C42\u7EA7\u5411\u5916\u5192\u6CE1:\u5DE5\u4F5C\u533A\u4E0E\u5206\u7EC4\u884C\u4EE5\u56FE\u6807\u547C\u5438\u53D1\u5149(\u989C\u8272\u968F\u72B6\u6001,\u81EA\u5B9A\u4E49\u8FC7\u53D1\u5149\u7684\u6807\u9898\u4E00\u8D77\u547C\u5438),\u4F1A\u8BDD\u5206\u7EC4\u884C\u663E\u793A\u547C\u5438\u72B6\u6001\u706F;\u9ED8\u8BA4\u5F00\u542F,\u53EF\u5728\u6B64\u5173\u95ED\u3002",
+    "settings.statusPulse.hint": "\u88AB\u6298\u53E0\u85CF\u8D77\u7684\u72B6\u6001\u706F(\u5B8C\u6210\u7EFF / \u8FD0\u884C\u6A59 / \u5F85\u4EA4\u4E92\u7425\u73C0)\u6CBF\u5C42\u7EA7\u5411\u5916\u5192\u6CE1:\u5DE5\u4F5C\u533A\u4E0E\u5206\u7EC4\u884C\u4EE5\u56FE\u6807\u547C\u5438\u53D1\u5149(\u989C\u8272\u968F\u72B6\u6001,\u81EA\u5B9A\u4E49\u8FC7\u53D1\u5149\u7684\u6807\u9898\u4E00\u8D77\u547C\u5438),\u4F1A\u8BDD\u5206\u7EC4\u884C\u663E\u793A\u547C\u5438\u72B6\u6001\u706F;\u9ED8\u8BA4\u5F00\u542F,\u53EF\u5728\u6B64\u5173\u95ED\u3002",
     "custom.title": "\u81EA\u5B9A\u4E49\u5916\u89C2",
     "custom.color": "\u989C\u8272",
     "custom.glow": "\u53D1\u5149",
@@ -276,7 +276,7 @@
     "settings.compactChains": "Merge single-child chains",
     "settings.compactChains.hint": "Single-child chains merge into one row; levels with multiple children expand as a tree. Chains re-expand into folder rows while you drag a workspace, so it can drop into any level. State and custom styling persist in this browser.",
     "settings.statusPulse": "Status breathing light",
-    "settings.statusPulse.hint": "Status dots hidden by collapse (done green / running blue / pending amber) bubble outward: workspace and folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; on by default, turn it off here.",
+    "settings.statusPulse.hint": "Status dots hidden by collapse (done green / running orange / pending amber) bubble outward: workspace and folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; on by default, turn it off here.",
     "custom.title": "Customize",
     "custom.color": "Color",
     "custom.glow": "Glow",
@@ -460,13 +460,18 @@
     if (!p) return void 0;
     return p.kind || p.status || p.type || "pending";
   };
+  var statusPendingKindOf = (status) => {
+    const p = status && status.pendingInteraction;
+    if (!p) return void 0;
+    return p.kind || p.status || p.type || "pending";
+  };
   var sessionTitleOf = (summary, t) => {
     if (!summary) return "";
     if (summary.blank) return t("session.new");
     return String(summary.displayTitle || summary.title || "");
   };
   var hasActiveScheduleOf = (summary) => !!(summary && summary.projectionValues && Array.isArray(summary.projectionValues.schedule) && summary.projectionValues.schedule.length > 0);
-  var subagentRunningCounts = (byId) => {
+  var subagentRunningCounts = (byId, runningOf) => {
     const children = /* @__PURE__ */ new Map();
     for (const id of Object.keys(byId || {})) {
       const summary = byId[id];
@@ -487,7 +492,8 @@
         const summary = queue.shift();
         if (!summary || seen.has(summary.id)) continue;
         seen.add(summary.id);
-        if (summary.running) count += 1;
+        const running = typeof runningOf === "function" ? runningOf(summary.id) === true : !!summary.running;
+        if (running) count += 1;
         const kids = children.get(summary.id);
         if (kids) for (const kid of kids) queue.push(kid);
       }
@@ -917,6 +923,12 @@
     "@keyframes bw-tip-in{from{opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}",
     ".bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}",
+    // The plugin-drawn status dot (all three states): geometry only, the colour is
+    // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
+    // display:inline-block is load-bearing — the dot sits inside the .bw-pulse
+    // span, so it is NOT a grid item of the row icon, and an inline span would
+    // ignore width/height (the dot then renders at zero size: invisible).
+    ".bw-state-dot{display:inline-block;flex:none;width:6px;height:6px;border-radius:50%}",
     ".bw-session-row{font-size:12.5px;color:var(--dsw-alias-label-secondary,#b8b8b8);min-height:26px}",
     ".bw-sgroup-row{font-size:12.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);min-height:24px}",
     ".bw-sgroup-row:hover{color:var(--dsw-alias-label-secondary,#b8b8b8)}",
@@ -966,17 +978,9 @@
     ".bw-ctx-danger{color:var(--dsw-alias-state-error-primary,#f85149)}",
     ".bw-ctx-sep{height:1px;background:var(--dsw-alias-border-l1,rgba(127,127,127,.2));margin:4px 6px}",
     ".bw-settings{display:flex;flex-direction:column;gap:6px;max-width:640px}",
-    ".bw-plugin-card{list-style:none;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18));border-radius:12px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.05));transition:border-color .16s,background .16s}",
-    ".bw-plugin-card:hover{border-color:var(--dsw-alias-label-dimmed,#7a7a7a)}",
-    ".bw-plugin-card-open{background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.1));border-color:var(--dsw-alias-label-dimmed,#7a7a7a)}",
-    ".bw-plugin-head{width:100%;appearance:none;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px}",
-    ".bw-plugin-head:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
-    ".bw-plugin-headtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}",
-    ".bw-plugin-name{font-size:15px;font-weight:600;line-height:1.4;color:var(--dsw-alias-label-primary,#e6e6e6)}",
-    ".bw-plugin-desc{font-size:13px;line-height:1.5;color:var(--dsw-alias-label-tertiary,#9a9a9a)}",
-    ".bw-plugin-chevron{flex:none;color:var(--dsw-alias-label-tertiary,#9a9a9a);transition:transform .16s}",
-    ".bw-plugin-chevron-open{transform:rotate(180deg)}",
-    ".bw-plugin-body{border-top:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18));margin:0 16px;padding:12px 0 16px}",
+    // Settings → Plugins: the body our plugins.bundle.config slot renders on the
+    // bundle's page.
+    ".bw-plugin-config{display:flex;flex-direction:column;gap:2px;padding:4px 0 8px}",
     ".bw-setting-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-secondary,#b8b8b8)}",
     ".bw-setting-label{flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--dsw-alias-label-secondary,#b8b8b8)}",
     ".bw-switch{box-sizing:border-box;position:relative;flex:0 0 auto;width:36px;height:20px;padding:2px;border:0;border-radius:10px;background:var(--dsw-alias-border-l3,rgba(127,127,127,.3));cursor:pointer;transition:background 120ms ease}",
@@ -1047,7 +1051,7 @@
     ".bw-preview-icon{flex:none;display:grid;place-items:center;width:20px;height:20px;color:var(--dsw-alias-label-primary,#e6e6e6)}",
     ".bw-preview-icon svg{width:18px;height:18px}",
     ".bw-preview-label{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:18px}",
-    ".bw-pulse{animation:bw-breathe 1.8s ease-in-out infinite}",
+    ".bw-pulse{display:inline-flex;align-items:center;justify-content:center;animation:bw-breathe 1.8s ease-in-out infinite}",
     "@keyframes bw-breathe{0%,100%{filter:drop-shadow(0 0 1px var(--bw-pulse-color));opacity:.55}50%{filter:drop-shadow(0 0 6px var(--bw-pulse-color));opacity:1}}",
     ".bw-pulse-text{animation:bw-breathe-text 1.8s ease-in-out infinite}",
     "@keyframes bw-breathe-text{0%,100%{text-shadow:0 0 1px var(--bw-pulse-color);opacity:.65}50%{text-shadow:0 0 7px var(--bw-pulse-color);opacity:1}}",
@@ -1888,15 +1892,15 @@
       )
     );
   }
-  var sessionStateOf = (row) => {
+  var sessionStateOf = (row, current) => {
     if (!row) return null;
     if (row.pending === "approval" || row.pending === "plan-review" || row.pending === "question") return "warning";
     if (row.running || row.subagents > 0) return "ongoing";
-    if (row.completed) return "done";
+    if (row.completed && current !== true) return "done";
     return null;
   };
   var PULSE_RANK = { warning: 3, ongoing: 2, done: 1 };
-  var PULSE_COLORS = { warning: "#d29922", ongoing: "#5b8def", done: "#3fb950" };
+  var PULSE_COLORS = { warning: "#d29922", ongoing: "#ff9f45", done: "#3fb950" };
   var pulseRank = (state) => state ? PULSE_RANK[state] || 0 : 0;
   function PulseGlow({ state, children }) {
     return E("span", {
@@ -1904,12 +1908,21 @@
       style: { "--bw-pulse-color": PULSE_COLORS[state] || PULSE_COLORS.ongoing }
     }, children);
   }
-  var relayStateOf = (row) => {
-    const s = sessionStateOf(row);
+  var STATUS_DOT_SIZE = 6;
+  function StatusDot({ state, size = STATUS_DOT_SIZE, label }) {
+    return E("span", {
+      className: "bw-state-dot",
+      role: label ? "img" : void 0,
+      "aria-label": label,
+      style: { width: size, height: size, background: PULSE_COLORS[state] }
+    });
+  }
+  var relayStateOf = (row, current) => {
+    const s = sessionStateOf(row, current);
     return s === "ongoing" ? null : s;
   };
   function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
-    const state = sessionStateOf(node);
+    const state = sessionStateOf(node, current);
     const status = state === null ? null : {
       state,
       title: state === "warning" ? t("status." + (node.pending === "plan-review" ? "planReview" : node.pending)) : state === "ongoing" ? node.running ? t("status.running") : t("status.subagents", { n: node.subagents }) : t("status.completed")
@@ -1967,7 +1980,7 @@
       E(
         "span",
         { className: "bw-row-icon", title: status ? status.title : void 0 },
-        status && typeof ui.StateDot === "function" ? state === "ongoing" && breathing ? E(PulseGlow, { state: "ongoing" }, E(ui.StateDot, { state: status.state, size: 10 })) : E(ui.StateDot, { state: status.state, size: 10 }) : E("span", { className: "bw-dot" })
+        status ? state === "ongoing" ? breathing ? E(PulseGlow, { state: "ongoing" }, E(StatusDot, { state: "ongoing", label: status.title })) : E(StatusDot, { state: "ongoing", label: status.title }) : E(StatusDot, { state: status.state, label: status.title }) : E("span", { className: "bw-dot" })
       ),
       E("span", { className: "bw-row-label" }, node.leaf || node.title),
       node.archived ? E("span", { className: "bw-archive-mark", role: "img", "aria-label": t("session.archived"), title: t("session.archived") }, icon("IconArchiveOutline20", 14)) : null,
@@ -1995,8 +2008,8 @@
       },
       E("span", { className: cls("bw-chevron", expanded && "bw-chevron-open") }, icon("IconTriangleRightFill14", 14)),
       // Session groups have no icon slot: a collapsed group with hidden
-      // status relays through a breathing official StateDot instead.
-      pulse ? E(PulseGlow, { state: pulse }, typeof ui.StateDot === "function" ? E(ui.StateDot, { state: pulse, size: 10 }) : null) : null,
+      // status relays through the same breathing dot as the rows inside it.
+      pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse })) : null,
       E("span", { className: "bw-row-label" }, name),
       count > 0 ? E("span", { className: "bw-row-count" }, String(count)) : null
     );
@@ -2012,6 +2025,7 @@
       archivedFilter,
       subCounts,
       pending,
+      statuses,
       t,
       sessionSectionOf,
       drag,
@@ -2031,9 +2045,11 @@
       accounted.add(id);
       workspaceIndexOf.set(id, workspace.workspaceId);
     }
+    const statusOf = (id) => statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
     const sessionRowOf = (id) => {
       const summary = list && list.byId ? list.byId[id] : void 0;
       if (!sessionVisible(summary, list ? list.current : void 0, archivedSet, archivedFilter)) return null;
+      const status = statusOf(id);
       const workspace = (items || []).find((item) => item.workspaceId === workspaceIndexOf.get(id));
       return {
         id,
@@ -2042,12 +2058,14 @@
         leaf: sessionTitleOf(summary, t),
         blank: !!summary.blank,
         archived: archivedSet.has(id),
-        running: !!summary.running,
-        completed: summary.completed === true,
+        // The status store wins when present; the list snapshot only carries the
+        // older fields (and no live running flag at all).
+        running: status && status.running !== void 0 ? status.running === true : !!summary.running,
+        completed: status ? status.completionUnread === true : summary.completed === true,
         hasActiveSchedule: hasActiveScheduleOf(summary),
         subagents: subCounts.get(id) || 0,
         updatedAt: summary.updatedAt || 0,
-        pending: pendingKindOf(pending, id)
+        pending: pendingKindOf(pending, id) || statusPendingKindOf(status)
       };
     };
     const ungrouped = [];
@@ -2112,6 +2130,7 @@
     };
     const searched = normalizedQuery ? searchAgent(tree) : null;
     const searching = normalizedQuery !== "";
+    const viewedSessionId = list && list.current !== void 0 && list.current !== null ? String(list.current) : null;
     const nodePulseOf = (sessionNode) => {
       let best = null;
       for (const group of sessionNode.groups || []) {
@@ -2119,7 +2138,7 @@
         if (pulseRank(s) > pulseRank(best)) best = s;
       }
       for (const row of sessionNode.sessions || []) {
-        const s = relayStateOf(row);
+        const s = relayStateOf(row, viewedSessionId !== null && String(row.id) === viewedSessionId);
         if (pulseRank(s) > pulseRank(best)) best = s;
       }
       return best;
@@ -2816,7 +2835,9 @@
         key: String(session.id) + (inTray ? "-tray" : ""),
         node: session,
         depth,
-        current: list && list.current === session.id,
+        // Ids compare as strings so the row and the collapse relay (model.js)
+        // agree on which session is on screen whatever the host hands over.
+        current: !!list && list.current !== void 0 && list.current !== null && String(list.current) === String(session.id),
         now,
         onOpen: (id) => {
           if (session.archived) setErrorText(t("session.archivedHint"));
@@ -3967,35 +3988,9 @@
       E("div", { className: "bw-hint" }, t("view.hint"))
     );
   }
-  function BetterWorkspacePluginCard({ useStore, actions, t }) {
-    const [open, setOpen] = React.useState(false);
-    const Chevron = resolveIcon("IconChevronDownOutline14");
-    return E(
-      "li",
-      { className: cls("bw-plugin-card", open && "bw-plugin-card-open") },
-      E(
-        "button",
-        {
-          type: "button",
-          className: "bw-plugin-head",
-          "aria-expanded": open,
-          "aria-label": (open ? t("settings.collapse") : t("settings.expand")) + ": " + t("settings.title"),
-          onClick: () => setOpen(!open)
-        },
-        E(
-          "span",
-          { className: "bw-plugin-headtext" },
-          E("span", { className: "bw-plugin-name" }, t("settings.title")),
-          E("span", { className: "bw-plugin-desc" }, t("settings.desc"))
-        ),
-        Chevron ? E(Chevron, { size: 14, className: cls("bw-plugin-chevron", open && "bw-plugin-chevron-open") }) : null
-      ),
-      open ? E(
-        "div",
-        { className: "bw-plugin-body" },
-        E(BetterWorkspaceSettings, { useStore, actions, t })
-      ) : null
-    );
+  function BetterWorkspaceBundleConfig({ view, useStore, actions, t }) {
+    if (view !== "page") return null;
+    return E("div", { className: "bw-plugin-config" }, E(BetterWorkspaceSettings, { useStore, actions, t }));
   }
 
   // src/client/index.js
@@ -4004,11 +3999,13 @@
     factory: (hostRequire) => {
       installPlatform(hostRequire);
       const QuietBoundary = createQuietBoundary();
+      let statusStoreWarned = false;
       function BetterBrowser(props) {
         const {
           wide,
           expandSidebar,
           useSessions,
+          useSessionStatus,
           useSessionPendingInteraction,
           useWorkspaces,
           useStore,
@@ -4040,6 +4037,11 @@
         const phase = useWorkspaces((s) => s.phase);
         const archivedSessionIds = useWorkspaces((s) => s.archivedSessionIds) || [];
         const list = useSessions((s) => s);
+        const statuses = typeof useSessionStatus === "function" ? useSessionStatus((s) => s) : null;
+        if (statuses === null && !statusStoreWarned) {
+          statusStoreWarned = true;
+          console.warn("[dsh-workspace-plus] host status store missing; session status dots fall back to the session list snapshot");
+        }
         const pending = useSessionPendingInteraction ? useSessionPendingInteraction((s) => s) : null;
         const storeFolders = useStore ? useStore((s) => s.folders) || [] : [];
         const workspaceGroups = useStore ? useStore((s) => s.workspaceGroups) || [] : [];
@@ -4066,7 +4068,16 @@
         const pinnedList = useStore ? useStore((s) => s.pinned) || [] : [];
         const statusPulse = prefsMap.statusPulse !== false;
         const archivedSet = new Set(archivedSessionIds);
-        const subCounts = React.useMemo(() => subagentRunningCounts(list ? list.byId : {}), [list ? list.byId : null]);
+        const runningOf = (id) => {
+          const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
+          if (status && status.running !== void 0) return status.running === true;
+          const summary = list && list.byId ? list.byId[id] : void 0;
+          return !!(summary && summary.running === true);
+        };
+        const subCounts = React.useMemo(
+          () => subagentRunningCounts(list ? list.byId : {}, statuses ? runningOf : null),
+          [list ? list.byId : null, statuses]
+        );
         const pinnedSet = new Set(pinnedList.map(String).filter((id) => !archivedSet.has(id)));
         const workspaceTitleOf = (workspaceId) => {
           const workspace = (items || []).find((w) => w.workspaceId === workspaceId);
@@ -4276,6 +4287,7 @@
           archivedFilter,
           subCounts,
           pending,
+          statuses,
           t,
           sessionSectionOf,
           drag,
@@ -4674,15 +4686,15 @@
           { name: "sidebar.workspaces.directoryFlow", store: viewStore, inject: flowInjected("sidebar.workspaces.directoryFlow"), locale: NS, priority: -1 },
           BetterFlow
         ));
-        slots.inject("settings.plugin.item", guarded(
-          "settings.plugin.item",
+        slots.inject("plugins.bundle.config", guarded(
+          "plugins.bundle.config",
           {
-            name: "settings.plugin.item",
-            key: "better-workspace",
+            name: "plugins.bundle.config",
+            key: "dsh-workspace-plus",
             locale: NS,
             store: viewStore
           },
-          BetterWorkspacePluginCard
+          BetterWorkspaceBundleConfig
         ));
         slots.inject("sidebar.workspaces", guarded(
           "sidebar.workspaces",

@@ -92,7 +92,7 @@ export const zh = {
   'settings.compactChains': '单链分组折叠显示',
   'settings.compactChains.hint': '单层链合并为一行,出现多个子级时自动展开为树状;拖拽工作区期间单链临时展开回文件夹树,可放入任意一级;展开状态与自定义外观保存在当前浏览器。',
   'settings.statusPulse': '状态呼吸灯',
-  'settings.statusPulse.hint': '被折叠藏起的状态灯(完成绿 / 运行蓝 / 待交互琥珀)沿层级向外冒泡:工作区与分组行以图标呼吸发光(颜色随状态,自定义过发光的标题一起呼吸),会话分组行显示呼吸状态灯;默认开启,可在此关闭。',
+  'settings.statusPulse.hint': '被折叠藏起的状态灯(完成绿 / 运行橙 / 待交互琥珀)沿层级向外冒泡:工作区与分组行以图标呼吸发光(颜色随状态,自定义过发光的标题一起呼吸),会话分组行显示呼吸状态灯;默认开启,可在此关闭。',
   'custom.title': '自定义外观',
   'custom.color': '颜色',
   'custom.glow': '发光',

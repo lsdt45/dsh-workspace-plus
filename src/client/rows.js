@@ -104,12 +104,16 @@ export function WorkspaceRow({ workspace, depth, count, sessionsOpen, onToggle, 
 
 
 // Official status priority: pending interaction > running > running
-// subagents > completed reminder; idle rows show no dot at all.
-export const sessionStateOf = (row) => {
+// subagents > completed reminder; idle rows show no dot at all. A session the
+// user is looking at is read by definition: its completion reminder is
+// suppressed, or the row would advertise "unread" for the conversation on
+// screen. `current` is the row's own flag, so every caller that knows which
+// session is on screen (the sidebar row, the collapse relay) passes it down.
+export const sessionStateOf = (row, current) => {
   if (!row) return null
   if (row.pending === 'approval' || row.pending === 'plan-review' || row.pending === 'question') return 'warning'
   if (row.running || row.subagents > 0) return 'ongoing'
-  if (row.completed) return 'done'
+  if (row.completed && current !== true) return 'done'
   return null
 }
 
@@ -120,12 +124,15 @@ export const sessionStateOf = (row) => {
  * row. Workspace/folder rows breathe on their icon (drop-shadow glow in
  * the status color; a hidden/no icon falls back to the official StateDot);
  * session-group rows carry a breathing StateDot in front of the label.
- * Colors mirror the official dots: warning amber > ongoing blue > done
- * green, so the glow always matches the lamp it relays.
+ * Warning amber and done green mirror the official dots; RUNNING is
+ * deliberately not the official blue — the plugin draws that dot itself in
+ * orange (see StatusDot), so "running" can never be read as the amber
+ * "waiting for you" dot it sits next to. The glow always matches the lamp it
+ * relays, whichever component draws that lamp.
  */
 export const PULSE_RANK = { warning: 3, ongoing: 2, done: 1 }
 
-export const PULSE_COLORS = { warning: '#d29922', ongoing: '#5b8def', done: '#3fb950' }
+export const PULSE_COLORS = { warning: '#d29922', ongoing: '#ff9f45', done: '#3fb950' }
 
 export const pulseRank = (state) => (state ? (PULSE_RANK[state] || 0) : 0)
 
@@ -138,17 +145,46 @@ export function PulseGlow({ state, children }) {
 }
 
 
-// RUNNING deliberately stays on the session row itself (its official ring
-// breathes blue there) and does NOT bubble outward — the user found the
-// ongoing relay noisy. Only pending-amber and done-green propagate.
-export const relayStateOf = (row) => {
-  const s = sessionStateOf(row)
+/**
+ * Status-dot diameter: every state draws this size, so the three dots read as
+ * one family and a row never shifts when its session changes state.
+ */
+export const STATUS_DOT_SIZE = 6
+
+
+/**
+ * The one status dot all three states render.
+ *
+ * The plugin draws it instead of delegating to the official ui.StateDot: that
+ * component paints its own dot at a fixed 4px inside whatever box it is handed
+ * (a box of 6 and a box of 8 both render 4px — measured in the running app), so
+ * the unread/approval dots could never be matched to the running dot's size.
+ * Drawing all three keeps the diameters identical, and the colours come from
+ * PULSE_COLORS — the same table the breathing glow reads — so a dot and its
+ * glow can never drift apart. The host component itself stays untouched, so
+ * every other plugin keeps its own indicators.
+ */
+export function StatusDot({ state, size = STATUS_DOT_SIZE, label }) {
+  return E('span', {
+    className: 'bw-state-dot',
+    role: label ? 'img' : undefined,
+    'aria-label': label,
+    style: { width: size, height: size, background: PULSE_COLORS[state] },
+  })
+}
+
+
+// RUNNING deliberately stays on the session row itself (its orange dot
+// breathes there) and does NOT bubble outward — the user found the ongoing
+// relay noisy. Only pending-amber and done-green propagate.
+export const relayStateOf = (row, current) => {
+  const s = sessionStateOf(row, current)
   return s === 'ongoing' ? null : s
 }
 
 
 export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
-  const state = sessionStateOf(node)
+  const state = sessionStateOf(node, current)
   const status = state === null ? null : {
     state,
     title: state === 'warning'
@@ -204,12 +240,15 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
   },
     pinned ? E('span', { className: 'bw-pin-mark' }, E(PinIcon16, null)) : null,
     E('span', { className: 'bw-row-icon', title: status ? status.title : undefined },
-      status && typeof ui.StateDot === 'function'
-        ? (state === 'ongoing' && breathing
-          // Running breathes blue ON the session row only (never relays);
-          // the settings toggle covers this breathing too.
-          ? E(PulseGlow, { state: 'ongoing' }, E(ui.StateDot, { state: status.state, size: 10 }))
-          : E(ui.StateDot, { state: status.state, size: 10 }))
+      status
+        ? (state === 'ongoing'
+          // Running is the orange dot and the only state that breathes, ON the
+          // session row only (never relays); the settings toggle covers this
+          // breathing too.
+          ? (breathing
+            ? E(PulseGlow, { state: 'ongoing' }, E(StatusDot, { state: 'ongoing', label: status.title }))
+            : E(StatusDot, { state: 'ongoing', label: status.title }))
+          : E(StatusDot, { state: status.state, label: status.title }))
         : E('span', { className: 'bw-dot' }),
     ),
     E('span', { className: 'bw-row-label' }, node.leaf || node.title),
@@ -245,8 +284,8 @@ export function SessionGroupRow({ name, depth, expanded, count, onToggle, onCont
   },
     E('span', { className: cls('bw-chevron', expanded && 'bw-chevron-open') }, icon('IconTriangleRightFill14', 14)),
     // Session groups have no icon slot: a collapsed group with hidden
-    // status relays through a breathing official StateDot instead.
-    pulse ? E(PulseGlow, { state: pulse }, typeof ui.StateDot === 'function' ? E(ui.StateDot, { state: pulse, size: 10 }) : null) : null,
+    // status relays through the same breathing dot as the rows inside it.
+    pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse })) : null,
     E('span', { className: 'bw-row-label' }, name),
     count > 0 ? E('span', { className: 'bw-row-count' }, String(count)) : null,
   )

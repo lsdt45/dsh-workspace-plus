@@ -46,7 +46,7 @@ import { createMenu } from './browser/menu.js'
 import { createLayout } from './browser/layout.js'
 import { iconOf, colorToRgb, rgbToHex, FolderRow, WorkspaceGroupRow, WorkspaceRow, sessionStateOf, PULSE_RANK, PULSE_COLORS, pulseRank, PulseGlow, relayStateOf, SessionRow, SessionGroupRow } from './rows.js'
 import { SWATCHES, GLOW_MAX, ICON_CHOICES, CustomizeDialog } from './customize.js'
-import { BetterWorkspaceSettings, BetterWorkspacePluginCard } from './settings.js'
+import { BetterWorkspaceBundleConfig } from './settings.js'
 
 window.__ModuleLoader__.load({
   id: 'dsh-workspace-plus',
@@ -66,10 +66,12 @@ window.__ModuleLoader__.load({
 
     /* ============================= browser ============================ */
 
+    let statusStoreWarned = false
+
     function BetterBrowser(props) {
       const {
         wide, expandSidebar,
-        useSessions, useSessionPendingInteraction, useWorkspaces,
+        useSessions, useSessionStatus, useSessionPendingInteraction, useWorkspaces,
         useStore, actions,
         startSession, open, renameSession, forkSession, renameWorkspace, deleteWorkspace,
         archiveSession, unarchiveSession, createWorkspace, pickDirectory, insertWorkspaceBefore, insertSessionBefore,
@@ -86,6 +88,15 @@ window.__ModuleLoader__.load({
       const phase = useWorkspaces(s => s.phase)
       const archivedSessionIds = useWorkspaces(s => s.archivedSessionIds) || []
       const list = useSessions(s => s)
+      // Live session status lives in the host's own store: running,
+      // completion-unread and the pending interaction are NOT on the session
+      // list snapshot. Older hosts expose neither hook, so every read below
+      // falls back to the list fields.
+      const statuses = typeof useSessionStatus === 'function' ? useSessionStatus(s => s) : null
+      if (statuses === null && !statusStoreWarned) {
+        statusStoreWarned = true
+        console.warn('[dsh-workspace-plus] host status store missing; session status dots fall back to the session list snapshot')
+      }
       const pending = useSessionPendingInteraction ? useSessionPendingInteraction(s => s) : null
       const storeFolders = useStore ? (useStore(s => s.folders) || []) : []
       const workspaceGroups = useStore ? (useStore(s => s.workspaceGroups) || []) : []
@@ -113,7 +124,19 @@ window.__ModuleLoader__.load({
       const pinnedList = useStore ? (useStore(s => s.pinned) || []) : []
       const statusPulse = prefsMap.statusPulse !== false
       const archivedSet = new Set(archivedSessionIds)
-      const subCounts = React.useMemo(() => subagentRunningCounts(list ? list.byId : {}), [list ? list.byId : null])
+      // Same shape as the official row: the status store wins when it reports a
+      // running flag, and the list snapshot covers the sessions the store has
+      // not seeded yet (a subagent child is not in list.ids).
+      const runningOf = (id) => {
+        const status = statuses && typeof statuses.get === 'function' ? statuses.get(id) : undefined
+        if (status && status.running !== undefined) return status.running === true
+        const summary = list && list.byId ? list.byId[id] : undefined
+        return !!(summary && summary.running === true)
+      }
+      const subCounts = React.useMemo(
+        () => subagentRunningCounts(list ? list.byId : {}, statuses ? runningOf : null),
+        [list ? list.byId : null, statuses],
+      )
       // Pinned membership set + workspace lookup for the global pinned tray.
       const pinnedSet = new Set(pinnedList.map(String).filter(id => !archivedSet.has(id)))
       const workspaceTitleOf = (workspaceId) => {
@@ -325,7 +348,7 @@ window.__ModuleLoader__.load({
         sessionsOf, searchAgent, searched, nodePulseOf, wsPulseOf, wsAllPulseOf,
         folderPulseOf, folderExpanded, sessionsOpenOf, sessionGroupOpen,
       } = createBrowserModel({
-        normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, t,
+        normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
         sessionSectionOf, drag, sortOrder, viewMode, storeFolders, compactChains,
         workspaceGroupOf, statusPulse, expandedMap, sessionsExpandedMap, sessionGroupsMap,
       })
@@ -506,19 +529,20 @@ window.__ModuleLoader__.load({
         BetterFlow,
       ))
 
-      // Settings → Plugins card only (the tab dispatches the intersection of
-      // served namespaces — registered host-side — and settings.plugin.item
-      // cards). The old left-nav settings.section entry was removed: the
-      // plugins-section card is the single settings surface now.
-      slots.inject('settings.plugin.item', guarded(
-        'settings.plugin.item',
+      // Settings → Plugins: this bundle's own configuration, keyed by the
+      // bundle's package name. The shell renders it on the bundle's page
+      // between the description and the bundle's rows. (The older
+      // `settings.plugin.item` card slot is not dispatched by this shell, so
+      // the card it carried never appeared.)
+      slots.inject('plugins.bundle.config', guarded(
+        'plugins.bundle.config',
         {
-          name: 'settings.plugin.item',
-          key: 'better-workspace',
+          name: 'plugins.bundle.config',
+          key: 'dsh-workspace-plus',
           locale: NS,
           store: viewStore,
         },
-        BetterWorkspacePluginCard,
+        BetterWorkspaceBundleConfig,
       ))
 
       // 3. the browser itself — lowest priority renders, shadowing the shipped entry.

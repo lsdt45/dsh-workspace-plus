@@ -92,7 +92,7 @@ export const en = {
   'settings.compactChains': 'Merge single-child chains',
   'settings.compactChains.hint': 'Single-child chains merge into one row; levels with multiple children expand as a tree. Chains re-expand into folder rows while you drag a workspace, so it can drop into any level. State and custom styling persist in this browser.',
   'settings.statusPulse': 'Status breathing light',
-  'settings.statusPulse.hint': 'Status dots hidden by collapse (done green / running blue / pending amber) bubble outward: workspace and folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; on by default, turn it off here.',
+  'settings.statusPulse.hint': 'Status dots hidden by collapse (done green / running orange / pending amber) bubble outward: workspace and folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; on by default, turn it off here.',
   'custom.title': 'Customize',
   'custom.color': 'Color',
   'custom.glow': 'Glow',

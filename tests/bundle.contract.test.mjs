@@ -100,7 +100,10 @@ test('apply() occupies the four seats and registers the dictionary', () => {
   const holes = injected.map(([hole]) => hole).sort()
   assert.deepEqual(holes, [
     'conversation.hero.workspace.directoryFlow',
-    'settings.plugin.item',
+    // The plugin page in Settings → Plugins dispatches this keyed slot by the
+    // bundle's package name; the older settings.plugin.item card slot is not
+    // dispatched by this shell.
+    'plugins.bundle.config',
     'sidebar.workspaces',
     'sidebar.workspaces.directoryFlow',
   ])

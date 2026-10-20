@@ -5,23 +5,26 @@
  * The component destructures the result back into the names its render body
  * already uses.
  */
-import { sessionVisible, orderRows, pendingKindOf, sessionTitleOf, hasActiveScheduleOf } from '../core/view.js'
+import { sessionVisible, orderRows, pendingKindOf, statusPendingKindOf, sessionTitleOf, hasActiveScheduleOf } from '../core/view.js'
 import { buildSessionTree, buildTree, buildWorkspaceList, compressTree, materializeChain } from '../core/tree.js'
 import { pulseRank, relayStateOf } from '../rows.js'
 
 /** Inputs are host snapshots, view preferences and two injected predicates. */
 export function createBrowserModel(input) {
   const {
-    normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, t,
+    normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
     sessionSectionOf, drag, sortOrder, viewMode, storeFolders, compactChains,
     workspaceGroupOf, statusPulse, expandedMap, sessionsExpandedMap, sessionGroupsMap,
   } = input
 const accounted = new Set()
 const workspaceIndexOf = new Map()
 for (const workspace of items || []) for (const id of workspace.sessionIds || []) { accounted.add(id); workspaceIndexOf.set(id, workspace.workspaceId) }
+/** One session's live status record, when the profile serves the status store. */
+const statusOf = (id) => (statuses && typeof statuses.get === 'function' ? statuses.get(id) : undefined)
 const sessionRowOf = (id) => {
   const summary = list && list.byId ? list.byId[id] : undefined
   if (!sessionVisible(summary, list ? list.current : undefined, archivedSet, archivedFilter)) return null
+  const status = statusOf(id)
   const workspace = (items || []).find(item => item.workspaceId === workspaceIndexOf.get(id))
   return {
     id,
@@ -30,12 +33,14 @@ const sessionRowOf = (id) => {
     leaf: sessionTitleOf(summary, t),
     blank: !!summary.blank,
     archived: archivedSet.has(id),
-    running: !!summary.running,
-    completed: summary.completed === true,
+    // The status store wins when present; the list snapshot only carries the
+    // older fields (and no live running flag at all).
+    running: status && status.running !== undefined ? status.running === true : !!summary.running,
+    completed: status ? status.completionUnread === true : summary.completed === true,
     hasActiveSchedule: hasActiveScheduleOf(summary),
     subagents: subCounts.get(id) || 0,
     updatedAt: summary.updatedAt || 0,
-    pending: pendingKindOf(pending, id),
+    pending: pendingKindOf(pending, id) || statusPendingKindOf(status),
   }
 }
 const ungrouped = []
@@ -114,6 +119,9 @@ const searchAgent = (agent) => {
 }
 const searched = normalizedQuery ? searchAgent(tree) : null
 const searching = normalizedQuery !== ''
+// The session on screen is read by definition, so a collapse relay must not
+// bubble its completion reminder either (the row suppresses it on its own).
+const viewedSessionId = list && list.current !== undefined && list.current !== null ? String(list.current) : null
 const nodePulseOf = (sessionNode) => {
   let best = null
   for (const group of sessionNode.groups || []) {
@@ -121,7 +129,7 @@ const nodePulseOf = (sessionNode) => {
     if (pulseRank(s) > pulseRank(best)) best = s
   }
   for (const row of sessionNode.sessions || []) {
-    const s = relayStateOf(row)
+    const s = relayStateOf(row, viewedSessionId !== null && String(row.id) === viewedSessionId)
     if (pulseRank(s) > pulseRank(best)) best = s
   }
   return best

@@ -1,9 +1,8 @@
 /** Settings surface: the plugin-page card body and the Plugins-tab accordion card. */
 
-import { React, E } from './platform.js'
+import { E } from './platform.js'
 import { cls } from './core/text.js'
 import { VIEW_MODES, ARCHIVED_FILTERS, viewStateOf } from './core/view.js'
-import { resolveIcon } from './icons.js'
 import { StyleNode } from './ui/base.js'
 
 
@@ -65,27 +64,20 @@ export function BetterWorkspaceSettings({ useStore, actions, t }) {
 }
 
 
-/* --------- settings → plug-ins card (accordion like official cards) --------- */
+/* ---------- settings → plugins page: this bundle's configuration ---------- */
 
-export function BetterWorkspacePluginCard({ useStore, actions, t }) {
-  const [open, setOpen] = React.useState(false)
-  const Chevron = resolveIcon('IconChevronDownOutline14')
-  return E('li', { className: cls('bw-plugin-card', open && 'bw-plugin-card-open') },
-    E('button', {
-      type: 'button',
-      className: 'bw-plugin-head',
-      'aria-expanded': open,
-      'aria-label': (open ? t('settings.collapse') : t('settings.expand')) + ': ' + t('settings.title'),
-      onClick: () => setOpen(!open),
-    },
-      E('span', { className: 'bw-plugin-headtext' },
-        E('span', { className: 'bw-plugin-name' }, t('settings.title')),
-        E('span', { className: 'bw-plugin-desc' }, t('settings.desc')),
-      ),
-      Chevron ? E(Chevron, { size: 14, className: cls('bw-plugin-chevron', open && 'bw-plugin-chevron-open') }) : null,
-    ),
-    open ? E('div', { className: 'bw-plugin-body' },
-      E(BetterWorkspaceSettings, { useStore, actions, t }),
-    ) : null,
-  )
+/**
+ * The body of the plugin's page in Settings → Plugins.
+ *
+ * The shell dispatches `plugins.bundle.config` by the bundle's package name and
+ * asks for two views: `summary` (the one-liner beside the row) and `page` (the
+ * body between the bundle's description and its rows). Only the page needs UI;
+ * the row already carries the plugin's own name and description.
+ *
+ * The controls write the plugin's browser-side store — the same preferences the
+ * sidebar reads — so a change here is live immediately.
+ */
+export function BetterWorkspaceBundleConfig({ view, useStore, actions, t }) {
+  if (view !== 'page') return null
+  return E('div', { className: 'bw-plugin-config' }, E(BetterWorkspaceSettings, { useStore, actions, t }))
 }

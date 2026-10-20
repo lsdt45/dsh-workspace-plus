@@ -44,6 +44,17 @@ export const pendingKindOf = (pending, id) => {
   return p.kind || p.status || p.type || 'pending'
 }
 
+/**
+ * Pending-interaction kind from the host status store. That store is the live
+ * source of session status (running / completion-unread / pending
+ * interaction); the session list snapshot carries none of it.
+ */
+export const statusPendingKindOf = (status) => {
+  const p = status && status.pendingInteraction
+  if (!p) return undefined
+  return p.kind || p.status || p.type || 'pending'
+}
+
 export const sessionTitleOf = (summary, t) => {
   if (!summary) return ''
   if (summary.blank) return t('session.new')
@@ -69,7 +80,7 @@ export const hasActiveScheduleOf = (summary) => !!(summary
  * parentId on the wire); the old parentSessionId spelling is kept as a
  * fallback for profiles serving the pre-rename shape.
  */
-export const subagentRunningCounts = (byId) => {
+export const subagentRunningCounts = (byId, runningOf) => {
   const children = new Map()
   for (const id of Object.keys(byId || {})) {
     const summary = byId[id]
@@ -87,7 +98,8 @@ export const subagentRunningCounts = (byId) => {
       const summary = queue.shift()
       if (!summary || seen.has(summary.id)) continue
       seen.add(summary.id)
-      if (summary.running) count += 1
+      const running = typeof runningOf === 'function' ? runningOf(summary.id) === true : !!summary.running
+      if (running) count += 1
       const kids = children.get(summary.id)
       if (kids) for (const kid of kids) queue.push(kid)
     }

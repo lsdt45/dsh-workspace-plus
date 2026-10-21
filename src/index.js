@@ -4,7 +4,7 @@
  * The feature lives in the client half (src/client.js): the hierarchy tree,
  * the add-workspace parent-group popup, and view state (persisted in the
  * browser through the dsh client store). This host half carries the one
- * operation the browser cannot perform, plus the settings namespace.
+ * operation the browser cannot perform.
  *
  *  - `POST /dsh-workspace-plus/delete-session` — permanent session deletion.
  *    DSH ships archive but no delete RPC, so the plugin owns one: the pipeline
@@ -21,7 +21,8 @@
  *         environment (DSH injects it into tool subprocesses only), so the
  *         sessions root is read from the persistence service itself.
  *
- *  - Settings → Plugins card (namespace `better-workspace`).
+ * The configuration page lives in the client half (`plugins.bundle.config`);
+ * this host half exposes no settings service.
  */
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'

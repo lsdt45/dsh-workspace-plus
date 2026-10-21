@@ -42,19 +42,24 @@ export const CSS_TEXT = [
   // session's chips and utilities disappear). The crumbs line is the only element
   // carrying the title; the status chips and right-hand controls are siblings of it
   // inside the session header and stay where they are.
-  'header[data-window-drag] [class*="_crumbs"]{display:none}',
+  //
+  // All header overrides below are scoped to "tabs are shown" (the plugin
+  // settings page can turn the strip off): with tabs off the shell's header must
+  // render exactly as shipped, title line included. tabs-strip.js mirrors the
+  // switch into data-bw-tabs-off on <html>.
+  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_crumbs"]{display:none}',
   // The session's own chips (agent team / PTC mode / subagents) share the view
   // navigation row instead of the tab row: the nav row is the last line of the
   // header, so pinning them to its bottom-right corner puts them after the
   // view chips with no extra header height. Absolute positioning keeps the
   // shell's own header layout untouched.
-  'header[data-window-drag]{position:relative}',
+  'html:not([data-bw-tabs-off]) header[data-window-drag]{position:relative}',
   // z-index lifts the block above the view-nav row it is pinned onto: without it
   // the row paints over the chips and swallows their clicks.
   // left comes from useChipsAfterNav(): the measured end of the view-nav row.
   // Until it lands (first paint, markup drift) the rule falls back to the old
   // right-aligned spot.
-  'header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
   // Session tab strip: compact chips in the conversation header, one per open
   // session. The chip's dot is .bw-state-dot, so the three states stay identical.
   // Session tab strip, modelled on the reference: dot + label chips with a

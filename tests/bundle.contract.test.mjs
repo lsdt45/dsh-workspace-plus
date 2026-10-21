@@ -95,10 +95,13 @@ function applyAgainstStubContext() {
   return { injected, dictionaries }
 }
 
-test('apply() occupies the four seats and registers the dictionary', () => {
+test('apply() occupies the five seats and registers the dictionary', () => {
   const { injected, dictionaries } = applyAgainstStubContext()
   const holes = injected.map(([hole]) => hole).sort()
   assert.deepEqual(holes, [
+    // Session tabs: the chip row rides the free leading seat of the conversation
+    // header (the band's far left), before the session title.
+    'conversation.header.leading',
     'conversation.hero.workspace.directoryFlow',
     // The plugin page in Settings → Plugins dispatches this keyed slot by the
     // bundle's package name; the older settings.plugin.item card slot is not

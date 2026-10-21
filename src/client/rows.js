@@ -164,7 +164,13 @@ export const STATUS_DOT_SIZE = 6
  * glow can never drift apart. The host component itself stays untouched, so
  * every other plugin keeps its own indicators.
  */
-export function StatusDot({ state, size = STATUS_DOT_SIZE, label }) {
+export function StatusDot({ state, size = STATUS_DOT_SIZE, label, native }) {
+  // "Enable status dots" turned off: hand the state back to the host's own
+  // status-light primitive — the look the plugin used before it drew the dots
+  // itself — instead of the unified plugin dot.
+  if (native === true && ui && typeof ui.StateDot === 'function') {
+    return E(ui.StateDot, { state, size: 10 })
+  }
   return E('span', {
     className: 'bw-state-dot',
     role: label ? 'img' : undefined,
@@ -183,7 +189,7 @@ export const relayStateOf = (row, current) => {
 }
 
 
-export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
+export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, statusDots, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
   const state = sessionStateOf(node, current)
   const status = state === null ? null : {
     state,
@@ -247,9 +253,9 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
           // session row only (never relays); the settings toggle covers this
           // breathing too.
           ? (breathing
-            ? E(PulseGlow, { state: 'ongoing' }, E(StatusDot, { state: 'ongoing', label: status.title }))
-            : E(StatusDot, { state: 'ongoing', label: status.title }))
-          : E(StatusDot, { state: status.state, label: status.title }))
+            ? E(PulseGlow, { state: 'ongoing' }, E(StatusDot, { state: 'ongoing', label: status.title, native: statusDots === false }))
+            : E(StatusDot, { state: 'ongoing', label: status.title, native: statusDots === false }))
+          : E(StatusDot, { state: status.state, label: status.title, native: statusDots === false }))
         : E('span', { className: 'bw-dot' }),
     ),
     E('span', { className: 'bw-row-label' }, node.leaf || node.title),
@@ -272,7 +278,7 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
  * titles). Deliberately NOT styled like a workspace folder — no folder
  * icon, tertiary color — so a session level never reads as a workspace.
  */
-export function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, t }) {
+export function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, statusDots, t }) {
   return E('div', {
     'data-bw-context': 'session-group',
     className: cls('bw-row', 'bw-sgroup-row', dropInto && 'bw-drop-into'),
@@ -286,7 +292,7 @@ export function SessionGroupRow({ name, depth, expanded, count, onToggle, onCont
     E('span', { className: cls('bw-chevron', expanded && 'bw-chevron-open') }, icon('IconTriangleRightFill14', 14)),
     // Session groups have no icon slot: a collapsed group with hidden
     // status relays through the same breathing dot as the rows inside it.
-    pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse })) : null,
+    pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse, native: statusDots === false })) : null,
     E('span', { className: 'bw-row-label' }, name),
     count > 0 ? E('span', { className: 'bw-row-count' }, String(count)) : null,
   )

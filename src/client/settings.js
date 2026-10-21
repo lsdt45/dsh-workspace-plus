@@ -25,32 +25,31 @@ export function BetterWorkspaceSettings({ useStore, actions, t }) {
       }, t(key))),
     ),
   )
+  // Every on/off preference is one switch + hint pair; the first two are the
+  // "restore the host-native UI" escape hatches (tab strip, plugin-drawn dots).
+  const switches = [
+    ['showTabs', prefs.showTabs !== false],
+    ['statusDots', prefs.statusDots !== false],
+    ['compactChains', compactChains],
+    ['statusPulse', statusPulse],
+  ]
+  const switchRow = ([key, value], index) => [
+    E('div', { className: 'bw-setting-row', key: 'row-' + key, style: index === 0 ? undefined : { marginTop: 10 } },
+      E('div', { className: 'bw-setting-label' }, t('settings.' + key)),
+      E('button', {
+        type: 'button',
+        role: 'switch',
+        'aria-checked': value,
+        'aria-label': t('settings.' + key),
+        className: cls('bw-switch', value && 'bw-switch-on'),
+        onClick: () => { actions.setPref(key, !value) },
+      }, E('span', { className: 'bw-switch-thumb' })),
+    ),
+    E('div', { className: 'bw-hint', key: 'hint-' + key }, t('settings.' + key + '.hint')),
+  ]
   return E('div', { className: 'bw-settings' },
     StyleNode(),
-    E('div', { className: 'bw-setting-row' },
-      E('div', { className: 'bw-setting-label' }, t('settings.compactChains')),
-      E('button', {
-        type: 'button',
-        role: 'switch',
-        'aria-checked': compactChains,
-        'aria-label': t('settings.compactChains'),
-        className: cls('bw-switch', compactChains && 'bw-switch-on'),
-        onClick: () => { actions.setPref('compactChains', !compactChains) },
-      }, E('span', { className: 'bw-switch-thumb' })),
-    ),
-    E('div', { className: 'bw-hint' }, t('settings.compactChains.hint')),
-    E('div', { className: 'bw-setting-row', style: { marginTop: 10 } },
-      E('div', { className: 'bw-setting-label' }, t('settings.statusPulse')),
-      E('button', {
-        type: 'button',
-        role: 'switch',
-        'aria-checked': statusPulse,
-        'aria-label': t('settings.statusPulse'),
-        className: cls('bw-switch', statusPulse && 'bw-switch-on'),
-        onClick: () => { actions.setPref('statusPulse', !statusPulse) },
-      }, E('span', { className: 'bw-switch-thumb' })),
-    ),
-    E('div', { className: 'bw-hint' }, t('settings.statusPulse.hint')),
+    ...switches.flatMap(switchRow),
     choices('view.grouping', VIEW_MODES.map(mode => [mode, 'view.' + mode]), viewMode, mode => actions.setViewMode(mode)),
     choices('view.sort', [['manual', 'view.sort.manual'], ['latest', 'view.sort.latest']], viewMode === 'time' ? 'latest' : sortOrder, order => actions.setSortOrder(order), viewMode === 'time'),
     viewMode === 'time'

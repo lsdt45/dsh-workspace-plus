@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Better Workspaces (dsh-workspace-plus)",
+    "description": "Hierarchical workspace tree and browser-style session tabs for the sidebar: a \"/\" in a workspace title becomes a folder; sections, pinning, time buckets, status dots, drag ordering and a plugin settings page."
+  }
+}

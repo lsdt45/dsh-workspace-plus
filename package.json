@@ -1,7 +1,7 @@
 {
   "name": "dsh-workspace-plus",
-  "version": "0.2.2",
-  "description": "DSH web plugin: a hierarchical workspace tree for the sidebar with time-bucket sorting and session pinning. Workspace titles containing \"/\" group into virtual folders (web/前端 · web/后端); sessions sort by recency buckets (today/yesterday/7d/30d/earlier) or pin to the top of the sidebar.",
+  "version": "1.0.0",
+  "description": "DSH web plugin: a hierarchical workspace tree for the sidebar with browser-style session tabs, time-bucket sorting and session pinning. Workspace titles containing \"/\" group into virtual folders (web/前端 · web/后端); sessions open in replaceable tabs (Shift+click for a new one, drag to reorder), sort by recency buckets (today/yesterday/7d/30d/earlier) or pin to the top of the sidebar.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -13,7 +13,9 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./client": "./src/client.js"
+    "./client": "./src/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "engines": {
     "node": ">=18"
@@ -40,6 +42,7 @@
     "src/client",
     "cordis.patch.yml",
     "dsh.plugin.json",
+    "locale",
     "README.md",
     "README_EN.md",
     "LICENSE"

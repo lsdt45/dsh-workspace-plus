@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-workspace-plus · 侧边栏视图配置增强 · 会话转录</title>
+<link rel="preconnect" href="https://fonts.googleapis.cn">
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin>
+<link href="https://fonts.googleapis.cn/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F8FAFC; --surface:#FFFFFF; --fg:#1E293B; --fg-soft:#475569; --muted:#64748B;
+  --muted-bg:#EAEFF3; --border:#E2E8F0; --accent:#2563EB; --accent-soft:#EFF6FF;
+  --success:#16A34A; --warn:#B45309; --warn-bg:#FFFBEB;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 2px 8px rgba(15,23,42,.04);
+  --sans:'IBM Plex Sans','PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono','Menlo','Consolas',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--fg);font-size:14.5px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:940px;margin:0 auto;padding:0 18px}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono)}
+.slim{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 0}
+.slim .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.slim h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+.slim h1 svg{color:var(--accent);flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid}
+.badge.warn{color:var(--warn);background:var(--warn-bg);border-color:#FDE68A}
+.badge.ok{color:var(--success);background:#F0FDF4;border-color:#BBF7D0}
+.badge.neutral{color:var(--fg-soft);background:var(--bg);border-color:var(--border)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.slim .row2{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--fg);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;transition:border-color .18s,background .18s;max-width:100%}
+.chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chip svg{width:11px;height:11px;color:var(--muted);flex-shrink:0}
+.chip .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat{padding:26px 0 40px}
+.turn{display:flex;margin:16px 0;gap:10px}
+.turn.user{justify-content:flex-end}
+.avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:2px}
+.avatar.ai{background:var(--accent);color:#fff}
+.avatar.u{background:#E2E8F0;color:#64748B}
+.avatar.u svg{width:16px;height:16px}
+.bubble{padding:10px 15px;font-size:14px;min-width:0}
+.bubble.u{background:var(--accent);color:#fff;border-radius:12px 4px 12px 12px;max-width:76%;white-space:pre-wrap;word-break:break-word}
+.bubble.u .mono{background:rgba(255,255,255,.16);border-radius:4px;padding:0 5px;font-size:12px;word-break:break-all}
+.bubble.u code{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3);color:#fff}
+.bubble.u .shot img{display:block;max-width:100%;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,.45);background:#fff}
+.bubble.u .shot .cap{display:block;font-size:11px;opacity:.72;margin-top:4px}
+.bubble.u details.orig{margin-top:8px;border-top:1px dashed rgba(255,255,255,.35);padding-top:6px}
+.bubble.u details.orig summary{cursor:pointer;font-size:11.5px;font-weight:600;opacity:.92;list-style:none}
+.bubble.u details.orig summary::-webkit-details-marker{display:none}
+.bubble.u details.orig summary:hover{text-decoration:underline}
+.bubble.u details.orig pre{font-family:var(--mono);font-size:11px;line-height:1.65;white-space:pre-wrap;word-break:break-word;background:rgba(15,23,42,.18);border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:8px 10px;margin-top:7px;max-height:320px;overflow:auto}
+.bubble.a{background:var(--surface);border:1px solid var(--border);border-radius:4px 12px 12px 12px;max-width:82%;box-shadow:var(--shadow);padding:10px 16px 14px}
+.acts{margin-bottom:6px}
+.acts summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--muted);border:1px dashed var(--border);border-radius:6px;padding:2px 9px;transition:color .18s,border-color .18s}
+.acts summary::-webkit-details-marker{display:none}
+.acts summary:hover{color:var(--accent);border-color:var(--accent)}
+.acts summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.acts summary svg{width:11px;height:11px;transition:transform .2s}
+.acts[open] summary svg{transform:rotate(90deg)}
+.acts ul{list-style:none;margin:8px 0 2px;display:flex;flex-direction:column;gap:4px}
+.acts li{font-family:var(--mono);font-size:11px;color:var(--fg-soft);background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 8px;overflow-x:auto;white-space:nowrap}
+.acts li b{color:var(--muted);font-weight:500}
+.md p{margin:7px 0}
+.md p.dim{color:var(--muted);font-size:12.5px}
+.md ul,.md ol{margin:7px 0 7px 20px}
+.md li{margin:3px 0}
+.md pre{font-family:var(--mono);font-size:11.5px;line-height:1.7;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;overflow-x:auto;margin:8px 0;white-space:pre}
+.md pre .hl{color:var(--accent);font-weight:600}
+.md pre .ok{color:var(--success);font-weight:600}
+.md code{font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:0 5px;overflow-wrap:anywhere}
+.md .warnbox{background:var(--warn-bg);border:1px solid #FDE68A;border-radius:7px;padding:8px 12px;font-size:12.5px;color:#92400E;margin:8px 0}
+.md table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12.5px;table-layout:fixed}
+.md th,.md td{border:1px solid var(--border);padding:5px 9px;text-align:left;vertical-align:top;word-break:break-word}
+.md th{background:var(--bg);font-weight:600;color:var(--fg-soft)}
+.fold{position:relative;max-height:220px;overflow:hidden}
+.fold .fade{position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(180deg,rgba(255,255,255,0),var(--surface));pointer-events:none}
+.fold.open{max-height:none}
+.fold.open .fade{display:none}
+.fold-btn{display:block;width:100%;margin:2px 0 6px;text-align:center;font-size:11.5px;font-weight:600;color:var(--accent);background:none;border:none;border-top:1px dashed var(--border);padding-top:7px;cursor:pointer;font-family:var(--sans)}
+.fold-btn:hover{text-decoration:underline}
+.fold-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+footer{border-top:1px solid var(--border);background:var(--surface)}
+footer .wrap{padding:18px;font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,80px);background:#0F172A;color:#F8FAFC;font-size:12.5px;font-weight:500;padding:9px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(15,23,42,.25);opacity:0;pointer-events:none;transition:transform .25s cubic-bezier(.2,.8,.3,1),opacity .25s;z-index:99;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast code{color:#93C5FD;font-size:11.5px}
+@media (max-width:768px){
+  .bubble.u,.bubble.a{max-width:92%}
+  .bubble{font-size:13.5px}
+  .md pre{font-size:10.5px}
+  /* Two-column tables stack into per-row cards on narrow screens so the
+     file name never wraps mid-token. */
+  .md table,.md tbody,.md tr,.md td,.md th{display:block;width:auto}
+  .md th{display:none}
+  .md tr{border:1px solid var(--border);border-radius:7px;margin:6px 0;padding:6px 9px;background:var(--surface)}
+  .md td{border:0;padding:2px 0}
+  .md td:first-child{font-weight:600;color:var(--fg-soft)}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+@media print{
+  .toast{display:none}
+  .bubble.a,.bubble.u{box-shadow:none;break-inside:avoid}
+  .fold{max-height:none}
+  .fold .fade,.fold-btn{display:none}
+}
+</style>
+</head>
+<body>
+<header class="slim">
+  <div class="wrap">
+    <div class="row1">
+      <h1><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>dsh-workspace-plus · 侧边栏视图配置增强</h1>
+      <span class="badge ok"><span class="dot"></span>已实现并通过验证</span>
+      <span class="badge neutral"><span class="dot"></span>2026-10-01</span>
+    </div>
+    <div class="row2">
+      <button class="chip" data-copy="dsh-workspace-plus" data-label="插件"><span class="txt">dsh-workspace-plus</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <button class="chip" data-copy="src/client.js" data-label="主改动"><span class="txt">src/client.js</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <button class="chip" data-copy="dsh.betterWorkspace.view.v1" data-label="store"><span class="txt">dsh.betterWorkspace.view.v1</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <button class="chip" data-copy="uiWorkspace.unarchiveSession" data-label="宿主接口"><span class="txt">uiWorkspace.unarchiveSession</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+      <button class="chip" data-copy="node --test tests/smoke.mjs" data-label="验证命令"><span class="txt">node --test tests/smoke.mjs</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap chat">
+
+<div class="turn user"><div class="bubble u">根据以下提示词和参考图，实现需求。<p class="shot"><img src="data:image/webp;base64,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" alt="参考图：视图配置弹窗，含分组方式 / 排序方式 / 筛选会话三段"><span class="cap">参考图 · 视图配置弹窗（三段式，选中项带勾）</span></p><b>需求八个部分：</b><br>① 视图配置入口：标题栏按钮「视图配置」+ 设置卡片等效，共用同一份持久化状态<br>② 分组方式 4 种：按工作区 / 按工作区树（默认）/ 单列表 / 按时间<br>③ 排序方式 2 种：手动（宿主顺序）/ 最近更新（只改显示，不写回）<br>④ 归档筛选 3 种：隐藏已归档（默认）/ 全部对话 / 仅显示已归档<br>⑤ 搜索与去重：遵守当前视图与归档筛选，同一会话只展示一次<br>⑥ 四个字段分开存储 + 兼容旧 sortMode，切换一项不重置其余<br>⑦ 范围约束：不动会话右键菜单、不加插件依赖、不提交不发布不重启<br>⑧ 验证与交付：组合验证、跑测试与语法/差异检查、更新说明文档<details class="orig"><summary>展开原始需求提示词全文（一～八节）</summary><pre>根据以下提示词和参考图，实现需求
+
+请在 dsh-workspace-plus 插件中实现侧边栏视图配置增强。先阅读现有代码与仓库规范，再直接修改代码，完成必要的验证。
+
+背景：
+本插件用于增强 DSH 的工作区与会话侧边栏，已有工作区分组树、时间视图、会话置顶、搜索和外观自定义等能力。现在需要让分组方式、排序方式和归档筛选能够独立配置。
+
+一、视图配置入口
+在侧边栏标题栏增加或完善"视图配置"按钮，点击后展示三个区域：
+- 分组方式 / 排序方式 / 筛选会话
+当前选项应有明确的选中标识。按钮图标随当前视图变化。
+插件设置卡片也提供等效配置，两处使用同一份持久化状态。
+
+二、分组方式（四种视图）
+1. 按工作区：各工作区独立展示，不按工作区名称中的"/"构建上层分组树。
+2. 按工作区树：保留现有按名称路径分组的树形视图，作为默认值。
+3. 单列表：去掉工作区容器，直接展示会话列表。
+4. 按时间：保留现有时间分桶视图，并支持"最近优先 / 最早优先"。
+各视图都应支持未分组会话，保留现有会话状态、置顶、外观与必要的操作能力。
+
+三、排序方式
+- 手动排序：使用宿主提供的工作区和会话顺序。
+- 最近更新：按更新时间降序展示。
+排序与分组方式独立，可以组合使用。最近更新仅改变显示顺序，不得写回宿主顺序，也不得修改工作区或会话名称。时间视图使用自己的时间方向，通用排序选项应明确体现其受限状态。自动排序时禁用工作区和会话的拖拽重排；恢复手动排序后恢复原有拖拽能力。"按工作区"视图中的工作区重排不得意外修改名称或所属名称分组。
+
+四、筛选会话
+- 隐藏已归档：默认。 - 全部对话：显示普通与已归档会话。 - 仅显示已归档。
+使用宿主提供的归档状态，不维护另一套归档数据。筛选统一作用于四种视图、搜索结果和置顶区域。
+已归档会话应：有清晰的归档标识；不直接打开，提示先取消归档；可通过行上的恢复按钮调用宿主取消归档接口，旧宿主没有该接口时禁用恢复入口；保留原来的置顶配置，但归档期间不出现在置顶区域；显示归档时可出现在普通列表，恢复后重新进入置顶区域。
+仅归档模式隐藏没有匹配会话的工作区及空分组。归档结果为空时提供清晰空态和"查看全部对话"入口。
+
+五、搜索与去重
+搜索必须遵守当前视图和归档筛选，并保留原有名称匹配能力。同一会话在当前界面只展示一次，避免置顶区域与普通列表重复。保留现有对子任务会话、空白会话的可见性规则。
+
+六、状态持久化与兼容
+将分组方式、排序方式、归档筛选和时间方向分开存储。建议字段：viewMode: workspaces | projects | flat | time；sortOrder: manual | latest；archivedFilter: hide | show | only；timeDirection: latest | oldest。
+兼容旧版 sortMode 配置，让旧的时间视图及时间方向继续生效。切换一个选项不得重置其它独立选项，也不得丢失已有展开状态、置顶记录或外观配置。
+
+七、范围与实现约束
+本次只实现视图配置增强。不要增强或重构会话右键菜单，不要新增永久删除、复制目录、复制会话 ID 等菜单功能。不要引入额外插件依赖，不要提交、发布或重启服务。保留工作区内已有的未提交改动。采用简洁、可维护的实现，不使用嵌套三元表达式，非必要不新增 useMemo/useCallback。
+
+八、验证与交付
+- 四种视图与三种归档筛选的组合。
+- 搜索遵守筛选，未分组会话正常显示。
+- 置顶会话不重复，归档与恢复不丢失置顶配置。
+- 最近更新排序不改变宿主数据，切回手动排序恢复原顺序。
+- 自动排序禁用拖拽，按工作区重排不改名称。
+- 旧配置兼容，以及标题栏与设置卡片状态同步。
+运行仓库适用的测试、语法检查和差异检查，更新相关说明文档。界面由我自行验收，不需要启动浏览器进行人工验收。完成后简要说明修改内容、验证结果和仍存在的限制。</pre></details></div><div class="avatar u" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></div>
+<div class="turn agent"><div class="avatar ai" aria-hidden="true">A</div><div class="bubble a"><details class="acts"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>执行了 28 个动作</summary><ul><li><b>skill</b> dsh-plugin-dev（插件开发规范与双半纪律）</li><li><b>memorix</b> session_start 绑定项目根 dsh-workspace-plus</li><li><b>bash</b> ls -la / git status --porcelain / git log --oneline</li><li><b>bash</b> find src tests docs -type f / wc -l 统计规模</li><li><b>grep</b> 梳理 client.js 顶层结构与 sortMode、pinned、archived 关键点</li><li><b>read</b> src/client.js 分段通读（共 2930 行）</li><li><b>read</b> src/index.js / tests/smoke.mjs / README.md / README_EN.md</li><li><b>bash</b> 解析 app.asar 头部并从归档中取出官方 client bundle</li><li><b>grep</b> 官方 dsh-client-ui-workspace：unarchiveSession / archivedSessionIds / sessionVisible / ViewOptionsMenu</li><li><b>read</b> 官方可见性、分桶、注入映射片段（311-546 / 2169-2268 / 4259-4330）</li><li><b>bash</b> 提取 ui-primitives/lib/index.js 并枚举全部 Icon* 导出名</li><li><b>edit</b> client.js：zh/en 词典新增视图配置文案</li><li><b>edit</b> client.js：内嵌 Lucide 视图字形 + 四张共享选项表 + viewConfigOf</li><li><b>edit</b> client.js：store 新增 sortOrder / archivedFilter 字段与 actions</li><li><b>edit</b> client.js：SessionRow 归档标识、恢复按钮、不直开</li><li><b>edit</b> client.js：设置卡片 segGroup 三段 + 时间方向</li><li><b>edit</b> client.js：四视图 bodyRows 组装、去重、仅归档空态 CTA</li><li><b>edit</b> client.js：canReorderRows 拖拽门控 + 按工作区不重命名</li><li><b>edit</b> client.js：标题栏三段弹窗、勾选与受限禁用态</li><li><b>edit</b> client.js：browserInjected 注入 unarchiveSession</li><li><b>edit</b> tests/smoke.mjs：旧断言更新 + 模型/排序/剪枝单测</li><li><b>edit</b> tests/smoke.mjs：mock-render harness 真跑组件</li><li><b>bash</b> node --check src/client.js / src/index.js / tests/smoke.mjs</li><li><b>bash</b> npm test（20 项 -> 33 项）</li><li><b>bash</b> DSH_PRIMITIVES_LIB=… npm test 校验全部图标名可解析</li><li><b>bash</b> git diff --stat / git diff --check</li><li><b>edit</b> README.md / README_EN.md：视图配置、搜索、置顶、拖拽、存储、限制</li><li><b>memorix</b> store 设计决策 + session_end 交接摘要</li></ul></details><div class="md">
+  <p>需求已实现并验证通过：<b>侧边栏视图配置增强</b>——四种分组方式 × 两种排序 × 三种归档筛选，四轴独立可配。改动集中在客户端半 <code>src/client.js</code>，仓库测试 <b>33 项全绿</b>。</p>
+
+  <p><b>先读码，再动手</b></p>
+  <ul>
+    <li>通读现有 <code>src/client.js</code>（2930 行）、<code>tests/smoke.mjs</code> 与双语 README，摸清既有 store 结构、拖拽与置顶实现。</li>
+    <li>从 <code>app.asar</code> 里抽出官方 <code>dsh-client-ui-workspace</code> 与 <code>ui-primitives</code> 的真实契约：<code>uiWorkspace.unarchiveSession</code>、官方 <code>sessionVisible</code>、<code>archivedFilter</code> 语义、全部 <code>Icon*</code> 导出名——不按名字猜 API。</li>
+  </ul>
+
+  <p><b>设计三条主线</b></p>
+  <ul>
+    <li><b>四轴独立持久化</b>：<code>viewMode / sortOrder / archivedFilter / timeDirection</code> 各存各的键，改一个不动其余；旧 <code>sortMode</code>（manual / latest / oldest）在读取时折算，不迁移、不重写。</li>
+    <li><b>一份选项表、两处渲染</b>：标题栏弹窗与设置卡片都读 <code>VIEW_OPTIONS / SORT_OPTIONS / ARCHIVE_OPTIONS / TIME_DIRECTION_OPTIONS</code>，永远不漂移。</li>
+    <li><b>一个行可见性门</b>：<code>sessionRowVisible</code>（血缘 + 空白规则）叠加 <code>archiveVisible</code>（宿主归档状态），四种视图、搜索与置顶区共用；渲染层再用一次去重集合保证「一会话一行」。</li>
+  </ul>
+
+  <div class="warnbox">最容易踩的坑：<b>已归档的置顶会话</b>。沿用旧的 pinned 过滤，它既进不了置顶区、又被普通列表排除，会彻底消失。最终判定改用 <code>isTrayOwned = pinned &amp;&amp; !archived</code>——置顶记录原样保留，归档期间回到普通列表，取消归档自动回置顶区。</div>
+
+  <p><b>改了什么</b></p>
+  <table>
+    <tr><th style="width:27%">文件</th><th>内容</th></tr>
+    <tr><td><code>src/client.js</code></td><td>共享视图配置模型与选项表、四视图渲染、独立排序、归档筛选与归档行（标识 / 恢复 / 不直开）、去重、拖拽门控、标题栏三段弹窗、设置卡片分段、zh/en 文案与样式</td></tr>
+    <tr><td><code>tests/smoke.mjs</code></td><td>旧契约断言更新；视图配置模型 / 排序 / 剪枝单测；mock-render harness 真跑组件</td></tr>
+    <tr><td><code>README.md</code><br><code>README_EN.md</code></td><td>视图配置、搜索、置顶、拖拽、存储与限制章节</td></tr>
+  </table>
+
+  <p><b>验证</b>（33 项测试清单与逐条验收对照，展开可见）</p>
+  <div class="fold"><div>
+  <pre># 33 项，全绿（node --test tests/smoke.mjs）
+ 1 package.json declares a dual-face dsh web plugin
+ 2 dsh.plugin.json version matches package.json
+ 3 cordis.patch.yml inserts exactly one plugin row
+ 4 client half is a __ModuleLoader__ bundle with baseline requires only
+ 5 client half registers the three expected slots
+ 6 client plugin exports the cordis plugin triple
+ 7 client half stays plain JavaScript (no import/JSX/TS syntax)
+ 8 splitTitleSegs: paired quotes verbatim, lone quotes are plain text
+ 9 quote-on-land effect: blank-born only, user renames pinned, stability window
+10 host half imports cleanly and applies without side effects
+11 view modes and bucket views are wired as display-layer projections
+12 pinning is display-layer only: no host mutations, tray-only + badge
+13 view control surfaces: header popup and settings card share one state
+14 view configuration: four independent axes with a legacy sortMode fallback
+15 archive filter: host state + lineage rules drive the one row gate
+16 sort orders are display projections: manual is the host order, latest copies
+17 archived-only pruning drops empty workspaces and hollow folders
+18 every option-table label key exists in both locale dictionaries
+19 locale dictionaries cover every static t() key in both languages
+20-24 icon bridge: 0.1.7 weight suffixes / legacy builds / no-silent-failure / sizes
+25 every icon name in the bundle resolves on an installed primitives build
+26 render: every view x archive filter combination stays unique and filtered
+27 render: pinned sessions live in the tray only, archived pins outside it
+28 render: sort order is a projection, and the time view keeps its direction
+29 render: search follows the view and the archive filter, without duplicates
+30 render: archived rows mark themselves, never open, and call the Host restore
+31 render: archived-only empty state offers the way back to all conversations
+32 render: header popup exposes the three sections and restricts the sort
+33 render: the settings card drives the same axes as the popup
+
+# 用户要求的 8 项验收，对应到测试与实现
+- 四种视图 x 三种归档筛选   -&gt; #26（组合唯一性与可见集合）
+- 搜索遵守筛选、未分组会话   -&gt; #29（四个视图逐一断言）
+- 置顶不重复、归档不丢置顶   -&gt; #27（isTrayOwned：归档期离开置顶区、回普通列表）
+- 最近更新不改宿主、切回手动 -&gt; #16 + #28（对副本排序，源数组顺序不变）
+- 自动排序禁用拖拽、重排不改名 -&gt; #11（autoSorted 门控 + 按工作区不重命名）
+- 旧配置兼容、两处状态同步   -&gt; #14 + #13/#33
+- 语法与差异检查             -&gt; node --check 三文件通过；git diff --check 无空白错误</pre>
+  <div class="fade"></div></div></div>
+  <button class="fold-btn" aria-expanded="false">展开剩余内容</button>
+  <p class="dim">另有 <code>node --check</code> 三文件通过、<code>git diff --check</code> 无空白错误；把 <code>DSH_PRIMITIVES_LIB</code> 指向已安装的 primitives 构建后，插件里<b>每一个图标名都能解析</b>。</p>
+
+  <p><b>仍存在的限制</b></p>
+  <ul>
+    <li>未分组会话在<b>手动排序</b>下按宿主 <code>list.ids</code> 顺序展示，只有「最近更新」才按时间重排。</li>
+    <li>归档会话仍可从右键菜单置顶 / 取消置顶（右键菜单不在本次范围），但归档期间不会进入置顶区。</li>
+    <li>「按工作区」视图仍保留<b>会话标题</b>自身的 <code>/</code> 子分组——本次只取消了工作区名称的上层分组树。</li>
+    <li>视图配置存在浏览器本地 store，跨设备不共享。</li>
+    <li>界面由你自行验收：插件以 <code>link:</code> 装在 web profile，重启 DSH web 后生效（本次未重启服务）。</li>
+  </ul>
+</div></div></div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>由 Agent 会话蒸馏生成 · 2026-10-01 · dsh-workspace-plus 侧边栏视图配置增强</span>
+    <span class="mono">session-bubble-html · 单文件自包含 · 参考图已内嵌</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var toastEl=document.getElementById('toast'),timer=null;
+  function toast(html){toastEl.innerHTML=html;toastEl.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){toastEl.classList.remove('show');},2000);}
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function fallback(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();}
+  document.querySelectorAll('[data-copy]').forEach(function(el){
+    el.addEventListener('click',function(){
+      var t=el.getAttribute('data-copy'),lb=el.getAttribute('data-label')||'';
+      var done=function(){toast('已复制 '+(lb?lb+' ':'')+'<code>'+esc(t)+'</code>');};
+      if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(done).catch(function(){fallback(t);done();});}
+      else{fallback(t);done();}
+    });
+  });
+  document.querySelectorAll('.fold-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var fold=btn.previousElementSibling;
+      var open=fold.classList.toggle('open');
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      btn.textContent=open?'收起':'展开剩余内容';
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import { normPath } from './core/text.js'
 import { VIEW_MODES, ARCHIVED_FILTERS } from './core/view.js'
 
 export const createViewStore = () => storeKit.defineStore({
-  init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { compactChains: true, viewMode: 'projects', timeDirection: 'latest', sortOrder: 'manual', archivedFilter: 'hide' }, styling: {}, pinned: [] }),
+  init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, statusDots: true, compactChains: true, viewMode: 'projects', timeDirection: 'latest', sortOrder: 'manual', archivedFilter: 'hide' }, styling: {}, pinned: [] }),
   // NOTE: hydration REPLACES the state with the persisted whole value —
   // init defaults never merge. Every action must tolerate a missing key
   // (states persisted by older plugin versions lack sessionGroups), and

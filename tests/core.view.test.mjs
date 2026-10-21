@@ -1,7 +1,7 @@
 /** core/view.js — persisted-preference migration, visibility and ordering rules. */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { viewStateOf, sessionVisible, orderRows, pendingKindOf, sessionTitleOf, hasActiveScheduleOf, subagentRunningCounts } from '../src/client/core/view.js'
+import { viewStateOf, sessionVisible, orderRows, pendingKindOf, sessionTitleOf, hasActiveScheduleOf, subagentRunningCounts, currentSessionIdOf } from '../src/client/core/view.js'
 
 const t = (key) => key
 
@@ -60,6 +60,25 @@ test('sessionTitleOf prefers displayTitle and localizes the blank row', () => {
   assert.equal(sessionTitleOf({ title: 'plain' }, t), 'plain')
   assert.equal(sessionTitleOf({ title: 'plain', displayTitle: '顯示' }, t), '顯示')
   assert.equal(sessionTitleOf(undefined, t), '')
+})
+
+test("currentSessionIdOf reads the shell's mainView retention", () => {
+  // The list snapshot has no `current` field; the shell marks the session on
+  // screen with a retention count instead (see ui-workspace replaceMain).
+  const list = {
+    ids: ['a', 'b'],
+    byId: {
+      a: { id: 'a', retainedBy: { sidebar: 1 } },
+      b: { id: 'b', retainedBy: { mainView: 1 } },
+    },
+  }
+  assert.equal(currentSessionIdOf(list), 'b')
+  assert.equal(currentSessionIdOf({ byId: { a: { id: 'a', retainedBy: {} } } }), null)
+  assert.equal(currentSessionIdOf({ byId: { a: { id: 'a' } } }), null, 'no retention metadata means no current session')
+  assert.equal(currentSessionIdOf({ byId: { a: { id: 'a', retainedBy: { mainView: 0 } } } }), null)
+  assert.equal(currentSessionIdOf({ ids: [], byId: {} }), null)
+  assert.equal(currentSessionIdOf(undefined), null)
+  assert.equal(currentSessionIdOf({ byId: { n: { id: 7, retainedBy: { mainView: 2 } } } }), '7', 'ids always compare as strings')
 })
 
 test('hasActiveScheduleOf only trusts a non-empty schedule projection', () => {

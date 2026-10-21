@@ -6,7 +6,7 @@
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
-> A **folder system** for the DeepSeek Harness (DSH) sidebar workspace list — a workspace is still one directory, but every `/` in its name becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder.
+> A **folder system** for the DeepSeek Harness (DSH) sidebar workspace list — a workspace is still one directory, but every `/` in its name becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder — plus **browser-style session tabs** for the conversation panel.
 
 ```
 github/                 <- virtual folder (naming only, not a real directory)
@@ -17,6 +17,23 @@ dsh-model-config
 ```
 
 ## Features & preview
+
+### Session tabs
+
+<table>
+<tr>
+<td align="center" width="100%"><img src="docs/screenshots/4-session-tabs.png" alt="Session tabs in the conversation header"/></td>
+</tr>
+</table>
+
+Each open session owns a tab in the conversation header, above the view switcher: every chip carries a **status dot**, its title and a close button; the active chip gets a **brand-colored underline and a bold title**.
+
+- **Opening**: a plain click on a sidebar session **replaces** the session inside the current tab; **Shift + click** opens a new tab; **New session** (the workspace `+`, the shortcut, or any host entry point) opens its own tab — labelled "New session" until the first prompt lands and the real title arrives. Tabs live in the header's leading slot and shrink with ellipsis when space runs out instead of pushing the title and actions away.
+- **Context menu**: right-click a tab for the **exact same menu** as the sidebar session row (rename / archive / section / pin / fork / delete / customize / refresh…, see the Context menu section below); it reuses the sidebar's menu state instead of duplicating it.
+- **Drag to reorder**: drag a chip left or right and the strip **reorders live** (the same HTML5 drag mechanism the sidebar rows use — the dragged chip is dimmed, the others step aside, and the drop only ends the gesture).
+- **Persistence and limit**: tab order and the open-tab list persist in the current browser (`dsh.betterWorkspace.tabs.v1`) and return after a refresh/restart; at most 12 tabs, and the oldest retires beyond that.
+- **Self-cleaning**: closing the active tab hands over to its neighbour; tabs left behind by abandoned blank "New session" pages or by archived sessions are removed automatically, so no dead chip stays clickable.
+- **Can be turned off entirely**: switching "Show session tabs" off in the plugin settings page hides the strip and restores the shell's native header; switching it back on brings the same tab list back.
 
 ### Hierarchical tree
 
@@ -42,7 +59,15 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 
 ### Search
 
-The sidebar search button filters **workspaces, independent groups and sessions** by name instantly (local title filtering); the tree force-expands while searching. Host-level content search (`session.search`) is planned.
+<table>
+<tr>
+<td align="center" width="45%"><img src="docs/screenshots/12-search.png" alt="Sidebar search filtering"/></td>
+<td valign="top" width="55%">
+  <b>Filter by name as you type</b><br/>
+  Typing filters instantly (local title matching) across <b>workspaces, independent groups and sessions</b>; the tree force-expands while searching, and time buckets keep working (the screenshot searches for "测试"). Host-level content search (<code>session.search</code>) is planned.
+</td>
+</tr>
+</table>
 
 ### Workspace and session sections
 
@@ -72,7 +97,7 @@ Workspaces and sessions have separate ID-based membership without changing names
 <td valign="top" width="55%">
   <img src="docs/screenshots/7-view-switch.png" alt="Sidebar view switch menu"/><br/><br/>
   <b>One-click view switching</b><br/>
-  The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; Settings → Plugins → Configuration exposes the same choices.<br/><br/>
+  The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; **Settings → Plugins → dsh-workspace-plus** exposes the same choices (see the Plugin settings page section below).<br/><br/>
   <b>Time view (Global timeline)</b><br/>
   ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with a popup bubble styled like the official Tooltip; the plugin owns that bubble, so it withdraws the moment the pointer leaves, the row re-sorts away or the list scrolls.
 </td>
@@ -86,6 +111,21 @@ Workspaces and sessions have separate ID-based membership without changing names
 - **Sorting**: manual or recently updated, independent of grouping. Recency sorts workspaces, folders and sessions by visible session activity without changing host order; manual mode restores that order. Automatic sorting, flat and time views disable drag reordering. The pinned tray keeps pin-recency order.
 - **Archive filter**: hide archived (default), all conversations, or archived only; shared by every view and search. Archived-only mode omits empty workspaces and folders, with a show-all action for empty results. Archived rows have a badge and hover/context-menu restore actions; unarchive before opening. Restore is disabled when an older host lacks the action.
 - Preferences persist per browser; legacy projects/time and sorting preferences remain compatible.
+
+### Plugin settings page
+
+<table>
+<tr>
+<td align="center" width="52%"><img src="docs/screenshots/13-plugin-config.png" alt="Settings → Plugins → dsh-workspace-plus"/></td>
+<td valign="top" width="48%">
+  <b>Settings → Plugins → dsh-workspace-plus</b><br/>
+  The plugin owns a configuration page in Settings (the plugin version sits next to its name), so nothing has to be hunted down in a sidebar menu:<br/><br/>
+  <b>Display</b>: four switches — <b>Show session tabs</b> (off restores the shell's native header layout completely), <b>Enable status dots</b> (off hands the sidebar back to the host's native status lights and hides the dots in the tab strip), single-chain collapsing, and the status breathing light.<br/><br/>
+  <b>View</b>: grouping (workspace / workspace tree / flat list / time), sorting (manual / recently updated), time direction (latest / oldest first), and archive filter (hide archived / all conversations / archived only).<br/><br/>
+  It reads and writes the same preferences as the sidebar's view menu — a change on either side applies immediately and persists in the current browser.
+</td>
+</tr>
+</table>
 
 ### Session pinning
 
@@ -107,7 +147,17 @@ Drag a workspace row above/below another to reorder (writes back the host order)
 
 ### Status at a glance
 
-Session rows keep the official status-light semantics: **running** (blue ring), **waiting for approval / plan review / answer** (amber), **completed** (green reminder), and **{n} subagent(s) running** (subagent count); sessions with active scheduled tasks show an alarm-clock badge (matching official rows). The **status breathing light** (toggleable in settings): status dots hidden by collapse bubble outward — workspace/folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; the running blue breathes only on the session row itself and never relays.
+<table>
+<tr>
+<td align="center" width="45%"><img src="docs/screenshots/10-status-dots.png" alt="Status dots and the current-session highlight"/></td>
+<td valign="top" width="55%">
+  <b>One 6px status dot for every state</b><br/>
+  <b>Running</b>: the plugin-drawn orange <code>#ff9f45</code> breathing dot, also covering "<b>{n} subagent(s) running</b>"; <b>waiting for approval / plan review / answer</b>: amber <code>#d29922</code>; <b>completed, unread</b>: green <code>#3fb950</code>. Read sessions draw no dot, and <b>the session on screen never shows the green completion reminder, even the moment it finishes</b>. All three dots share one diameter, so a status change never makes rows jump, and orange never reads as the amber "waiting for you" dot next to it. Sessions with active scheduled tasks show an alarm-clock badge (matching official rows). The current session additionally gets a row highlight that stacks with the pin accent.<br/><br/>
+  <b>Can be turned off entirely</b>: switching "Enable status dots" off in the plugin settings page restores the host's native status-light style and hides the dots in the tab strip; switching it back on brings the unified 6px dots back.<br/><br/>
+  <b>Status breathing light</b> (toggleable in the plugin settings page): status dots hidden by a collapse bubble outward — workspace/folder rows breathe on their icon in the status color (custom-glow labels breathe along), session-group rows show a breathing dot; the running orange breathes only on the session row itself and never relays, and with the light off it is a static orange dot.
+</td>
+</tr>
+</table>
 
 ### Appearance customization
 
@@ -124,11 +174,11 @@ Session rows keep the official status-light semantics: **running** (blue ring), 
 
 ### Single-chain collapse
 
-A toggle in the settings card (on by default): a level with exactly one child merges into one row (e.g. `level1` holding `AI trade` renders as `level1/AI trade`); with multiple children it re-expands into a tree; during workspace drags it temporarily re-expands so any level is a drop target.
+A toggle in the plugin settings page (on by default): a level with exactly one child merges into one row (e.g. `level1` holding `AI trade` renders as `level1/AI trade`); with multiple children it re-expands into a tree; during workspace drags it temporarily re-expands so any level is a drop target.
 
 ### Native capabilities kept
 
-- Session rows: open / rename / fork / archive; per-workspace new session (the + button always expands the workspace first so the new session is immediately visible); current-session highlight; ungrouped-session fallback.
+- Session rows: open / rename / fork / archive; per-workspace new session (the + button always expands the workspace first so the new session is immediately visible, and the tab strip opens a tab for it); current-session highlight; ungrouped-session fallback.
 - **Slash-bearing titles never nest from URLs**: when a host-generated session title lands containing `/` (e.g. echoing a pasted URL), it is auto-wrapped in `“”` and shown verbatim — only for sessions **created after this launch**, and only once the name stays stable for ~20s (letting the native AI naming land first); pre-existing sessions and your manually named `/` groupings are never touched. Quotes (manual ones too) never split on `/`, and a lone quote is just an ordinary character; unquoted URL tails still fall back flat.
 - zh/en localization follows the UI language; session rows show a relative time at the tail (yields on hover).
 
@@ -147,6 +197,13 @@ A toggle in the settings card (on by default): a level with exactly one child me
     <li><b>Custom appearance</b>: Customize appearance (per-session color, text glow, font weight, and text shadow).</li>
     <li><b>Utilities</b>: Refresh (supports <code>Ctrl+R</code> shortcut).</li>
   </ul>
+</td>
+</tr>
+<tr>
+<td align="center" width="40%"><img src="docs/screenshots/11-context-menu-sections.png" alt="Session context menu with the section submenu"/></td>
+<td valign="top" width="60%">
+  <b>"Section" is a second-level menu</b><br/>
+  The Section entry opens a submenu: move into an existing section, <b>Follow workspace</b> (drop the independent section), or <b>New section…</b> inline. Sections share the same data as the sidebar and the tree header, and the check mark shows the current membership.
 </td>
 </tr>
 </table>
@@ -207,7 +264,11 @@ The add flow lands in the seam dsh designed for third parties: the two `director
 
 Both hosts must reach the section and group data: besides passing the store directly whenever this plugin occupies `sidebar.workspaces`, each directory-flow seat now declares the same store seat (`store: viewStore`, all at root scope, so the renderer reuses one instance per handle+scope). A flow hosted by the official shell therefore still lists sections and existing groups.
 
-View state (folder collapse, session expansion, explicit empty folders), custom styling and plugin settings persist browser-side via the dsh client store (`dsh.betterWorkspace.view.v1`). Note: that store's hydration replaces the whole value without merging defaults — after an upgrade, a stale state keeps its old shape and missing keys fall back to defaults.
+Session tabs stay on public API too: the strip lives in the conversation header's public `conversation.header.leading` slot (root scope — nothing session-specific, so switching sessions does not remount it), and the tab list persists in the plugin's own tiny store.
+
+"Which session is on screen" is not read from the session-list snapshot (it has no `current` field): it comes from the `mainView` retention count on each session summary — the same marker the shipped sidebar uses. That is what lets the strip follow **every** navigation path — new session, shortcut, command palette, fork — so a fresh blank session gets a new tab while ordinary navigation swaps the current one.
+
+View state (folder collapse, session expansion, explicit empty folders, tab order), custom styling and plugin settings persist browser-side (`dsh.betterWorkspace.view.v1`, `dsh.betterWorkspace.tabs.v1`). Note: the view store's hydration replaces the whole value without merging defaults — after an upgrade, a stale state keeps its old shape and missing keys fall back to defaults.
 
 ## Develop
 
@@ -248,6 +309,14 @@ Because the artifact is committed, two guards stop a forgotten build from shippi
 
 Both guards cover sync and tests only; `npm run verify` remains the full local check.
 
+### Plugin display metadata
+
+The card title and one-line description in Settings → Plugins come from the plugin package itself, not from this README:
+
+- `meta.title` / `meta.description` in `locale/en.json` and `locale/zh.json` are the **localized display metadata** (DSH picks the UI language); absent fields fall back to `package.json`'s `name` / `description`.
+- DSH **only reads exported package resources**, so `package.json` `exports` must include `"./locale/*.json"` and `"./package.json"`. Without them the plugins list shows the name with an empty description — exactly what 1.0.0 fixes.
+- `files` must list `locale` too, or an npm-installed copy would miss both files.
+
 ### Module map
 
 | Path | Responsibility |
@@ -257,7 +326,8 @@ Both guards cover sync and tests only; `npm run verify` remains the full local c
 | `src/client/core/*` | pure logic (text splitting, time buckets, view rules, virtual tree + chain compression), no React/DOM, unit-tested directly |
 | `src/client/browser/*` | `model`, `dnd`, `actions`, `tree-view`, `menu`, `layout` — all `createX(input)` factories whose dependencies arrive through an explicit input object |
 | `src/client/{store,host,icons,styles}.js`, `ui/*`, `rows.js`, `customize.js`, `settings.js` | view store, host calls, icons, stylesheet, row components, appearance and settings |
-| `src/index.js` | host half (Node): the permanent session-delete route and the settings namespace |
+| `src/client/{tabs,tabs-strip}.js` | tab rules (pure: open / replace / reorder / close / reconcile) and the header strip component (HTML5 drag reordering, context-menu bridge) |
+| `src/index.js` | host half (Node): only the permanent session-delete route |
 
 `tests/architecture.test.mjs` guards those boundaries (only the entry/platform layer may request platform modules;
 core/i18n/styles/host may not touch platform handles; cross-module references need an import; component-scope names must
@@ -273,8 +343,9 @@ dsh plugin --profile web add /absolute/path/to/dsh-workspace-plus   # linked dir
 ```
 
 Checklist: hierarchy tree, add-workspace dialog, rename with instant re-sort, new group, time buckets, pinned tray,
-drag reordering, context menus, appearance customisation, settings toggles, the permanent session delete round-trip, and
-the fallback to the shipped browser after uninstall.
+drag reordering, context menus, session tabs (new session opens a tab / Shift+click / context menu / drag reorder /
+restored after refresh), appearance customisation, settings toggles, the permanent session delete round-trip, and the
+fallback to the shipped browser after uninstall.
 
 > Note: a profile that installed this plugin as a **copy** (rather than a `link:`) keeps serving that copy — only a
 > `link:` install picks up freshly built artifacts.

@@ -179,7 +179,7 @@ const BY_ID = {
   s2: { id: 's2', title: 'archived chat', updatedAt: Date.now() - 1000, cwd: '/repos/app' },
   s3: { id: 's3', title: 'loose session', updatedAt: Date.now() - 2000, cwd: '/tmp' },
 }
-const SESSIONS = { byId: BY_ID, ids: ['s1', 's2', 's3'], current: 's1' }
+const SESSIONS = { byId: { ...BY_ID, s1: { ...BY_ID.s1, retainedBy: { mainView: 1 } } }, ids: ['s1', 's2', 's3'] }
 
 test('the projects view renders folders, workspaces and their sessions', () => {
   const tree = renderWith({ prefs: {}, items: ITEMS, sessions: SESSIONS, pinned: [] })
@@ -228,13 +228,14 @@ test('explicit folders, sections and custom styling render', () => {
 const DOT_ITEMS = [
   { workspaceId: 'w1', title: 'web/app', path: '/repos/app', sessionIds: ['s1', 's2'] },
 ]
+// The shell marks the session on screen with a mainView RETENTION on its
+// summary (ui-workspace replaceMain); the list has no `current` field.
 const dotSessions = (current) => ({
   byId: {
-    s1: { id: 's1', title: 'running chat', updatedAt: Date.now(), cwd: '/repos/app', running: true },
-    s2: { id: 's2', title: 'finished chat', updatedAt: Date.now() - 1000, cwd: '/repos/app', completed: true },
+    s1: { id: 's1', title: 'running chat', updatedAt: Date.now(), cwd: '/repos/app', running: true, retainedBy: current === 's1' ? { mainView: 1 } : {} },
+    s2: { id: 's2', title: 'finished chat', updatedAt: Date.now() - 1000, cwd: '/repos/app', completed: true, retainedBy: current === 's2' ? { mainView: 1 } : {} },
   },
   ids: ['s1', 's2'],
-  current,
 })
 
 test('a running session draws the plugin orange dot and breathes by default', () => {
@@ -255,6 +256,13 @@ test('turning the status breathing light off leaves the running dot static', () 
   assert.equal(countByClass(tree, /bw-pulse/), 0, 'breathing off means no pulse wrapper')
 })
 
+test('turning the status dots off restores the host status light', () => {
+  const tree = renderWith({ prefs: { statusDots: false }, items: DOT_ITEMS, sessions: dotSessions(undefined), pinned: [] })
+  assert.equal(findByClass(tree, /bw-state-dot/).length, 0, 'no plugin-drawn dots')
+  assert.equal(findByClass(tree, /bw-test-statedot/).length, 2, 'running and unread fall back to the host primitive')
+  assert.equal(countByClass(tree, /bw-pulse/), 1, 'the breathing-light switch stays independent')
+})
+
 test('the session on screen never shows the completion reminder', () => {
   const tree = renderWith({ prefs: {}, items: DOT_ITEMS, sessions: dotSessions('s2'), pinned: [] })
   assert.equal(findByClass(tree, /bw-state-dot/).filter((el) => el.props.style.background === '#3fb950').length, 0, 'the viewed session must not draw the green dot')
@@ -267,7 +275,7 @@ test('the on-screen flag survives an id-type mismatch, and the relay agrees', ()
   // strings (or the reverse); the row flag and the collapse relay must still
   // pick the same session.
   const items = [{ workspaceId: 'w1', title: 'web/app', path: '/repos/app', sessionIds: [2] }]
-  const sessions = { byId: { 2: { id: 2, title: 'finished chat', updatedAt: Date.now(), cwd: '/repos/app', completed: true } }, ids: [2], current: '2' }
+  const sessions = { byId: { 2: { id: 2, title: 'finished chat', updatedAt: Date.now(), cwd: '/repos/app', completed: true, retainedBy: { mainView: 1 } } }, ids: [2] }
   const tree = renderWith({ prefs: {}, items, sessions, pinned: [] })
   assert.equal(findByClass(tree, /bw-state-dot/).length, 0, 'a numeric row id must still match the string current')
   const collapsed = renderWith({ prefs: {}, items, sessions, pinned: [], store: { sessionsExpanded: { w1: false } } })
@@ -351,3 +359,103 @@ test('a collapse relay does not bubble the completion of the session on screen',
   const viewed = renderWith({ prefs: {}, items: DOT_ITEMS, sessions: dotSessions('s2'), pinned: [], store: collapsed })
   assert.equal(countByClass(viewed, /bw-pulse/), 0, 'the viewed session must not bubble a completion outward')
 })
+
+// -------------------------------------------------------------- tab strip
+const stripSeat = registered.get('conversation.header.leading')
+assert.ok(stripSeat, 'the tab strip seat was not registered')
+
+/** Render the strip with the standard-kit pieces it reads: sessions + prefs. */
+function renderStrip(sessionsState, workspacesState, prefs) {
+  const wrapper = stripSeat({
+    useSessions: (selector) => selector(sessionsState),
+    useSessionStatus: (selector) => selector(new Map()),
+    useWorkspaces: (selector) => selector(workspacesState || { items: [], phase: 'ready', archivedSessionIds: [] }),
+    useStore: (selector) => selector({ prefs: prefs || {} }),
+    t: (key) => key,
+    open: () => {},
+  })
+  const inner = wrapper && wrapper.children && wrapper.children[0]
+  assert.ok(inner && typeof inner.type === 'function', 'the strip seat did not produce a component element')
+  return deepRender(inner.type(inner.props))
+}
+
+/** The strip's chips are hosts of class "bw-tab" (never "bw-tab-close" et al). */
+const CHIP = /^bw-tab(?:$|\s)/
+
+test('the strip draws one chip for the session on screen and marks it active', () => {
+  const sessions = { byId: { a: { id: 'a', displayTitle: 'chat a', retainedBy: { mainView: 1 } } }, ids: ['a'] }
+  const tree = renderStrip(sessions)
+  const chips = findByClass(tree, CHIP)
+  assert.equal(chips.length, 1, 'the session on screen must own exactly one chip')
+  assert.equal(chips[0].props['data-bw-active'], '1', 'the chip of the session on screen is the active one')
+  const label = findByClass(tree, /bw-tab-label/)[0]
+  assert.deepEqual(label.children, ['chat a'], 'the chip is labelled with the session title')
+})
+
+test('a provisional New Session chip uses the localized blank title', () => {
+  // A newly created session is blank until the first prompt: the chip must not
+  // leak the raw session id as its label.
+  const sessions = { byId: { n: { id: 'n', blank: true, retainedBy: { mainView: 1 } } }, ids: ['n'] }
+  const tree = renderStrip(sessions)
+  assert.equal(findByClass(tree, CHIP).length, 1, 'the new session still gets a chip')
+  assert.deepEqual(findByClass(tree, /bw-tab-label/)[0].children, ['session.new'])
+})
+
+
+test('the strip can be switched off from the plugin settings', () => {
+  const sessions = { byId: { a: { id: 'a', displayTitle: 'chat a', retainedBy: { mainView: 1 } } }, ids: ['a'] }
+  assert.equal(renderStrip(sessions, undefined, { showTabs: false }), null, 'tabs off renders no strip at all')
+  assert.ok(renderStrip(sessions, undefined, { showTabs: true }), 'tabs on still renders')
+  assert.ok(renderStrip(sessions, undefined, {}), 'a missing preference defaults to on')
+})
+
+test('the strip drops its dots when status dots are switched off', () => {
+  const sessions = { byId: { a: { id: 'a', displayTitle: 'chat a', running: true, retainedBy: { mainView: 1 } } }, ids: ['a'] }
+  const on = renderStrip(sessions)
+  assert.equal(findByClass(on, /bw-state-dot/).length, 1, 'the running chip draws the plugin dot by default')
+  const off = renderStrip(sessions, undefined, { statusDots: false })
+  assert.equal(findByClass(off, /bw-state-dot/).length, 0, 'dots off: no plugin dots in the strip')
+  assert.equal(findByClass(off, /bw-tab-dot/).length, 0, 'and no placeholder dots either')
+  assert.equal(findByClass(off, CHIP).length, 1, 'the chip itself stays')
+})
+
+// ------------------------------------------------------- plugin settings page
+const settingsSeat = registered.get('plugins.bundle.config')
+assert.ok(settingsSeat, 'the plugin settings page was not registered')
+
+/** Render the plugin page with a stub store + recording actions. */
+function renderSettings(prefs, calls) {
+  const actions = {
+    setPref: (key, value) => calls.push([key, value]),
+    setViewMode: () => {},
+    setTimeDirection: () => {},
+    setSortOrder: () => {},
+    setArchivedFilter: () => {},
+  }
+  const wrapper = settingsSeat({ view: 'page', useStore: (selector) => selector({ prefs }), actions, t: (key) => key })
+  const inner = wrapper && wrapper.children && wrapper.children[0]
+  assert.ok(inner && typeof inner.type === 'function', 'the settings seat did not produce a component element')
+  return deepRender(inner.type(inner.props))
+}
+
+test('the plugin settings page exposes the native-fallback switches', () => {
+  const calls = []
+  const tree = renderSettings({}, calls)
+  const switches = findByClass(tree, /^bw-switch(?:$|\s)/)
+  assert.equal(switches.length, 4, 'four toggles: tabs, dots, chains, breathing light')
+  assert.deepEqual(switches.map((node) => node.props['aria-checked']), [true, true, true, true], 'all default to on')
+  switches[0].props.onClick()
+  switches[1].props.onClick()
+  assert.deepEqual(calls, [['showTabs', false], ['statusDots', false]], 'the new switches write their prefs')
+})
+
+test('header overrides only apply while tabs are shown', () => {
+  // CSS_TEXT is one joined stylesheet string: every header override must sit
+  // under the html:not([data-bw-tabs-off]) scope, so turning tabs off restores
+  // the shell's own header layout.
+  const occurrences = CSS_TEXT.split('header[data-window-drag]').length - 1
+  const scoped = (CSS_TEXT.match(/html:not\(\[data-bw-tabs-off\]\) header\[data-window-drag\]/g) || []).length
+  assert.equal(occurrences, 3, 'three header overrides exist')
+  assert.equal(scoped, occurrences, 'every header override is scoped to tabs-on')
+})
+

@@ -11,7 +11,7 @@ import { openTab, replaceTab, saveTabs, setActiveTab, tabsActive, tabsSnapshot }
 
 export function createTreeView(input) {
   const {
-    actions, tabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+    actions, tabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
   } = input
 
 /* ---------------------------- rows ----------------------------- */
@@ -101,6 +101,7 @@ const renderSessionNode = (node, workspaceId, depth) => {
       dropInto: sgroupDropInto(workspaceId, group.path),
       dragEvents: sgroupDropEvents(workspaceId, group.path),
       custStyle: rowStyleOf('sgroup:' + workspaceId + '|' + group.path),
+      statusDots,
       t,
     }))
     if (open) out.push(...renderSessionNode(group, workspaceId, depth + 1))
@@ -157,6 +158,7 @@ const renderSessionRow = (session, depth, workspaceId, opts) => {
     dragEvents: sessionDraggable(session) && (canMoveWorkspaceGroup || (workspaceId && !o.sectioned)) ? sessionDragEvents(session, workspaceId, o.sectioned === true) : undefined,
     custStyle: rowStyleOf('session:' + session.id),
     breathing: statusPulse,
+    statusDots,
     pinned,
     onTogglePin: session.archived ? undefined : togglePin,
     onUnarchive: typeof unarchiveSession === 'function' ? restoreSession : undefined,

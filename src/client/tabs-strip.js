@@ -36,9 +36,18 @@ export const tabsHost = { openSessionMenu: null }
  * CSS rule consumes; the rule keeps the right-aligned position as its fallback, so
  * a markup change leaves the chips where they were instead of hiding them.
  */
-function useChipsAfterNav() {
+function useChipsAfterNav(enabled) {
   React.useEffect(() => {
     if (typeof document === 'undefined') return undefined
+    const header = document.querySelector('header[data-window-drag]')
+    // Tabs off: the header is the shell's again, so the parked chips go back to
+    // their own slot and every measured offset is dropped.
+    if (!enabled) {
+      if (header) {
+        for (const name of ['--bw-chips-left', '--bw-chips-right', '--bw-chips-top', '--bw-chips-bottom']) header.style.removeProperty(name)
+      }
+      return undefined
+    }
     const place = () => {
       const header = document.querySelector('header[data-window-drag]')
       if (!header) return
@@ -75,7 +84,6 @@ function useChipsAfterNav() {
       }
     }
     place()
-    const header = document.querySelector('header[data-window-drag]')
     const nav = header ? header.querySelector('[class*="_tabs"]') : null
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null
     if (observer && header) observer.observe(header)
@@ -85,7 +93,28 @@ function useChipsAfterNav() {
       if (observer) observer.disconnect()
       window.removeEventListener('resize', place)
     }
-  }, [])
+  }, [enabled])
+}
+
+/**
+ * Mirror the "show tabs" switch into CSS.
+ *
+ * The header overrides (hide the crumb title line, park the session chips at the
+ * measured end of the view-nav row) only make sense while the strip is drawn:
+ * with tabs off they must not touch the shell's layout, so every one of those
+ * rules is scoped to `html:not([data-bw-tabs-off])`.
+ */
+function useTabsSurface(showTabs) {
+  // Layout effect: the attribute must land before the first paint, or the
+  // shell's title line is hidden for one frame when tabs are off.
+  const useIsoLayoutEffect = typeof React.useLayoutEffect === 'function' ? React.useLayoutEffect : React.useEffect
+  useIsoLayoutEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const root = document.documentElement
+    if (showTabs) delete root.dataset.bwTabsOff
+    else root.dataset.bwTabsOff = '1'
+    return () => { delete root.dataset.bwTabsOff }
+  }, [showTabs])
 }
 
 /** Re-render on tab-list changes (the list is module state, not a React store). */
@@ -134,8 +163,15 @@ function useTabSync(sessions, useWorkspaces) {
 }
 
 export function TabsStrip(props) {
-  const { useSessions, useSessionStatus, useWorkspaces, t, open } = props
-  useChipsAfterNav()
+  const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open } = props
+  // The seat declares the shared view store, so the settings page's two
+  // "restore the host-native UI" switches are live here: tabs on/off and the
+  // plugin dots vs. the host's own status lights.
+  const prefs = typeof useStore === 'function' ? (useStore((s) => s.prefs) || {}) : {}
+  const showTabs = prefs.showTabs !== false
+  const statusDots = prefs.statusDots !== false
+  useTabsSurface(showTabs)
+  useChipsAfterNav(showTabs)
   const stored = useTabs()
   // Reordering is dnd.js' job (the same HTML5 drag the sidebar rows use); the
   // strip only commits the move into its own store.
@@ -148,6 +184,10 @@ export function TabsStrip(props) {
   useTabSync(sessions, useWorkspaces)
   const statuses = typeof useSessionStatus === 'function' ? useSessionStatus((s) => s) : null
   if (sessions === null && typeof useSessions !== 'function') return null
+  // "Show session tabs" off: render nothing and let the header CSS fall back to
+  // the shell's own layout — the tab list keeps syncing in the background, so
+  // turning it back on restores the same strip.
+  if (!showTabs) return null
   // The mainView retention is the authoritative "on screen" marker; the tab
   // store copy covers the frame between a chip click and the shell's
   // navigation, and a session-scoped host may hand sessionId down directly.
@@ -218,9 +258,11 @@ export function TabsStrip(props) {
         },
         ...eventsFor(id),
       },
-        state
-          ? E(StatusDot, { state, label: t('tabs.' + state) })
-          : E('span', { className: 'bw-tab-dot', 'aria-hidden': 'true' }),
+        statusDots
+          ? (state
+            ? E(StatusDot, { state, label: t('tabs.' + state) })
+            : E('span', { className: 'bw-tab-dot', 'aria-hidden': 'true' }))
+          : null,
         E('span', { className: 'bw-tab-label', style: active ? { color: 'var(--dsw-alias-brand-primary, #5b8def)', fontWeight: 600 } : undefined }, title),
         E('button', {
           type: 'button',

@@ -112,6 +112,10 @@
     "settings.desc": "\u5DE5\u4F5C\u533A\u6811\u7684\u5916\u89C2\u4E0E\u6298\u53E0\u504F\u597D",
     "settings.expand": "\u5C55\u5F00",
     "settings.collapse": "\u6536\u8D77",
+    "settings.showTabs": "\u5C55\u793A\u4F1A\u8BDD\u6807\u7B7E\u9875",
+    "settings.showTabs.hint": "\u5728\u5BF9\u8BDD\u9876\u680F\u663E\u793A\u4F1A\u8BDD\u6807\u7B7E\u9875;\u5173\u95ED\u540E\u9690\u85CF\u6807\u7B7E\u6761,\u9876\u680F\u8FD8\u539F\u4E3A\u5BBF\u4E3B\u539F\u751F\u5E03\u5C40(\u4F1A\u8BDD\u6807\u9898\u4E0E\u64CD\u4F5C\u533A\u56DE\u5230\u539F\u4F4D\u7F6E)\u3002",
+    "settings.statusDots": "\u542F\u7528\u5706\u70B9\u72B6\u6001",
+    "settings.statusDots.hint": "\u4F1A\u8BDD\u884C\u4F7F\u7528\u63D2\u4EF6\u7ED8\u5236\u7684\u7EDF\u4E00 6px \u72B6\u6001\u70B9(\u8FD0\u884C\u6A59 / \u5F85\u4EA4\u4E92\u7425\u73C0 / \u5B8C\u6210\u7EFF);\u5173\u95ED\u540E\u8FD8\u539F\u4E3A\u5BBF\u4E3B\u539F\u751F\u7684\u72B6\u6001\u706F\u6837\u5F0F,\u6807\u7B7E\u9875\u4E5F\u4E0D\u518D\u663E\u793A\u72B6\u6001\u70B9\u3002",
     "settings.compactChains": "\u5355\u94FE\u5206\u7EC4\u6298\u53E0\u663E\u793A",
     "settings.compactChains.hint": "\u5355\u5C42\u94FE\u5408\u5E76\u4E3A\u4E00\u884C,\u51FA\u73B0\u591A\u4E2A\u5B50\u7EA7\u65F6\u81EA\u52A8\u5C55\u5F00\u4E3A\u6811\u72B6;\u62D6\u62FD\u5DE5\u4F5C\u533A\u671F\u95F4\u5355\u94FE\u4E34\u65F6\u5C55\u5F00\u56DE\u6587\u4EF6\u5939\u6811,\u53EF\u653E\u5165\u4EFB\u610F\u4E00\u7EA7;\u5C55\u5F00\u72B6\u6001\u4E0E\u81EA\u5B9A\u4E49\u5916\u89C2\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002",
     "settings.statusPulse": "\u72B6\u6001\u547C\u5438\u706F",
@@ -285,6 +289,10 @@
     "settings.desc": "Workspace tree appearance and folding preferences",
     "settings.expand": "Expand",
     "settings.collapse": "Collapse",
+    "settings.showTabs": "Show session tabs",
+    "settings.showTabs.hint": "Draw the session tab strip in the conversation header; turning it off hides the strip and restores the shell's native header layout (the session title and actions return to their original spots).",
+    "settings.statusDots": "Enable status dots",
+    "settings.statusDots.hint": "Session rows use the plugin-drawn 6px status dots (running orange / pending amber / done green); turning it off restores the host's native status-light style and hides the dots in the tab strip.",
     "settings.compactChains": "Merge single-child chains",
     "settings.compactChains.hint": "Single-child chains merge into one row; levels with multiple children expand as a tree. Chains re-expand into folder rows while you drag a workspace, so it can drop into any level. State and custom styling persist in this browser.",
     "settings.statusPulse": "Status breathing light",
@@ -710,7 +718,7 @@
 
   // src/client/store.js
   var createViewStore = () => storeKit.defineStore({
-    init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { compactChains: true, viewMode: "projects", timeDirection: "latest", sortOrder: "manual", archivedFilter: "hide" }, styling: {}, pinned: [] }),
+    init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, statusDots: true, compactChains: true, viewMode: "projects", timeDirection: "latest", sortOrder: "manual", archivedFilter: "hide" }, styling: {}, pinned: [] }),
     // NOTE: hydration REPLACES the state with the persisted whole value —
     // init defaults never merge. Every action must tolerate a missing key
     // (states persisted by older plugin versions lack sessionGroups), and
@@ -949,19 +957,24 @@
     // session's chips and utilities disappear). The crumbs line is the only element
     // carrying the title; the status chips and right-hand controls are siblings of it
     // inside the session header and stay where they are.
-    'header[data-window-drag] [class*="_crumbs"]{display:none}',
+    //
+    // All header overrides below are scoped to "tabs are shown" (the plugin
+    // settings page can turn the strip off): with tabs off the shell's header must
+    // render exactly as shipped, title line included. tabs-strip.js mirrors the
+    // switch into data-bw-tabs-off on <html>.
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_crumbs"]{display:none}',
     // The session's own chips (agent team / PTC mode / subagents) share the view
     // navigation row instead of the tab row: the nav row is the last line of the
     // header, so pinning them to its bottom-right corner puts them after the
     // view chips with no extra header height. Absolute positioning keeps the
     // shell's own header layout untouched.
-    "header[data-window-drag]{position:relative}",
+    "html:not([data-bw-tabs-off]) header[data-window-drag]{position:relative}",
     // z-index lifts the block above the view-nav row it is pinned onto: without it
     // the row paints over the chips and swallows their clicks.
     // left comes from useChipsAfterNav(): the measured end of the view-nav row.
     // Until it lands (first paint, markup drift) the rule falls back to the old
     // right-aligned spot.
-    'header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
     // Session tab strip: compact chips in the conversation header, one per open
     // session. The chip's dot is .bw-state-dot, so the three states stay identical.
     // Session tab strip, modelled on the reference: dot + label chips with a
@@ -1965,7 +1978,10 @@
     }, children);
   }
   var STATUS_DOT_SIZE = 6;
-  function StatusDot({ state, size = STATUS_DOT_SIZE, label }) {
+  function StatusDot({ state, size = STATUS_DOT_SIZE, label, native }) {
+    if (native === true && ui && typeof ui.StateDot === "function") {
+      return E(ui.StateDot, { state, size: 10 });
+    }
     return E("span", {
       className: "bw-state-dot",
       role: label ? "img" : void 0,
@@ -1977,7 +1993,7 @@
     const s = sessionStateOf(row, current);
     return s === "ongoing" ? null : s;
   };
-  function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
+  function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, statusDots, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
     const state = sessionStateOf(node, current);
     const status = state === null ? null : {
       state,
@@ -2037,7 +2053,7 @@
       E(
         "span",
         { className: "bw-row-icon", title: status ? status.title : void 0 },
-        status ? state === "ongoing" ? breathing ? E(PulseGlow, { state: "ongoing" }, E(StatusDot, { state: "ongoing", label: status.title })) : E(StatusDot, { state: "ongoing", label: status.title }) : E(StatusDot, { state: status.state, label: status.title }) : E("span", { className: "bw-dot" })
+        status ? state === "ongoing" ? breathing ? E(PulseGlow, { state: "ongoing" }, E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false })) : E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false }) : E(StatusDot, { state: status.state, label: status.title, native: statusDots === false }) : E("span", { className: "bw-dot" })
       ),
       E("span", { className: "bw-row-label" }, node.leaf || node.title),
       node.archived ? E("span", { className: "bw-archive-mark", role: "img", "aria-label": t("session.archived"), title: t("session.archived") }, icon("IconArchiveOutline20", 14)) : null,
@@ -2050,7 +2066,7 @@
     );
     return row;
   }
-  function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, t }) {
+  function SessionGroupRow({ name, depth, expanded, count, onToggle, onContextMenu, dropInto, dragEvents, custStyle, pulse, statusDots, t }) {
     return E(
       "div",
       {
@@ -2066,7 +2082,7 @@
       E("span", { className: cls("bw-chevron", expanded && "bw-chevron-open") }, icon("IconTriangleRightFill14", 14)),
       // Session groups have no icon slot: a collapsed group with hidden
       // status relays through the same breathing dot as the rows inside it.
-      pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse })) : null,
+      pulse ? E(PulseGlow, { state: pulse }, E(StatusDot, { state: pulse, native: statusDots === false })) : null,
       E("span", { className: "bw-row-label" }, name),
       count > 0 ? E("span", { className: "bw-row-count" }, String(count)) : null
     );
@@ -2972,6 +2988,7 @@
       sortOrder,
       startSession,
       statusPulse,
+      statusDots,
       styleEntry,
       t,
       timeDirection,
@@ -3057,6 +3074,7 @@
           dropInto: sgroupDropInto(workspaceId, group.path),
           dragEvents: sgroupDropEvents(workspaceId, group.path),
           custStyle: rowStyleOf("sgroup:" + workspaceId + "|" + group.path),
+          statusDots,
           t
         }));
         if (open2) out.push(...renderSessionNode(group, workspaceId, depth + 1));
@@ -3097,6 +3115,7 @@
         dragEvents: sessionDraggable(session) && (canMoveWorkspaceGroup || workspaceId && !o.sectioned) ? sessionDragEvents(session, workspaceId, o.sectioned === true) : void 0,
         custStyle: rowStyleOf("session:" + session.id),
         breathing: statusPulse,
+        statusDots,
         pinned,
         onTogglePin: session.archived ? void 0 : togglePin,
         onUnarchive: typeof unarchiveSession === "function" ? restoreSession : void 0,
@@ -3330,9 +3349,16 @@
 
   // src/client/tabs-strip.js
   var tabsHost = { openSessionMenu: null };
-  function useChipsAfterNav() {
+  function useChipsAfterNav(enabled) {
     React.useEffect(() => {
       if (typeof document === "undefined") return void 0;
+      const header = document.querySelector("header[data-window-drag]");
+      if (!enabled) {
+        if (header) {
+          for (const name of ["--bw-chips-left", "--bw-chips-right", "--bw-chips-top", "--bw-chips-bottom"]) header.style.removeProperty(name);
+        }
+        return void 0;
+      }
       const place = () => {
         const header2 = document.querySelector("header[data-window-drag]");
         if (!header2) return;
@@ -3358,7 +3384,6 @@
         }
       };
       place();
-      const header = document.querySelector("header[data-window-drag]");
       const nav = header ? header.querySelector('[class*="_tabs"]') : null;
       const observer = typeof ResizeObserver === "function" ? new ResizeObserver(place) : null;
       if (observer && header) observer.observe(header);
@@ -3368,7 +3393,19 @@
         if (observer) observer.disconnect();
         window.removeEventListener("resize", place);
       };
-    }, []);
+    }, [enabled]);
+  }
+  function useTabsSurface(showTabs) {
+    const useIsoLayoutEffect = typeof React.useLayoutEffect === "function" ? React.useLayoutEffect : React.useEffect;
+    useIsoLayoutEffect(() => {
+      if (typeof document === "undefined") return void 0;
+      const root = document.documentElement;
+      if (showTabs) delete root.dataset.bwTabsOff;
+      else root.dataset.bwTabsOff = "1";
+      return () => {
+        delete root.dataset.bwTabsOff;
+      };
+    }, [showTabs]);
   }
   function useTabs() {
     const [tabs, setTabs] = React.useState(() => tabsSnapshot());
@@ -3395,8 +3432,12 @@
     }, [sessions, archivedIds]);
   }
   function TabsStrip(props) {
-    const { useSessions, useSessionStatus, useWorkspaces, t, open } = props;
-    useChipsAfterNav();
+    const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open } = props;
+    const prefs = typeof useStore === "function" ? useStore((s) => s.prefs) || {} : {};
+    const showTabs = prefs.showTabs !== false;
+    const statusDots = prefs.statusDots !== false;
+    useTabsSurface(showTabs);
+    useChipsAfterNav(showTabs);
     const stored = useTabs();
     const { draggingId, eventsFor } = useTabReorder({
       onReorder: (fromId, toId) => {
@@ -3407,6 +3448,7 @@
     useTabSync(sessions, useWorkspaces);
     const statuses = typeof useSessionStatus === "function" ? useSessionStatus((s) => s) : null;
     if (sessions === null && typeof useSessions !== "function") return null;
+    if (!showTabs) return null;
     const bound = props.sessionId === void 0 || props.sessionId === null ? null : String(props.sessionId);
     const liveCurrent = currentSessionIdOf(sessions);
     const sessionId = liveCurrent || tabsActive() || bound || null;
@@ -3472,7 +3514,7 @@
             },
             ...eventsFor(id)
           },
-          state ? E(StatusDot, { state, label: t("tabs." + state) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }),
+          statusDots ? state ? E(StatusDot, { state, label: t("tabs." + state) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }) : null,
           E("span", { className: "bw-tab-label", style: active ? { color: "var(--dsw-alias-brand-primary, #5b8def)", fontWeight: 600 } : void 0 }, title),
           E("button", {
             type: "button",
@@ -4351,42 +4393,35 @@
         }, t(key)))
       )
     );
+    const switches = [
+      ["showTabs", prefs.showTabs !== false],
+      ["statusDots", prefs.statusDots !== false],
+      ["compactChains", compactChains],
+      ["statusPulse", statusPulse]
+    ];
+    const switchRow = ([key, value], index) => [
+      E(
+        "div",
+        { className: "bw-setting-row", key: "row-" + key, style: index === 0 ? void 0 : { marginTop: 10 } },
+        E("div", { className: "bw-setting-label" }, t("settings." + key)),
+        E("button", {
+          type: "button",
+          role: "switch",
+          "aria-checked": value,
+          "aria-label": t("settings." + key),
+          className: cls("bw-switch", value && "bw-switch-on"),
+          onClick: () => {
+            actions.setPref(key, !value);
+          }
+        }, E("span", { className: "bw-switch-thumb" }))
+      ),
+      E("div", { className: "bw-hint", key: "hint-" + key }, t("settings." + key + ".hint"))
+    ];
     return E(
       "div",
       { className: "bw-settings" },
       StyleNode(),
-      E(
-        "div",
-        { className: "bw-setting-row" },
-        E("div", { className: "bw-setting-label" }, t("settings.compactChains")),
-        E("button", {
-          type: "button",
-          role: "switch",
-          "aria-checked": compactChains,
-          "aria-label": t("settings.compactChains"),
-          className: cls("bw-switch", compactChains && "bw-switch-on"),
-          onClick: () => {
-            actions.setPref("compactChains", !compactChains);
-          }
-        }, E("span", { className: "bw-switch-thumb" }))
-      ),
-      E("div", { className: "bw-hint" }, t("settings.compactChains.hint")),
-      E(
-        "div",
-        { className: "bw-setting-row", style: { marginTop: 10 } },
-        E("div", { className: "bw-setting-label" }, t("settings.statusPulse")),
-        E("button", {
-          type: "button",
-          role: "switch",
-          "aria-checked": statusPulse,
-          "aria-label": t("settings.statusPulse"),
-          className: cls("bw-switch", statusPulse && "bw-switch-on"),
-          onClick: () => {
-            actions.setPref("statusPulse", !statusPulse);
-          }
-        }, E("span", { className: "bw-switch-thumb" }))
-      ),
-      E("div", { className: "bw-hint" }, t("settings.statusPulse.hint")),
+      ...switches.flatMap(switchRow),
       choices("view.grouping", VIEW_MODES.map((mode) => [mode, "view." + mode]), viewMode, (mode) => actions.setViewMode(mode)),
       choices("view.sort", [["manual", "view.sort.manual"], ["latest", "view.sort.latest"]], viewMode === "time" ? "latest" : sortOrder, (order) => actions.setSortOrder(order), viewMode === "time"),
       viewMode === "time" ? choices("view.time.direction", [["latest", "view.time.latest"], ["oldest", "view.time.oldest"]], timeDirection, (dir) => actions.setTimeDirection(dir)) : null,
@@ -4476,6 +4511,7 @@
         const groupedView = viewMode === "projects" || viewMode === "workspaces";
         const pinnedList = useStore ? useStore((s) => s.pinned) || [] : [];
         const statusPulse = prefsMap.statusPulse !== false;
+        const statusDots = prefsMap.statusDots !== false;
         const archivedSet = new Set(archivedSessionIds);
         const runningOf = (id) => {
           const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
@@ -4876,6 +4912,7 @@
           sortOrder,
           startSession,
           statusPulse,
+          statusDots,
           styleEntry,
           t,
           timeDirection,
@@ -5122,6 +5159,9 @@
           {
             name: "conversation.header.leading",
             locale: NS,
+            // The strip reads the shared view store: the plugin settings page can
+            // hide tabs / fall back to native dots, and both must be live here.
+            store: viewStore,
             inject: () => ({ open: (sessionId) => {
               openSessionCompat(sessionId);
             } })

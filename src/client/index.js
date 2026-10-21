@@ -10,7 +10,7 @@
  * @deepseek-ai/dsh-client-modules), which is why the sources are bundled instead
  * of being served as separate files.
  *
- * Three registrations:
+ * Five registrations:
  *  1. `sidebar.workspaces` (priority -1): replaces the shipped workspace
  *     browser with a hierarchy tree derived from "/" inside workspace titles.
  *  2. `conversation.hero.workspace.directoryFlow`: the add-workspace picking
@@ -19,6 +19,10 @@
  *  3. `sidebar.workspaces.directoryFlow`: the same interaction for the
  *     shipped sidebar browser (fills only when that hole is declared, i.e.
  *     whenever this plugin's own browser is not the occupying entry).
+ *  4. `conversation.header.leading`: the browser-style session tab strip in
+ *     the conversation header (the free root-scoped leading seat).
+ *  5. `plugins.bundle.config`: this bundle's configuration page under
+ *     Settings → Plugins (`key: 'dsh-workspace-plus'`).
  *
  * The single `hostRequire` below is the loader's factory `require`: every
  * request is a dsh client baseline module (see
@@ -125,6 +129,9 @@ window.__ModuleLoader__.load({
       const groupedView = viewMode === 'projects' || viewMode === 'workspaces'
       const pinnedList = useStore ? (useStore(s => s.pinned) || []) : []
       const statusPulse = prefsMap.statusPulse !== false
+      // "Enable status dots" off: rows fall back to the host's native status
+      // lights, and the tab strip drops its dots (see rows.js / tabs-strip.js).
+      const statusDots = prefsMap.statusDots !== false
       const archivedSet = new Set(archivedSessionIds)
       // Same shape as the official row: the status store wins when it reports a
       // running flag, and the list snapshot covers the sessions the store has
@@ -394,7 +401,7 @@ window.__ModuleLoader__.load({
       const {
         bodyRows, isEmpty, matchesSession, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSearchedFolder, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, searchSessionNode, sectionRowsOf
       } = createTreeView({
-        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
       })
 
       const {
@@ -572,6 +579,9 @@ window.__ModuleLoader__.load({
         {
           name: 'conversation.header.leading',
           locale: NS,
+          // The strip reads the shared view store: the plugin settings page can
+          // hide tabs / fall back to native dots, and both must be live here.
+          store: viewStore,
           inject: () => ({ open: (sessionId) => { openSessionCompat(sessionId) } }),
         },
         TabsStrip,

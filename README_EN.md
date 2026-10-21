@@ -1,12 +1,34 @@
+<div align="center">
+
 # dsh-workspace-plus
 
-**English** | [简体中文](./README.md)
+**Folder hierarchy, browser-style session tabs, unified status dots and a plugin settings page for the DSH sidebar**
 
+[![GitHub release](https://img.shields.io/github/v/release/lsdt45/dsh-workspace-plus?color=2ea043&label=release)](https://github.com/lsdt45/dsh-workspace-plus/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/lsdt45/dsh-workspace-plus/total?color=2ea043&label=downloads)](https://github.com/lsdt45/dsh-workspace-plus/releases)
+[![DSH](https://img.shields.io/badge/DSH-0.2.x-4c6ef5)](https://github.com/lsdt45/dsh-workspace-plus)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
+[简体中文](README.md) · [English](README_EN.md)
+
+</div>
+
+---
+
+A DSH plugin that gives the [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) sidebar workspace list a **folder system** — a workspace is still one directory, but every `/` in its title becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder — plus **browser-style session tabs**, unified **status dots** and a **plugin settings page**.
+
+- 🗂️ **Hierarchical tree** — every `/` in a workspace or session title becomes a virtual folder, arbitrarily deep; sections, pinning, time buckets and drag ordering included
+- 📑 **Session tabs** — click to replace the current tab, Shift+click to open a new one, right-click for the same session menu, drag to reorder live; order survives restarts, at most 12 tabs
+- 🔴 **Status dots** — one 6px dot per row: running orange breathing / pending amber / done green, mirrored in the tab strip
+- 🎛️ **Plugin settings page** — switches for "Show session tabs" and "Enable status dots"; turning them off restores the shell's native header and status lights
+- 📦 **Install and go** — prebuilt artifacts ship with the repo and the Release, so git installs need no build step
+
+> **Updating**: `dsh plugin --profile desktop update dsh-workspace-plus` (use `web` for the Web profile) and restart DSH; tabs and status dots can each be toggled from Settings → Plugins → Better Workspaces.
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
-> A **folder system** for the DeepSeek Harness (DSH) sidebar workspace list — a workspace is still one directory, but every `/` in its name becomes hierarchy, so `web/frontend` and `web/backend` group under one virtual `web` folder — plus **browser-style session tabs** for the conversation panel.
+**Contents**: [Features & preview](#features--preview) · [Install](#install) · [How it works](#how-it-works) · [Develop](#develop) · [Release notes](https://github.com/lsdt45/dsh-workspace-plus/releases) · [License](#license)
 
 ```
 github/                 <- virtual folder (naming only, not a real directory)
@@ -227,6 +249,8 @@ dsh plugin --profile web add https://github.com/lsdt45/dsh-workspace-plus.git
 ```
 
 Restart DSH after installing.
+
+> The plugin declares DSH `>=0.2.0-rc.1 <0.3.0-0` in [package.json](package.json) → `engines.dsh`; on a mismatched runtime DSH reports it as incompatible at install/load time (an exact-version exemption can be granted with `dsh plugin allow-version`).
 
 ### Update
 

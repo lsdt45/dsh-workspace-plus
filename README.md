@@ -1,12 +1,34 @@
+<div align="center">
+
 # dsh-workspace-plus
 
-[English](./README_EN.md) | **简体中文**
+**给 DSH 的侧边栏装上「文件夹系统」与浏览器式会话标签页，外加统一状态点与插件配置页**
 
+[![GitHub release](https://img.shields.io/github/v/release/lsdt45/dsh-workspace-plus?color=2ea043&label=release)](https://github.com/lsdt45/dsh-workspace-plus/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/lsdt45/dsh-workspace-plus/total?color=2ea043&label=downloads)](https://github.com/lsdt45/dsh-workspace-plus/releases)
+[![DSH](https://img.shields.io/badge/DSH-0.2.x-4c6ef5)](https://github.com/lsdt45/dsh-workspace-plus)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
+[简体中文](README.md) · [English](README_EN.md)
+
+</div>
+
+---
+
+DSH 插件：给 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 的侧边栏「工作区」列表装上一套**文件夹系统**——工作区还是那个工作区（一个目录），但标题里的 `/` 就是层级，让「网页前端」「网页后端」这类工作区归到同一个 `web` 分组下；再叠加浏览器风格的**会话标签页**、统一**状态点**与**插件配置页**。
+
+- 🗂️ **层级树** —— 工作区 / 会话标题里的 `/` 即分组，任意多级；另含分区、置顶、时间分桶与拖拽排序
+- 📑 **会话标签页** —— 点击替换当前标签、Shift+点击新开、右键复用会话菜单、拖拽实时排序；顺序随重启恢复，最多 12 个
+- 🔴 **状态点** —— 每行统一 6px：运行橙呼吸 / 待交互琥珀 / 完成绿，标签条同步显示
+- 🎛️ **插件配置页** —— 「展示会话标签页」「启用圆点状态」等开关，关掉即还原宿主原生顶栏与状态灯
+- 📦 **装上就能用** —— 预构建产物随仓库与 Release 提供，从 git 安装无需构建
+
+> **更新提示**：`dsh plugin --profile desktop update dsh-workspace-plus`（Web 端把 `desktop` 换成 `web`），更新后重启 DSH 生效；标签页与状态点都可在「设置 → 插件 → 更好的工作区」里逐项开关。
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
-> 给 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) 的侧边栏「工作区」列表装上一套**文件夹系统**——工作区还是那个工作区(一个目录),但名字里的 `/` 就是层级,让「网页前端」「网页后端」这类工作区可以归到同一个 `web` 分组下;再加上一套浏览器风格的**会话标签页**。
+**目录**：[功能与效果](#功能与效果) · [安装](#安装) · [工作原理](#工作原理) · [开发](#开发) · [更新日志](https://github.com/lsdt45/dsh-workspace-plus/releases) · [License](#license)
 
 ```
 github/                 ← 虚拟分组(不是真实目录,纯命名层级)
@@ -227,6 +249,8 @@ dsh plugin --profile web add https://github.com/lsdt45/dsh-workspace-plus.git
 ```
 
 安装完成后**重启 DSH** 即生效。
+
+> 插件在 [package.json](package.json) 的 `engines.dsh` 中声明兼容 DSH `>=0.2.0-rc.1 <0.3.0-0`；运行时版本不满足时，DSH 会在安装或加载时提示不兼容（可用 `dsh plugin allow-version` 按精确版本豁免）。
 
 ### 更新
 

@@ -41,6 +41,10 @@ import { messageOf, SESSION_DELETE_ROUTE, checkSessionDelete, deleteSessionRecor
 import { createViewStore } from './store.ts'
 import { icon, iconExport, resolveIcon, PinIcon16, lucideSvg, ListTreeIcon16, ListIcon16, CalendarDaysIcon16 } from './icons.ts'
 import { BTN, TextDialog, ConfirmDialog, createQuietBoundary, PickerList, renderWsTag, StyleNode } from './ui/base.ts'
+import { SearchOverlaySeat } from './ui/search-overlay.ts'
+import { searchHost } from './ui/search-host.ts'
+import { searchCandidates } from './core/search.ts'
+import type { SearchCandidate } from './core/search.ts'
 import { BetterFlow } from './ui/flow.ts'
 import { createBrowserModel } from './browser/model.ts'
 import { createDnd } from './browser/dnd.ts'
@@ -77,6 +81,9 @@ interface BetterBrowserProps {
   unarchiveSession?: (sessionId: string) => any
   createWorkspace?: (input: any) => any
   pickDirectory?: () => any
+  /** Host full-text search over session history (absent before 0.2.1). */
+  searchSessions?: (query: string, signal?: any) => Promise<{ items: Array<{ sessionId: string; snippet?: string }>; hasMore?: boolean }>
+  searchResultLimit?: number
   insertWorkspaceBefore?: (workspaceId: string, beforeWorkspaceId: string) => any
   insertSessionBefore?: (workspaceId: string, sessionId: string, beforeSessionId: string) => any
   deleteSession?: (sessionId: string) => any
@@ -113,7 +120,8 @@ window.__ModuleLoader__.load({
         useSessions, useSessionStatus, useSessionPendingInteraction, useWorkspaces,
         useStore, actions,
         startSession, open, renameSession, forkSession, renameWorkspace, deleteWorkspace,
-        archiveSession, unarchiveSession, createWorkspace, pickDirectory, insertWorkspaceBefore, insertSessionBefore,
+        archiveSession, unarchiveSession, createWorkspace, pickDirectory, searchSessions, searchResultLimit,
+        insertWorkspaceBefore, insertSessionBefore,
         deleteSession, checkSessionDelete: checkDelete, openDirectory, refreshSessions, refreshPage,
         t,
       } = props
@@ -189,8 +197,6 @@ window.__ModuleLoader__.load({
         return segs.length > 0 ? segs[segs.length - 1] : (workspace.leaf || '')
       }
 
-      const [query, setQuery] = React.useState('')
-      const [searchOpen, setSearchOpen] = React.useState(false)
       const [flowOpen, setFlowOpen] = React.useState(false)
       const [flowParent, setFlowParent] = React.useState('') // parent path prefill for the add-workspace flow (context menu entry)
       const [dialog, setDialog] = React.useState(null) // { kind, ... }
@@ -345,13 +351,12 @@ window.__ModuleLoader__.load({
         }
         for (const id of current) seen.add(id)
       }, [list, pinnedList])
-      const normalizedQuery = query.trim().toLowerCase()
       const now = Date.now()
       React.useEffect(() => {
         if (wsDragArmTimer.current !== null) { clearTimeout(wsDragArmTimer.current); wsDragArmTimer.current = null }
         setDrag(null)
         return () => { if (wsDragArmTimer.current !== null) clearTimeout(wsDragArmTimer.current) }
-      }, [viewMode, sortOrder, archivedFilter, normalizedQuery])
+      }, [viewMode, sortOrder, archivedFilter])
 
       const fail = (text: any) => { setFlowOpen(false); setDialog(null); setNotice(null); setErrorText(String(text || 'unknown error')) }
 
@@ -386,16 +391,45 @@ window.__ModuleLoader__.load({
       // Derived once per render; the destructuring keeps every downstream name
       // unchanged, so the rest of this component reads as before.
       const {
-        searching, accounted, workspaceIndexOf, sessionRowOf, ungrouped,
+        accounted, workspaceIndexOf, sessionRowOf, ungrouped,
         sectionedSessions, visibleItems, workspaceRecency, recency, projectItems, tree,
-        sessionsOf, searchAgent, searched, nodePulseOf, wsPulseOf, wsAllPulseOf,
+        sessionsOf, nodePulseOf, wsPulseOf, wsAllPulseOf,
         folderPulseOf, folderExpanded, sessionsOpenOf, sessionGroupOpen,
       } = createBrowserModel({
-        normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
+        items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
         sessionSectionOf, drag, sortOrder, viewMode, storeFolders, compactChains,
         workspaceGroupOf, statusPulse, expandedMap, sessionsExpandedMap, sessionGroupsMap,
       })
 
+
+      // Search overlay candidates: every visible session with its workspace
+      // label, shared by the local title matches and the content-hit merge.
+      const searchLimit = Number(searchResultLimit) > 0 ? Number(searchResultLimit) : 20
+      const searchRows: SearchCandidate[] = React.useMemo(() => {
+        // The label resolver lives inside the memo so the row list only rebuilds
+        // when a source snapshot changes (workspace titles arrive with items).
+        const workspaceLabelOf = (id: string): string => {
+          const workspaceId = workspaceIndexOf.get(id)
+          return workspaceId !== undefined ? workspaceTitleOf(workspaceId) : ''
+        }
+        return searchCandidates(list, workspaceLabelOf).filter((row) => {
+          const archived = archivedSet.has(row.id)
+          return archivedFilter === 'only' ? archived : !archived
+        })
+      }, [list, items, archivedSessionIds, archivedFilter])
+
+      // Publish into the bridge the shell.overlay seat reads: the panel lives
+      // outside the sidebar's fixed-position container, so it cannot hold the
+      // sidebar's React state directly.
+      React.useEffect(() => {
+        searchHost.publish({
+          candidates: searchRows,
+          limit: searchLimit,
+          searchSessions: typeof searchSessions === 'function' ? searchSessions : null,
+          openSession: typeof open === 'function' ? open : null,
+          t,
+        })
+      }, [searchRows, searchLimit, searchSessions, open, t])
 
       // Highest-priority status across a whole session subtree (groups + rows).
 
@@ -430,13 +464,13 @@ window.__ModuleLoader__.load({
       const {
         canDragWorkspace, canMoveWorkspaceGroup, canReorderSessions, canReorderWorkspaces, commitSessionDrop, commitSessionMoveInto, commitWorkspaceDrop, commitWorkspaceMoveInto, dragMatches, folderDropEvents, nextWorkspaceAfter, rowHalf, sessDropHalf, sessionDragEvents, sessionDraggable, sgroupDropEvents, sgroupDropInto, workspaceDragEvents, workspaceGroupDropEvents, wsDropHalf, wsDropInto
       } = createDnd({
-        archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, fail, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, searching, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
+        archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, fail, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
       })
 
       const {
-        bodyRows, isEmpty, matchesSession, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSearchedFolder, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, searchSessionNode, sectionRowsOf
+        bodyRows, isEmpty, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, sectionRowsOf
       } = createTreeView({
-        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, normalizedQuery, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, searchAgent, searched, searching, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
       })
 
       const {
@@ -446,7 +480,7 @@ window.__ModuleLoader__.load({
       })
 
       const { render: renderLayout } = createLayout({
-        actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, ownMenuRoot, pickDirectory, query, renameWorkspace, searchOpen, sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, setQuery, setSearchOpen, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide: wide === true, workspaceGroupOf, workspaceGroups, workspaceIndexOf
+        actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, ownMenuRoot, pickDirectory, renameWorkspace, openSearch: () => searchHost.show(), sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide: wide === true, workspaceGroupOf, workspaceGroups, workspaceIndexOf
       })
 
       return renderLayout()
@@ -620,6 +654,17 @@ window.__ModuleLoader__.load({
           inject: () => ({ open: (sessionId: string) => { openSessionCompat(sessionId) } }),
         },
         TabsStrip,
+      ))
+
+      // Search panel: root-scoped overlay seat so the panel floats over the
+      // whole app instead of being clipped by the sidebar's own container.
+      // shell.overlay is a LIST slot (shell.overlay: { kind: 'list' } in the
+      // frame's root registration), and the slot core rejects a list registration
+      // without an id — omit it and the panel silently never renders.
+      slots.inject('shell.overlay', guarded(
+        'shell.overlay',
+        { name: 'shell.overlay', id: 'dsh-workspace-plus.search' },
+        SearchOverlaySeat,
       ))
 
       // 3. the browser itself — lowest priority renders, shadowing the shipped entry.

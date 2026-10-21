@@ -6,7 +6,6 @@ export const CSS_TEXT = [
   '.bw-header-title{flex:1;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-secondary,#b8b8b8);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.bw-icon-btn{flex:none;width:24px;height:24px;border:none;background:transparent;border-radius:6px;display:grid;place-items:center;color:var(--dsw-alias-label-secondary,#b8b8b8);cursor:pointer;padding:0}',
   '.bw-icon-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}',
-  '.bw-search-row{flex:none;padding:0 10px 6px}',
   '.bw-input{width:100%;box-sizing:border-box;height:26px;background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.1));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:6px;color:inherit;padding:0 8px;font-size:12px;outline:none;font-family:inherit}',
   '.bw-input:focus{border-color:var(--dsw-alias-brand-primary,#5b8def)}',
   '.bw-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
@@ -30,12 +29,29 @@ export const CSS_TEXT = [
   '.bw-row:hover .bw-row-actions{display:flex}',
   '.bw-row:hover .bw-row-time,.bw-row:hover .bw-row-count,.bw-row:hover .bw-schedule-badge{display:none}',
   // Session-row hover bubble (ui/tooltip.js). Metrics and tokens mirror the
-  // host primitives bubble, so the plugin-owned tip is visually identical.
+  // host primitives bubble; placement is the bubble's own top-left corner, set
+  // beside the row like the Codex hover card — no translate to undo it.
   '.bw-tip{display:inline-flex;align-items:center;gap:8px;position:fixed;z-index:100;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,rgba(24,24,28,.95));color:var(--dsw-static-neutral-bluish-00,#fff);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;animation:bw-tip-in 150ms var(--ds-ease-in-out,ease)}',
-  '.bw-tip[data-side="bottom"]{transform:translateX(-50%)}',
-  '.bw-tip[data-side="top"]{transform:translate(-50%,-100%)}',
   '@keyframes bw-tip-in{from{opacity:0}}',
   '@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}',
+  // Floating search overlay (ui/search-overlay.ts): one dark card pinned near
+  // the sidebar's top-left corner, matching the shell's menu surfaces.
+  '.bw-search-overlay{position:fixed;inset:0;z-index:130}',
+  '.bw-search-panel{position:absolute;left:16px;top:64px;width:min(560px,calc(100vw - 32px));max-height:min(72vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));overflow:hidden}',
+  '.bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
+  '.bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}',
+  '.bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+  '.bw-search-list{flex:1;min-height:0;overflow-y:auto;padding:6px 8px 8px}',
+  '.bw-search-section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 2px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+  '.bw-search-status{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.bw-search-empty{padding:18px 10px;text-align:center;font-size:12px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+  '.bw-search-row{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:7px 8px;border:none;background:transparent;border-radius:8px;text-align:left;cursor:pointer;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit}',
+  '.bw-search-row-active{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.16))}',
+  '.bw-search-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
+  '.bw-search-row-title{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.bw-search-row-snippet{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.bw-search-row-ws{flex:none;max-width:120px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+  '.bw-search-row-idx{flex:none;min-width:26px;padding:1px 5px;border-radius:6px;background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14));font-size:10.5px;text-align:center;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}',
   '.bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}',
   // The session title repeats what the active tab already says, so hide just that
   // line — the shell's own header layout stays untouched (re-gridding it made the

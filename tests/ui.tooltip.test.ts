@@ -40,76 +40,64 @@ test('pointInRect survives degenerate and missing inputs', () => {
   assert.equal(pointInRect(undefined, undefined), false)
 })
 
-test('placeTip centers the bubble under the anchor and honours the default gap', () => {
+test('placeTip sits the bubble to the right of the row, centred on it', () => {
   const anchor = rect(100, 200, 80, 26)
   const size = { width: 200, height: 20 }
   const viewport = { width: 1280, height: 800 }
-  assert.deepEqual(placeTip(anchor, size, viewport), { left: 140, top: 234, side: 'bottom' })
+  assert.deepEqual(placeTip(anchor, size, viewport), { left: 188, top: 203, side: 'right' })
   assert.deepEqual(Object.keys(placeTip(anchor, size, viewport)).sort(), ['left', 'side', 'top'])
 })
 
-test('placeTip clamps against the right viewport edge', () => {
-  const anchor = rect(1200, 200, 60, 26)
+test('placeTip flips to the left when the right side has no room', () => {
+  const anchor = rect(1180, 200, 60, 26)
   const size = { width: 200, height: 20 }
   const viewport = { width: 1280, height: 800 }
   const out = placeTip(anchor, size, viewport)
-  assert.equal(out.left, viewport.width - TIP_EDGE - size.width / 2, 'centered x is clamped to the right margin')
-  assert.equal(out.left, 1168)
+  assert.equal(out.side, 'left')
+  assert.equal(out.left, anchor.left - 8 - size.width)
+  assert.equal(out.left, 972)
+  assert.equal(out.top, 203)
+})
+
+test('placeTip clamps the vertical centre inside the viewport margins', () => {
+  const size = { width: 200, height: 20 }
+  const viewport = { width: 1280, height: 800 }
+  const low = placeTip(rect(100, 780, 80, 26), size, viewport)
+  assert.equal(low.side, 'right')
+  assert.equal(low.top, viewport.height - TIP_EDGE - size.height, 'bottom margin wins')
+  assert.equal(low.top, 768)
+  const high = placeTip(rect(100, -40, 80, 26), size, viewport)
+  assert.equal(high.top, TIP_EDGE, 'top margin wins')
+})
+
+test('placeTip falls back below the row when neither side fits', () => {
+  const viewport = { width: 300, height: 800 }
+  const size = { width: 200, height: 20 }
+  const out = placeTip(rect(100, 100, 80, 26), size, viewport)
   assert.equal(out.side, 'bottom')
+  assert.equal(out.top, 100 + 26 + 8)
+  assert.equal(out.left, 40, 'horizontally centred on the anchor')
 })
 
-test('placeTip clamps against the left viewport edge too', () => {
-  const anchor = rect(0, 200, 40, 26)
+test('placeTip flips above in the narrow-viewport fallback when below cannot fit', () => {
+  const viewport = { width: 300, height: 200 }
   const size = { width: 200, height: 20 }
-  const out = placeTip(anchor, size, { width: 1280, height: 800 })
-  assert.equal(out.left, TIP_EDGE + size.width / 2)
-  assert.equal(out.left, 112)
-})
-
-test('placeTip flips above the anchor when below cannot fit but above can', () => {
-  const anchor = rect(100, 700, 80, 26)
-  const size = { width: 200, height: 20 }
-  const viewport = { width: 1280, height: 760 }
-  const out = placeTip(anchor, size, viewport)
+  const out = placeTip(rect(100, 150, 80, 26), size, viewport)
   assert.equal(out.side, 'top')
-  assert.equal(out.top, anchor.top - 8 - size.height)
-  assert.equal(out.top, 672)
+  assert.equal(out.top, 150 - 8 - size.height)
 })
 
-test('placeTip keeps the bubble below when neither side fits', () => {
-  const anchor = rect(100, 4, 80, 26) // taller than the viewport allows either way
-  const size = { width: 200, height: 40 }
-  const viewport = { width: 1280, height: 60 }
-  const out = placeTip(anchor, size, viewport)
+test('placeTip keeps the bubble below when neither side of the anchor fits', () => {
+  const viewport = { width: 300, height: 60 }
+  const out = placeTip(rect(100, 4, 80, 26), { width: 200, height: 40 }, viewport)
   assert.equal(out.side, 'bottom')
-  assert.equal(out.top, anchor.bottom + 8)
   assert.equal(out.top, 38)
 })
 
-test('placeTip treats the exact fit boundaries as fitting', () => {
-  const size = { width: 200, height: 20 }
-  const viewport = { width: 1280, height: 800 }
-  // below + height === viewport.height - TIP_EDGE  -> still fits below
-  const flushBottom = rect(100, viewport.height - TIP_EDGE - size.height - 8 - 26, 80, 26)
-  assert.equal(placeTip(flushBottom, size, viewport).side, 'bottom')
-
-  // A viewport short enough that the bottom never fits: the flip boundary is
-  // above === TIP_EDGE, so top = TIP_EDGE flips and top = TIP_EDGE - 1 falls back.
-  const tight = { width: 1280, height: 100 }
-  const atMargin = rect(100, TIP_EDGE + 8 + size.height, 80, 26)
-  const belowMargin = rect(100, TIP_EDGE + 8 + size.height - 1, 80, 26)
-  assert.equal(placeTip(atMargin, size, tight).side, 'top', 'above === TIP_EDGE still fits above')
-  assert.equal(placeTip(atMargin, size, tight).top, TIP_EDGE)
-  assert.equal(placeTip(belowMargin, size, tight).side, 'bottom', 'above < TIP_EDGE cannot flip; stay below')
-})
-
 test('placeTip lands on the left margin when the bubble is wider than the viewport', () => {
-  const anchor = rect(200, 100, 80, 26)
-  const size = { width: 600, height: 20 }
-  const viewport = { width: 320, height: 800 }
-  const out = placeTip(anchor, size, viewport)
-  assert.equal(out.left, TIP_EDGE + size.width / 2, 'the clamp floor wins over the ceiling')
+  const out = placeTip(rect(200, 100, 80, 26), { width: 600, height: 20 }, { width: 320, height: 800 })
   assert.equal(out.side, 'bottom')
+  assert.equal(out.left, TIP_EDGE, 'the clamp floor wins over the ceiling')
 })
 
 test('placeTip honours a custom gap and does not mutate its inputs', () => {
@@ -117,8 +105,8 @@ test('placeTip honours a custom gap and does not mutate its inputs', () => {
   const size = { width: 200, height: 20 }
   const viewport = { width: 1280, height: 800 }
   const snapshot = JSON.stringify([anchor, size, viewport])
-  assert.equal(placeTip(anchor, size, viewport, 0).top, 226)
-  assert.equal(placeTip(anchor, size, viewport, 24).top, 250)
+  assert.equal(placeTip(anchor, size, viewport, 0).left, 180)
+  assert.equal(placeTip(anchor, size, viewport, 24).left, 204)
   assert.equal(JSON.stringify([anchor, size, viewport]), snapshot)
 })
 

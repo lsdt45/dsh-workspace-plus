@@ -35,10 +35,9 @@ export interface LayoutInput {
   items: any
   notice: string | null
   ownMenuRoot: any
+  openSearch: () => void
   pickDirectory: any
-  query: string
   renameWorkspace: any
-  searchOpen: boolean
   sessionSectionOf: any
   setCtx: any
   setCtxSubmenu: any
@@ -47,8 +46,6 @@ export interface LayoutInput {
   setErrorText: any
   setFlowOpen: any
   setFlowParent: any
-  setQuery: any
-  setSearchOpen: any
   styleEntry: any
   submitFolderDelete: any
   submitFolderNew: any
@@ -71,7 +68,7 @@ export interface LayoutInput {
 
 export function createLayout(input: LayoutInput) {
   const {
-    actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, ownMenuRoot, pickDirectory, query, renameWorkspace, searchOpen, sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, setQuery, setSearchOpen, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide, workspaceGroupOf, workspaceGroups, workspaceIndexOf
+    actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, openSearch, ownMenuRoot, pickDirectory, renameWorkspace, sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide, workspaceGroupOf, workspaceGroups, workspaceIndexOf
   } = input
 
 /* --------------------------- dialogs --------------------------- */
@@ -87,7 +84,7 @@ export function createLayout(input: LayoutInput) {
   if (!wide) {
     return E('div', { className: 'bw-rail' },
       StyleNode(),
-      E('button', { type: 'button', className: 'bw-rail-btn', 'aria-label': t('rail.search'), onClick: () => { expandSidebar(); setSearchOpen(true) } }, icon('IconSearchOutline16', 18)),
+      E('button', { type: 'button', className: 'bw-rail-btn', 'aria-label': t('rail.search'), onClick: () => { expandSidebar(); openSearch() } }, icon('IconSearchOutline16', 18)),
       E('button', { type: 'button', className: 'bw-rail-btn', 'aria-label': t('rail.add'), onClick: () => { expandSidebar(); setFlowParent(''); setFlowOpen(true) } }, icon('IconProjectAddOutline16', 18)),
     )
   }
@@ -250,22 +247,12 @@ export function createLayout(input: LayoutInput) {
     StyleNode(),
     E('div', { className: 'bw-header' },
       E('div', { className: 'bw-header-title' }, t('title')),
-      (searchOpen || query !== '') ? E('input', {
-        className: 'bw-input',
-        style: { width: 130, flex: 'none' },
-        value: query,
-        autoFocus: true,
-        placeholder: t('search.placeholder'),
-        onChange: (e: any) => setQuery(e.target.value),
-        onKeyDown: (e: any) => { if (e.key === 'Escape') { setQuery(''); setSearchOpen(false) } },
-        onBlur: () => { if (query === '') setSearchOpen(false) },
-      }) : null,
       E('button', {
         type: 'button', className: 'bw-icon-btn', 'aria-label': t('view.label'), title: t('view.label'),
         'aria-haspopup': 'menu', 'aria-expanded': ctx !== null && ctx.kind === 'view',
         onClick: (e: any) => { e.preventDefault(); setCtx({ kind: 'view', payload: {}, x: e.clientX, y: e.clientY }) },
       }, viewGlyph()),
-      E('button', { type: 'button', className: 'bw-icon-btn', 'aria-label': t('search.placeholder'), onClick: () => setSearchOpen((v: boolean) => !v) }, icon('IconSearchOutline16')),
+      E('button', { type: 'button', className: 'bw-icon-btn', 'aria-label': t('search.label'), title: t('search.label'), onClick: () => openSearch() }, icon('IconSearchOutline16')),
       E('button', { type: 'button', className: 'bw-icon-btn', 'aria-label': t('add'), onClick: () => { setFlowParent(''); setFlowOpen(true) } }, icon('IconProjectAddOutline16')),
     ),
     E('div', { className: 'bw-tree', role: 'tree', 'aria-label': t('title') }, bodyRows),

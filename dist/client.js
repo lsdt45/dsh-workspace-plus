@@ -20,12 +20,18 @@
   // src/client/i18n/zh.ts
   var zh = {
     "title": "\u5DE5\u4F5C\u533A",
-    "search.placeholder": "\u641C\u7D22\u5DE5\u4F5C\u533A\u6216\u4F1A\u8BDD",
+    "search.placeholder": "\u641C\u7D22 \u804A\u5929",
+    "search.label": "\u641C\u7D22\u4F1A\u8BDD",
+    "search.results": "\u641C\u7D22\u7ED3\u679C",
+    "search.section.chats": "\u804A\u5929",
+    "search.empty": "\u6CA1\u6709\u5339\u914D\u7684\u4F1A\u8BDD",
+    "search.emptyRecent": "\u6682\u65E0\u6700\u8FD1\u4F1A\u8BDD",
+    "search.pending": "\u6B63\u5728\u641C\u7D22\u4F1A\u8BDD\u5386\u53F2\u2026",
+    "search.hasMore": "\u4EC5\u663E\u793A\u524D {n} \u6761\u7ED3\u679C\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002",
     "add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
     "rail.search": "\u641C\u7D22",
     "rail.add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
     "empty": "\u6682\u65E0\u5DE5\u4F5C\u533A",
-    "empty.search": "\u6CA1\u6709\u5339\u914D\u7684\u7ED3\u679C",
     "empty.archived": "\u6682\u65E0\u5DF2\u5F52\u6863\u4F1A\u8BDD",
     "empty.sessions": "\u6682\u65E0\u7B26\u5408\u7B5B\u9009\u6761\u4EF6\u7684\u4F1A\u8BDD",
     "empty.showAll": "\u67E5\u770B\u5168\u90E8\u5BF9\u8BDD",
@@ -197,12 +203,18 @@
   // src/client/i18n/en.ts
   var en = {
     "title": "Workspaces",
-    "search.placeholder": "Search workspaces or sessions",
+    "search.placeholder": "Search chats",
+    "search.label": "Search sessions",
+    "search.results": "Search results",
+    "search.section.chats": "Chats",
+    "search.empty": "No matching sessions",
+    "search.emptyRecent": "No recent sessions",
+    "search.pending": "Searching session history\u2026",
+    "search.hasMore": "Showing the first {n} results \u2014 refine your query.",
     "add": "Add workspace",
     "rail.search": "Search",
     "rail.add": "Add workspace",
     "empty": "No workspaces yet",
-    "empty.search": "No matches",
     "empty.archived": "No archived sessions",
     "empty.sessions": "No sessions match this filter",
     "empty.showAll": "Show all conversations",
@@ -933,7 +945,6 @@
     ".bw-header-title{flex:1;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-secondary,#b8b8b8);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     ".bw-icon-btn{flex:none;width:24px;height:24px;border:none;background:transparent;border-radius:6px;display:grid;place-items:center;color:var(--dsw-alias-label-secondary,#b8b8b8);cursor:pointer;padding:0}",
     ".bw-icon-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}",
-    ".bw-search-row{flex:none;padding:0 10px 6px}",
     ".bw-input{width:100%;box-sizing:border-box;height:26px;background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.1));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));border-radius:6px;color:inherit;padding:0 8px;font-size:12px;outline:none;font-family:inherit}",
     ".bw-input:focus{border-color:var(--dsw-alias-brand-primary,#5b8def)}",
     ".bw-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
@@ -957,12 +968,29 @@
     ".bw-row:hover .bw-row-actions{display:flex}",
     ".bw-row:hover .bw-row-time,.bw-row:hover .bw-row-count,.bw-row:hover .bw-schedule-badge{display:none}",
     // Session-row hover bubble (ui/tooltip.js). Metrics and tokens mirror the
-    // host primitives bubble, so the plugin-owned tip is visually identical.
+    // host primitives bubble; placement is the bubble's own top-left corner, set
+    // beside the row like the Codex hover card — no translate to undo it.
     ".bw-tip{display:inline-flex;align-items:center;gap:8px;position:fixed;z-index:100;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,rgba(24,24,28,.95));color:var(--dsw-static-neutral-bluish-00,#fff);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;animation:bw-tip-in 150ms var(--ds-ease-in-out,ease)}",
-    '.bw-tip[data-side="bottom"]{transform:translateX(-50%)}',
-    '.bw-tip[data-side="top"]{transform:translate(-50%,-100%)}',
     "@keyframes bw-tip-in{from{opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}",
+    // Floating search overlay (ui/search-overlay.ts): one dark card pinned near
+    // the sidebar's top-left corner, matching the shell's menu surfaces.
+    ".bw-search-overlay{position:fixed;inset:0;z-index:130}",
+    ".bw-search-panel{position:absolute;left:16px;top:64px;width:min(560px,calc(100vw - 32px));max-height:min(72vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));overflow:hidden}",
+    ".bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}",
+    ".bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}",
+    ".bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    ".bw-search-list{flex:1;min-height:0;overflow-y:auto;padding:6px 8px 8px}",
+    ".bw-search-section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 2px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    ".bw-search-status{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".bw-search-empty{padding:18px 10px;text-align:center;font-size:12px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    ".bw-search-row{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:7px 8px;border:none;background:transparent;border-radius:8px;text-align:left;cursor:pointer;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit}",
+    ".bw-search-row-active{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.16))}",
+    ".bw-search-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}",
+    ".bw-search-row-title{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".bw-search-row-snippet{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".bw-search-row-ws{flex:none;max-width:120px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".bw-search-row-idx{flex:none;min-width:26px;padding:1px 5px;border-radius:6px;background:var(--dsw-alias-bg-layer-2,rgba(127,127,127,.14));font-size:10.5px;text-align:center;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}",
     ".bw-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}",
     // The session title repeats what the active tab already says, so hide just that
     // line — the shell's own header layout stays untouched (re-gridding it made the
@@ -1175,8 +1203,8 @@
 
   // src/client/ui/base.ts
   var BTN = (props) => ui.Button ? E(ui.Button, props) : E("button", { type: "button", className: cls("bw-btn", props.variant === "primary" && "bw-btn-primary", props.className), onClick: props.onClick, disabled: props.disabled }, props.children);
-  function TextDialog({ title, hint, initial, confirmLabel, onConfirm, onClose, t }) {
-    const [value, setValue] = React.useState(initial);
+  function TextDialog({ title, hint, initial: initial2, confirmLabel, onConfirm, onClose, t }) {
+    const [value, setValue] = React.useState(initial2);
     const inputRef = React.useRef(null);
     React.useEffect(() => {
       if (inputRef.current) {
@@ -1307,6 +1335,303 @@
     "data-tag": workspaceTag
   });
   var StyleNode = () => E("style", null, CSS_TEXT);
+
+  // src/client/core/search.ts
+  var normalizeQuery = (text) => String(text ?? "").trim();
+  function searchCandidates(list, workspaceLabelOf) {
+    const ids = Array.isArray(list && list.ids) ? list.ids : Object.keys(list && list.byId || {});
+    const byId = list && list.byId || {};
+    const out = [];
+    for (const id of ids) {
+      const summary = byId[id];
+      if (!summary || summary.blank === true) continue;
+      out.push({
+        id: String(id),
+        title: String(summary.displayTitle || summary.title || "") || String(id),
+        workspace: workspaceLabelOf(String(id)),
+        updatedAt: Number(summary.updatedAt) || 0
+      });
+    }
+    return out;
+  }
+  function localSearch(candidates, query) {
+    const needle = normalizeQuery(query).toLowerCase();
+    if (needle === "") return [];
+    return candidates.filter((candidate) => candidate.title.toLowerCase().includes(needle) || candidate.workspace.toLowerCase().includes(needle)).slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+  function recentSearchRows(candidates, limit) {
+    const max = Math.max(0, Math.trunc(limit));
+    return candidates.slice().sort((a, b) => b.updatedAt - a.updatedAt).slice(0, max);
+  }
+  function mergeSearchResults(local, content, byId, limit) {
+    const max = Math.max(0, Math.trunc(limit));
+    const items = [];
+    const indexOf = /* @__PURE__ */ new Map();
+    const include = (row, snippet) => {
+      const existing = indexOf.get(row.id);
+      if (existing !== void 0) {
+        if (snippet && items[existing].snippet === void 0) items[existing].snippet = snippet;
+        return;
+      }
+      indexOf.set(row.id, items.length);
+      items.push(snippet === void 0 ? { ...row } : { ...row, snippet });
+    };
+    for (const row of local) include(row);
+    for (const hit of content || []) {
+      if (!hit || typeof hit.sessionId !== "string") continue;
+      const row = byId(hit.sessionId);
+      if (row) include(row, typeof hit.snippet === "string" && hit.snippet !== "" ? hit.snippet : void 0);
+    }
+    const hasMore = items.length > max;
+    return { items: items.slice(0, max), hasMore };
+  }
+
+  // src/client/ui/search-host.ts
+  var initial = {
+    open: false,
+    candidates: [],
+    limit: 20,
+    searchSessions: null,
+    openSession: null,
+    t: null
+  };
+  var state = initial;
+  var listeners = /* @__PURE__ */ new Set();
+  var emit = () => {
+    for (const listener of [...listeners]) {
+      try {
+        listener();
+      } catch {
+      }
+    }
+  };
+  var searchHost = {
+    state: () => state,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    publish(patch) {
+      const next = { ...state, ...patch };
+      const changed = Object.keys(patch).some((key) => next[key] !== state[key]);
+      if (!changed) return;
+      state = next;
+      emit();
+    },
+    show() {
+      searchHost.publish({ open: true });
+    },
+    hide() {
+      searchHost.publish({ open: false });
+    }
+  };
+  function useSearchHost() {
+    const [snapshot, setSnapshot] = React.useState(state);
+    React.useEffect(() => searchHost.subscribe(() => setSnapshot(state)), []);
+    return snapshot;
+  }
+
+  // src/client/ui/search-overlay.ts
+  var SEARCH_DEBOUNCE_MS = 180;
+  var DEFAULT_LIMIT = 20;
+  function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchSessions, onOpen, onClose, t }) {
+    const [query, setQuery] = React.useState("");
+    const [active, setActive] = React.useState(0);
+    const [remote, setRemote] = React.useState({ status: "idle", items: [], hasMore: false });
+    const inputRef = React.useRef(null);
+    const requestRef = React.useRef(0);
+    const cappedLimit = Math.max(1, Math.trunc(Number(limit) || DEFAULT_LIMIT));
+    React.useEffect(() => {
+      if (!open) return void 0;
+      const previous = typeof document !== "undefined" ? document.activeElement : null;
+      setQuery("");
+      setActive(0);
+      setRemote({ status: "idle", items: [], hasMore: false });
+      const timer = setTimeout(() => {
+        const input = inputRef.current;
+        if (input && typeof input.focus === "function") input.focus({ preventScroll: true });
+      }, 0);
+      return () => {
+        clearTimeout(timer);
+        if (previous && typeof previous.focus === "function") {
+          try {
+            previous.focus({ preventScroll: true });
+          } catch {
+          }
+        }
+      };
+    }, [open]);
+    React.useEffect(() => {
+      if (!open) return void 0;
+      const trimmed2 = normalizeQuery(query);
+      if (trimmed2 === "" || typeof searchSessions !== "function") {
+        requestRef.current += 1;
+        setRemote({ status: "idle", items: [], hasMore: false });
+        return void 0;
+      }
+      const requestId = requestRef.current + 1;
+      requestRef.current = requestId;
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      setRemote((previous) => ({ status: "loading", items: previous.items, hasMore: false }));
+      const timer = setTimeout(() => {
+        searchSessions(trimmed2, controller ? controller.signal : void 0).then((page) => {
+          if (requestRef.current !== requestId) return;
+          setRemote({
+            status: "ready",
+            items: Array.isArray(page && page.items) ? page.items : [],
+            hasMore: !!(page && page.hasMore)
+          });
+        }).catch(() => {
+          if (requestRef.current !== requestId) return;
+          setRemote({ status: "error", items: [], hasMore: false });
+        });
+      }, SEARCH_DEBOUNCE_MS);
+      return () => {
+        clearTimeout(timer);
+        if (controller) controller.abort();
+      };
+    }, [open, query, searchSessions]);
+    const byId = React.useMemo(() => {
+      const map = /* @__PURE__ */ new Map();
+      for (const candidate of candidates) if (!map.has(candidate.id)) map.set(candidate.id, candidate);
+      return map;
+    }, [candidates]);
+    const merged = React.useMemo(() => {
+      const local = localSearch(candidates, query);
+      return mergeSearchResults(local, remote.items, (id) => byId.get(id), cappedLimit);
+    }, [candidates, query, remote.items, byId, cappedLimit]);
+    const display = React.useMemo(() => {
+      if (normalizeQuery(query) === "") return recentSearchRows(candidates, cappedLimit).map((candidate) => ({ ...candidate }));
+      return merged.items;
+    }, [candidates, query, merged, cappedLimit]);
+    React.useEffect(() => {
+      setActive(0);
+    }, [query]);
+    const openAt = (index) => {
+      const row = display[index];
+      if (!row) return;
+      onOpen(row.id);
+      onClose();
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActive((index) => display.length === 0 ? 0 : (index + 1) % display.length);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActive((index) => display.length === 0 ? 0 : (index - 1 + display.length) % display.length);
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        openAt(active);
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(event.key)) {
+        event.preventDefault();
+        openAt(Number(event.key) - 1);
+      }
+    };
+    if (!open) return null;
+    const trimmed = normalizeQuery(query);
+    const pending = remote.status === "loading";
+    const rows = display.map((row, index) => E(
+      "button",
+      {
+        key: row.id,
+        type: "button",
+        role: "option",
+        "aria-selected": index === active,
+        className: cls("bw-search-row", index === active && "bw-search-row-active"),
+        onMouseEnter: () => setActive(index),
+        onClick: () => {
+          onOpen(row.id);
+          onClose();
+        }
+      },
+      E(
+        "span",
+        { className: "bw-search-row-main" },
+        E("span", { className: "bw-search-row-title", title: row.title }, row.title),
+        row.snippet ? E("span", { className: "bw-search-row-snippet" }, row.snippet) : null
+      ),
+      row.workspace ? E("span", { className: "bw-search-row-ws", title: row.workspace }, row.workspace) : null,
+      index < 9 ? E("span", { className: "bw-search-row-idx", "aria-hidden": "true" }, "\u2303" + (index + 1)) : null
+    ));
+    const empty = display.length === 0;
+    const statusText = trimmed === "" ? "" : pending ? t("search.pending") : remote.hasMore || merged.hasMore ? t("search.hasMore", { n: cappedLimit }) : "";
+    return E(
+      "div",
+      {
+        className: "bw-search-overlay",
+        onMouseDown: () => onClose(),
+        onKeyDown
+      },
+      E(
+        "div",
+        {
+          className: "bw-search-panel",
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": t("search.label"),
+          onMouseDown: (event) => event.stopPropagation()
+        },
+        E(
+          "div",
+          { className: "bw-search-field" },
+          icon("IconSearchOutline16", 16),
+          E("input", {
+            ref: inputRef,
+            className: "bw-search-input",
+            type: "text",
+            value: query,
+            placeholder: t("search.placeholder"),
+            "aria-label": t("search.label"),
+            autoComplete: "off",
+            spellCheck: false,
+            onChange: (event) => setQuery(event.target.value)
+          })
+        ),
+        E(
+          "div",
+          { className: "bw-search-list", role: "listbox", "aria-label": t("search.results") },
+          E(
+            "div",
+            { className: "bw-search-section" },
+            E("span", null, t("search.section.chats")),
+            statusText !== "" ? E("span", { className: "bw-search-status", role: "status" }, statusText) : null
+          ),
+          empty ? pending ? null : E("div", { className: "bw-search-empty" }, trimmed === "" ? t("search.emptyRecent") : t("search.empty")) : rows
+        )
+      )
+    );
+  }
+  function SearchOverlaySeat() {
+    const host = useSearchHost();
+    if (!host.open || host.t === null) return null;
+    const t = host.t;
+    return E(SearchOverlay, {
+      open: true,
+      candidates: host.candidates,
+      limit: host.limit,
+      searchSessions: host.searchSessions,
+      onOpen: (sessionId) => {
+        if (host.openSession) host.openSession(sessionId);
+      },
+      onClose: () => searchHost.hide(),
+      t
+    });
+  }
 
   // src/client/ui/flow.ts
   function BetterFlow(props) {
@@ -1728,15 +2053,22 @@
   var TIP_TICK_MS = 120;
   var pointInRect = (rect, point) => !!rect && !!point && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
   var placeTip = (anchor, size, viewport, gap = 8) => {
-    const lo = TIP_EDGE + size.width / 2;
-    const hi = viewport.width - TIP_EDGE - size.width / 2;
-    const left = Math.max(lo, Math.min(anchor.left + anchor.width / 2, hi));
+    const top = Math.max(TIP_EDGE, Math.min(
+      anchor.top + anchor.height / 2 - size.height / 2,
+      Math.max(TIP_EDGE, viewport.height - TIP_EDGE - size.height)
+    ));
+    const right = anchor.right + gap;
+    if (right + size.width <= viewport.width - TIP_EDGE) return { left: right, top, side: "right" };
+    const left = anchor.left - gap - size.width;
+    if (left >= TIP_EDGE) return { left, top, side: "left" };
+    const centred = anchor.left + anchor.width / 2 - size.width / 2;
+    const x = Math.max(TIP_EDGE, Math.min(centred, viewport.width - TIP_EDGE - size.width));
     const below = anchor.bottom + gap;
     const above = anchor.top - gap - size.height;
     const fitsBelow = below + size.height <= viewport.height - TIP_EDGE;
     const fitsAbove = above >= TIP_EDGE;
     const flipped = !fitsBelow && fitsAbove;
-    return { left, top: flipped ? above : below, side: flipped ? "top" : "bottom" };
+    return { left: x, top: flipped ? above : below, side: flipped ? "top" : "bottom" };
   };
   function useHoverTip(options) {
     const opts = options || {};
@@ -1982,23 +2314,23 @@
   };
   var PULSE_RANK = { warning: 3, ongoing: 2, done: 1 };
   var PULSE_COLORS = { warning: "#d29922", ongoing: "#ff9f45", done: "#3fb950" };
-  var pulseRank = (state) => state ? PULSE_RANK[state] || 0 : 0;
-  function PulseGlow({ state, children }) {
+  var pulseRank = (state2) => state2 ? PULSE_RANK[state2] || 0 : 0;
+  function PulseGlow({ state: state2, children }) {
     return E("span", {
       className: "bw-pulse",
-      style: { "--bw-pulse-color": PULSE_COLORS[state] || PULSE_COLORS.ongoing }
+      style: { "--bw-pulse-color": PULSE_COLORS[state2] || PULSE_COLORS.ongoing }
     }, children);
   }
   var STATUS_DOT_SIZE = 6;
-  function StatusDot({ state, size = STATUS_DOT_SIZE, label, native }) {
+  function StatusDot({ state: state2, size = STATUS_DOT_SIZE, label, native }) {
     if (native === true && ui && typeof ui.StateDot === "function") {
-      return E(ui.StateDot, { state, size: 10 });
+      return E(ui.StateDot, { state: state2, size: 10 });
     }
     return E("span", {
       className: "bw-state-dot",
       role: label ? "img" : void 0,
       "aria-label": label,
-      style: { width: size, height: size, background: PULSE_COLORS[state] }
+      style: { width: size, height: size, background: PULSE_COLORS[state2] }
     });
   }
   var relayStateOf = (row, current) => {
@@ -2006,10 +2338,10 @@
     return s === "ongoing" ? null : s;
   };
   function SessionRow({ node, depth, current, onOpen, onContextMenu, now, dropHalf, dragEvents, custStyle, breathing, statusDots, pinned, onTogglePin, onUnarchive, workspaceTag, tagOnHover, tooltip, t }) {
-    const state = sessionStateOf(node, current);
-    const status = state === null ? null : {
-      state,
-      title: state === "warning" ? t("status." + (node.pending === "plan-review" ? "planReview" : node.pending)) : state === "ongoing" ? node.running ? t("status.running") : t("status.subagents", { n: node.subagents }) : t("status.completed")
+    const state2 = sessionStateOf(node, current);
+    const status = state2 === null ? null : {
+      state: state2,
+      title: state2 === "warning" ? t("status." + (node.pending === "plan-review" ? "planReview" : node.pending)) : state2 === "ongoing" ? node.running ? t("status.running") : t("status.subagents", { n: node.subagents }) : t("status.completed")
     };
     const hasHoverLabel = tooltip === true;
     const hoverLabel = hasHoverLabel ? () => {
@@ -2065,7 +2397,7 @@
       E(
         "span",
         { className: "bw-row-icon", title: status ? status.title : void 0 },
-        status ? state === "ongoing" ? breathing ? E(PulseGlow, { state: "ongoing" }, E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false })) : E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false }) : E(StatusDot, { state: status.state, label: status.title, native: statusDots === false }) : E("span", { className: "bw-dot" })
+        status ? state2 === "ongoing" ? breathing ? E(PulseGlow, { state: "ongoing" }, E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false })) : E(StatusDot, { state: "ongoing", label: status.title, native: statusDots === false }) : E(StatusDot, { state: status.state, label: status.title, native: statusDots === false }) : E("span", { className: "bw-dot" })
       ),
       E("span", { className: "bw-row-label" }, node.leaf || node.title),
       node.archived ? E("span", { className: "bw-archive-mark", role: "img", "aria-label": t("session.archived"), title: t("session.archived") }, icon("IconArchiveOutline20", 14)) : null,
@@ -2103,7 +2435,6 @@
   // src/client/browser/model.ts
   function createBrowserModel(input) {
     const {
-      normalizedQuery,
       items,
       list,
       archivedSet,
@@ -2188,34 +2519,6 @@
       }
       return orderRows(rows, sortOrder);
     };
-    const searchAgent = (agent) => {
-      if (!normalizedQuery) return agent;
-      if (agent.kind === "ws") {
-        const ws = agent.workspace;
-        const sessions = sessionsOf(ws);
-        const wsHit = ws.leaf.toLowerCase().includes(normalizedQuery) || ws.title.toLowerCase().includes(normalizedQuery);
-        if (wsHit || sessions.some((s) => s.title.toLowerCase().includes(normalizedQuery))) {
-          return { ...agent, node: agent, folders: [], workspaces: [ws] };
-        }
-        return null;
-      }
-      const folders = [];
-      for (const folder of agent.folders) {
-        const hit = searchAgent(folder);
-        if (hit) folders.push(hit);
-      }
-      const workspaces = [];
-      for (const workspace of agent.workspaces) {
-        const sessions = sessionsOf(workspace);
-        const wsHit = workspace.leaf.toLowerCase().includes(normalizedQuery) || workspace.title.toLowerCase().includes(normalizedQuery);
-        const matchedSessions = wsHit ? sessions : sessions.filter((s) => s.title.toLowerCase().includes(normalizedQuery));
-        if (wsHit || matchedSessions.length > 0) workspaces.push({ workspace, matchedSessions });
-      }
-      if (folders.length === 0 && workspaces.length === 0) return null;
-      return { node: agent, folders, workspaces };
-    };
-    const searched = normalizedQuery ? searchAgent(tree) : null;
-    const searching = normalizedQuery !== "";
     const viewedSessionId = currentSessionId;
     const nodePulseOf = (sessionNode) => {
       let best = null;
@@ -2229,8 +2532,8 @@
       }
       return best;
     };
-    const wsPulseOf = (workspace) => !statusPulse || searching || sessionsOpenOf(workspace.workspaceId) ? null : nodePulseOf(buildSessionTree(sessionsOf(workspace)));
-    const wsAllPulseOf = (workspace) => !statusPulse || searching ? null : nodePulseOf(buildSessionTree(sessionsOf(workspace)));
+    const wsPulseOf = (workspace) => !statusPulse || sessionsOpenOf(workspace.workspaceId) ? null : nodePulseOf(buildSessionTree(sessionsOf(workspace)));
+    const wsAllPulseOf = (workspace) => !statusPulse ? null : nodePulseOf(buildSessionTree(sessionsOf(workspace)));
     const folderPulseOf = (node) => {
       if (node.kind === "ws") return wsAllPulseOf(node.workspace);
       let best = null;
@@ -2248,7 +2551,6 @@
     const sessionsOpenOf = (workspaceId) => sessionsExpandedMap ? sessionsExpandedMap[workspaceId] !== false : true;
     const sessionGroupOpen = (key) => sessionGroupsMap ? sessionGroupsMap[key] !== false : true;
     return {
-      searching,
       accounted,
       workspaceIndexOf,
       sessionRowOf,
@@ -2260,8 +2562,6 @@
       projectItems,
       tree,
       sessionsOf,
-      searchAgent,
-      searched,
       nodePulseOf,
       wsPulseOf,
       wsAllPulseOf,
@@ -2290,7 +2590,6 @@
       recency,
       renameByUser,
       renameWorkspace,
-      searching,
       sessionsOf,
       setDrag,
       tree,
@@ -2332,9 +2631,9 @@
     };
     const wsDropInto = (path) => dragMatches("workspace") && drag.over && drag.over.kind === "folder" && drag.over.target === path;
     const workspaceDragEvents = (workspace) => ({
-      draggable: !searching && canDragWorkspace,
+      draggable: canDragWorkspace,
       onDragStart: (event) => {
-        if (searching || !canDragWorkspace) return;
+        if (!canDragWorkspace) return;
         event.stopPropagation();
         try {
           event.dataTransfer.effectAllowed = "move";
@@ -2358,7 +2657,7 @@
         setDrag(null);
       },
       onDragOver: (event) => {
-        if (!dragMatches("workspace") || !canDragWorkspace || searching) return;
+        if (!dragMatches("workspace") || !canDragWorkspace) return;
         if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return;
         event.preventDefault();
         event.stopPropagation();
@@ -2370,7 +2669,7 @@
         setDrag((current) => current && current.over && current.over.kind === "workspace" && current.over.target === workspace.workspaceId && current.over.half === half ? current : current ? { ...current, over: { kind: "workspace", target: workspace.workspaceId, half } } : current);
       },
       onDrop: (event) => {
-        if (!dragMatches("workspace") || !canDragWorkspace || searching) return;
+        if (!dragMatches("workspace") || !canDragWorkspace) return;
         if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return;
         event.preventDefault();
         event.stopPropagation();
@@ -2380,7 +2679,7 @@
     });
     const folderDropEvents = (path) => ({
       onDragOver: (event) => {
-        if (!dragMatches("workspace") || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return;
+        if (!dragMatches("workspace") || !canReorderWorkspaces || workspaceGroupOf(drag.source.workspaceId)) return;
         event.preventDefault();
         event.stopPropagation();
         try {
@@ -2390,7 +2689,7 @@
         setDrag((current) => current && current.over && current.over.kind === "folder" && current.over.target === path ? current : current ? { ...current, over: { kind: "folder", target: path } } : current);
       },
       onDrop: (event) => {
-        if (!dragMatches("workspace") || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return;
+        if (!dragMatches("workspace") || !canReorderWorkspaces || workspaceGroupOf(drag.source.workspaceId)) return;
         event.preventDefault();
         event.stopPropagation();
         commitWorkspaceMoveInto(path);
@@ -2413,7 +2712,7 @@
       return index === -1 ? void 0 : node.workspaces[index + 1] ? node.workspaces[index + 1].workspaceId : void 0;
     };
     const commitWorkspaceDrop = (targetWorkspace, half) => {
-      if (!drag || !canDragWorkspace || searching) {
+      if (!drag || !canDragWorkspace) {
         setDrag(null);
         return;
       }
@@ -2433,7 +2732,7 @@
       chain.then(() => anchor !== void 0 ? insertWorkspaceBefore(source.workspaceId, anchor) : insertWorkspaceBefore(source.workspaceId)).catch(fail);
     };
     const commitWorkspaceMoveInto = (folderPath) => {
-      if (!drag || !canReorderWorkspaces || searching || viewMode !== "projects" || workspaceGroupOf(drag.source.workspaceId)) {
+      if (!drag || !canReorderWorkspaces || viewMode !== "projects" || workspaceGroupOf(drag.source.workspaceId)) {
         setDrag(null);
         return;
       }
@@ -2445,7 +2744,7 @@
     };
     const workspaceGroupDropEvents = (groupId) => ({
       onDragOver: (event) => {
-        if (!dragMatches("workspace") && !dragMatches("session") || !canMoveWorkspaceGroup || searching) return;
+        if (!dragMatches("workspace") && !dragMatches("session") || !canMoveWorkspaceGroup) return;
         event.preventDefault();
         event.stopPropagation();
         try {
@@ -2458,7 +2757,7 @@
         });
       },
       onDrop: (event) => {
-        if (!dragMatches("workspace") && !dragMatches("session") || !canMoveWorkspaceGroup || searching) return;
+        if (!dragMatches("workspace") && !dragMatches("session") || !canMoveWorkspaceGroup) return;
         event.preventDefault();
         event.stopPropagation();
         if (drag.kind === "session") assignSessionSection(drag.source.sessionId, groupId);
@@ -2473,14 +2772,14 @@
     };
     const sgroupDropInto = (workspaceId, path) => !automaticSort && dragMatches("session") && !drag.source.sectioned && drag.source.workspaceId === workspaceId && drag.over && drag.over.kind === "sgroup" && drag.over.target === path;
     const sessionDraggable = (session) => {
-      if (searching || !groupedView || session.blank) return false;
+      if (!groupedView || session.blank) return false;
       if (workspaceGroups.length > 0) return true;
       return !automaticSort && !session.archived && !pinnedSet.has(session.id);
     };
     const sessionDragEvents = (session, workspaceId, sectioned = false) => ({
       draggable: sessionDraggable(session),
       onDragStart: (event) => {
-        if (searching || !sessionDraggable(session)) return;
+        if (!sessionDraggable(session)) return;
         event.stopPropagation();
         try {
           event.dataTransfer.effectAllowed = "move";
@@ -2491,7 +2790,7 @@
       },
       onDragEnd: () => setDrag(null),
       onDragOver: (event) => {
-        if (!dragMatches("session") || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching || drag.source.workspaceId !== workspaceId || session.archived || archivedSet.has(drag.source.sessionId) || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return;
+        if (!dragMatches("session") || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || drag.source.workspaceId !== workspaceId || session.archived || archivedSet.has(drag.source.sessionId) || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return;
         event.preventDefault();
         event.stopPropagation();
         try {
@@ -2502,7 +2801,7 @@
         setDrag((current) => current && current.over && current.over.kind === "session" && current.over.target === session.id && current.over.half === half ? current : current ? { ...current, over: { kind: "session", target: session.id, half } } : current);
       },
       onDrop: (event) => {
-        if (!dragMatches("session") || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching || drag.source.workspaceId !== workspaceId || session.archived || archivedSet.has(drag.source.sessionId) || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return;
+        if (!dragMatches("session") || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || drag.source.workspaceId !== workspaceId || session.archived || archivedSet.has(drag.source.sessionId) || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return;
         event.preventDefault();
         event.stopPropagation();
         const half = drag.over && drag.over.kind === "session" && drag.over.target === session.id ? drag.over.half : rowHalf(event);
@@ -2511,7 +2810,7 @@
     });
     const sgroupDropEvents = (workspaceId, path) => ({
       onDragOver: (event) => {
-        if (!dragMatches("session") || drag.source.sectioned || automaticSort || !groupedView || searching || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return;
+        if (!dragMatches("session") || drag.source.sectioned || automaticSort || !groupedView || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return;
         event.preventDefault();
         event.stopPropagation();
         try {
@@ -2521,7 +2820,7 @@
         setDrag((current) => current && current.over && current.over.kind === "sgroup" && current.over.target === path ? current : current ? { ...current, over: { kind: "sgroup", target: path } } : current);
       },
       onDrop: (event) => {
-        if (!dragMatches("session") || drag.source.sectioned || automaticSort || !groupedView || searching || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return;
+        if (!dragMatches("session") || drag.source.sectioned || automaticSort || !groupedView || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return;
         event.preventDefault();
         event.stopPropagation();
         commitSessionMoveInto(workspaceId, path);
@@ -2531,7 +2830,7 @@
       if (!drag) return;
       const source = drag.source;
       setDrag(null);
-      if (!canReorderSessions || automaticSort || !groupedView || searching) return;
+      if (!canReorderSessions || automaticSort || !groupedView) return;
       if (archivedSet.has(source.sessionId) || archivedSet.has(targetSessionId)) return;
       if (pinnedSet.has(source.sessionId) || pinnedSet.has(targetSessionId)) return;
       if (source.sessionId === targetSessionId) return;
@@ -2543,7 +2842,7 @@
       Promise.resolve().then(() => anchor !== void 0 ? insertSessionBefore(workspaceId, source.sessionId, anchor) : insertSessionBefore(workspaceId, source.sessionId)).catch(fail);
     };
     const commitSessionMoveInto = (workspaceId, groupPath) => {
-      if (!drag || automaticSort || !groupedView || searching || archivedSet.has(drag.source.sessionId)) {
+      if (!drag || automaticSort || !groupedView || archivedSet.has(drag.source.sessionId)) {
         setDrag(null);
         return;
       }
@@ -2911,7 +3210,7 @@
   }
   var tabList = loadTabs();
   var activeTab = null;
-  var listeners = /* @__PURE__ */ new Set();
+  var listeners2 = /* @__PURE__ */ new Set();
   function tabsSnapshot() {
     return tabList.slice();
   }
@@ -2922,7 +3221,7 @@
     const next = tabIdOf(value) || null;
     if (next === activeTab) return activeTab;
     activeTab = next;
-    for (const listener of [...listeners]) {
+    for (const listener of [...listeners2]) {
       try {
         listener();
       } catch {
@@ -2939,7 +3238,7 @@
         if (globalThis.localStorage) globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {
       }
-      for (const listener of [...listeners]) {
+      for (const listener of [...listeners2]) {
         try {
           listener();
         } catch {
@@ -2949,9 +3248,9 @@
     return tabList.slice();
   }
   function subscribeTabs(listener) {
-    listeners.add(listener);
+    listeners2.add(listener);
     return () => {
-      listeners.delete(listener);
+      listeners2.delete(listener);
     };
   }
 
@@ -2972,7 +3271,6 @@
       items,
       list,
       nodePulseOf,
-      normalizedQuery,
       now,
       open,
       openCtx,
@@ -2982,9 +3280,6 @@
       projectItems,
       recency,
       rowStyleOf,
-      searchAgent,
-      searched,
-      searching,
       sectionedSessions,
       sessDropHalf,
       sessionDragEvents,
@@ -3021,17 +3316,8 @@
       wsPulseOf
     } = input;
     const currentSessionId = currentSessionIdOf(list);
-    const matchesSession = (row) => {
-      if (!searching) return true;
-      const workspaceId = workspaceIndexOf.get(row.id);
-      const workspace = (items || []).find((item) => item.workspaceId === workspaceId);
-      const sectionId = sessionSectionOf(row.id);
-      const groupId = sectionId === null ? workspaceGroupOf(workspaceId) : sectionId;
-      const group = workspaceGroups.find((group2) => group2.id === groupId);
-      return (row.title + " " + (workspace ? workspace.title : "") + " " + (group ? group.name : "")).toLowerCase().includes(normalizedQuery);
-    };
     const renderSessionTree = (workspace, depth) => {
-      if (!searching && !sessionsOpenOf(workspace.workspaceId)) return [];
+      if (!sessionsOpenOf(workspace.workspaceId)) return [];
       const rows = sessionsOf(workspace);
       if (rows.length === 0) return [];
       const unpinned = rows.filter((r) => !pinnedSet.has(r.id));
@@ -3055,23 +3341,11 @@
       }
       return out;
     };
-    const searchSessionNode = (node) => {
-      const groups = [];
-      for (const group of node.groups) {
-        const hit = searchSessionNode(group);
-        if (hit) groups.push(hit);
-      }
-      const sessions = node.sessions.filter((row) => matchesSession(row));
-      if (groups.length === 0 && sessions.length === 0) return null;
-      return { path: node.path, name: node.name, groups, sessions };
-    };
     const renderSessionNode = (node, workspaceId, depth) => {
-      const view = searching ? searchSessionNode(node) : node;
-      if (!view) return [];
       const out = [];
-      for (const group of view.groups) {
+      for (const group of node.groups) {
         const key = workspaceId + "|" + group.path;
-        const open2 = searching || sessionGroupOpen(key);
+        const open2 = sessionGroupOpen(key);
         out.push(E(SessionGroupRow, {
           key: "sg-" + key,
           name: group.name,
@@ -3080,7 +3354,7 @@
           pulse: statusPulse && !open2 ? nodePulseOf(group) : null,
           count: countSessionTree(group),
           onToggle: () => {
-            if (!searching) actions.setSessionGroupExpanded(key, !open2);
+            actions.setSessionGroupExpanded(key, !open2);
           },
           onContextMenu: (e) => openCtx("sgroup", { workspaceId, path: group.path, name: group.name }, e),
           dropInto: sgroupDropInto(workspaceId, group.path),
@@ -3091,7 +3365,7 @@
         }));
         if (open2) out.push(...renderSessionNode(group, workspaceId, depth + 1));
       }
-      for (const s of view.sessions) out.push(renderSessionRow(s, depth, workspaceId));
+      for (const s of node.sessions) out.push(renderSessionRow(s, depth, workspaceId));
       return out;
     };
     const restoreSession = (id) => {
@@ -3148,10 +3422,10 @@
         depth,
         count,
         pinCount,
-        sessionsOpen: searching ? true : sessionsOpenOf(workspace.workspaceId),
+        sessionsOpen: sessionsOpenOf(workspace.workspaceId),
         currentInside: !!(currentSessionId !== null && (workspace.sessionIds || []).includes(currentSessionId)),
         onToggle: () => {
-          if (!searching) actions.setSessionsExpanded(workspace.workspaceId, !sessionsOpenOf(workspace.workspaceId));
+          actions.setSessionsExpanded(workspace.workspaceId, !sessionsOpenOf(workspace.workspaceId));
         },
         // Starting a session force-expands the workspace row: the user must
         // SEE the new session appear, even if the row was collapsed.
@@ -3172,14 +3446,14 @@
     };
     const renderPlainFolder = (node, depth) => {
       if (node.kind === "ws") return renderWorkspaceEntry({ workspace: node.workspace }, depth, wsPulseOf(node.workspace));
-      const expanded = searching || folderExpanded(node.path);
+      const expanded = folderExpanded(node.path);
       const rows = [E(FolderRow, {
         key: "f-" + node.path,
         node,
         depth,
         expanded,
         onToggle: () => {
-          if (!searching) actions.setExpanded(node.path, !expanded);
+          actions.setExpanded(node.path, !expanded);
         },
         onContextMenu: (e) => openCtx("folder", { path: node.path, name: node.name }, e),
         dropInto: wsDropInto(node.path),
@@ -3193,27 +3467,6 @@
         for (const child of node.folders) rows.push(...renderPlainFolder(child, depth + 1));
         for (const workspace of node.workspaces) rows.push(...renderWorkspaceEntry({ workspace }, depth + 1, wsPulseOf(workspace)));
       }
-      return rows;
-    };
-    const renderSearchedFolder = (hit, depth) => {
-      if (hit.kind === "ws") return renderWorkspaceEntry({ workspace: hit.workspace }, depth);
-      const node = hit.node;
-      const rows = [E(FolderRow, {
-        key: "f-" + node.path,
-        node,
-        depth,
-        expanded: true,
-        onToggle: () => {
-        },
-        onContextMenu: (e) => openCtx("folder", { path: node.path, name: node.name }, e),
-        dropInto: false,
-        dragEvents: void 0,
-        custStyle: rowStyleOf("folder:" + node.path),
-        iconMode: (styleEntry("folder:" + node.path) || {}).icon || "solid",
-        t
-      })];
-      for (const child of hit.folders) rows.push(...renderSearchedFolder(child, depth + 1));
-      for (const entry of hit.workspaces) rows.push(...renderWorkspaceEntry(entry, depth + 1));
       return rows;
     };
     const renderPinnedSection = (rows) => E(
@@ -3234,13 +3487,12 @@
         const id = String(rawId);
         const row = sessionRowOf(id);
         if (!row || row.archived) continue;
-        if (!matchesSession(row)) continue;
         const wsId = workspaceIndexOf.get(id);
         row.workspaceTag = wsId !== void 0 ? workspaceTitleOf(wsId) : "";
         pinnedTray.push(row);
       }
     }
-    const sectionRowsOf = (groupId) => orderRows(sectionedSessions.filter((row) => sessionSectionOf(row.id) === groupId && !pinnedSet.has(row.id) && matchesSession(row)), sortOrder);
+    const sectionRowsOf = (groupId) => orderRows(sectionedSessions.filter((row) => sessionSectionOf(row.id) === groupId && !pinnedSet.has(row.id)), sortOrder);
     const renderSectionedSession = (row) => renderSessionRow(row, 0, workspaceIndexOf.get(row.id), {
       sectioned: true,
       workspaceTag: workspaceTitleOf(workspaceIndexOf.get(row.id)),
@@ -3253,26 +3505,20 @@
         const looseRows = sectionRowsOf(group.id);
         if (archivedFilter === "only" && members.length === 0 && looseRows.length === 0) continue;
         const groupTree = buildWorkspaceList(members, recency);
-        const groupMatch = searching && group.name.toLowerCase().includes(normalizedQuery);
-        const hit = searching && !groupMatch ? searchAgent(groupTree) : null;
-        if (searching && !groupMatch && !hit && looseRows.length === 0) continue;
-        const expanded = searching || expandedMap["workspace-group:" + group.id] !== false;
+        const expanded = expandedMap["workspace-group:" + group.id] !== false;
         rows.push(E(WorkspaceGroupRow, {
           key: "workspace-group-" + group.id,
           group,
           expanded,
           onToggle: () => {
-            if (!searching) actions.setExpanded("workspace-group:" + group.id, !expanded);
+            actions.setExpanded("workspace-group:" + group.id, !expanded);
           },
           onContextMenu: (event) => openCtx("wgroup", group, event),
           dropInto: drag !== null && drag.over && drag.over.kind === "wgroup" && drag.over.target === group.id,
           dragEvents: workspaceGroupDropEvents(group.id)
         }));
         if (expanded) {
-          const entries = hit ? hit.workspaces : groupTree.workspaces.map((workspace) => ({ workspace }));
-          if (!searching || groupMatch || hit) {
-            for (const entry of entries) rows.push(...renderWorkspaceEntry(entry, 0, wsPulseOf(entry.workspace)));
-          }
+          for (const workspace of groupTree.workspaces) rows.push(...renderWorkspaceEntry({ workspace }, 0, wsPulseOf(workspace)));
           for (const row of looseRows) rows.push(renderSectionedSession(row));
         }
       }
@@ -3281,7 +3527,6 @@
     const renderProjectsHeader = () => {
       const looseRows = sectionRowsOf("");
       if (workspaceGroups.length === 0 && looseRows.length === 0) return [];
-      if (searching && !searched && looseRows.length === 0) return [];
       if (archivedFilter === "only" && projectItems.length === 0 && looseRows.length === 0) return [];
       const group = { id: "", name: t("wgroup.projects") };
       return [E(WorkspaceGroupRow, {
@@ -3293,19 +3538,11 @@
       })];
     };
     let bodyRows = [];
-    if (searching && groupedView) {
-      if (pinnedTray.length > 0) bodyRows.push(renderPinnedSection(pinnedTray));
-      bodyRows.push(...renderCustomWorkspaceGroups(), ...renderProjectsHeader());
-      if (searched) {
-        for (const child of searched.folders) bodyRows.push(...renderSearchedFolder(child, 0));
-        for (const entry of searched.workspaces) bodyRows.push(...renderWorkspaceEntry(entry, 0));
-      }
-      for (const row of sectionRowsOf("")) bodyRows.push(renderSectionedSession(row));
-    } else if (timeSorted || viewMode === "flat") {
+    if (timeSorted || viewMode === "flat") {
       const timelineRows = [];
       const included = /* @__PURE__ */ new Set();
       const append = (row) => {
-        if (included.has(row.id) || pinnedSet.has(row.id) || !matchesSession(row)) return;
+        if (included.has(row.id) || pinnedSet.has(row.id)) return;
         included.add(row.id);
         const workspaceId = workspaceIndexOf.get(row.id);
         row.workspaceTag = workspaceId !== void 0 ? workspaceTitleOf(workspaceId) : "";
@@ -3328,25 +3565,17 @@
       for (const workspace of tree.workspaces) bodyRows.push(...renderWorkspaceEntry({ workspace }, 0, wsPulseOf(workspace)));
       for (const row of sectionRowsOf("")) bodyRows.push(renderSectionedSession(row));
       if (ungrouped.length > 0) {
-        const plainUn = ungrouped.filter((s) => sessionSectionOf(s.id) === null && !pinnedSet.has(s.id) && matchesSession(s));
+        const plainUn = ungrouped.filter((s) => sessionSectionOf(s.id) === null && !pinnedSet.has(s.id));
         if (plainUn.length > 0) {
           bodyRows.push(E("div", { key: "ungrouped-label", className: "bw-header-title", style: { padding: "10px 6px 2px" } }, t("group.ungrouped")));
         }
         for (const s of plainUn) bodyRows.push(renderSessionRow(s, 0, null));
       }
     }
-    if (searching && groupedView) {
-      const matchedUngrouped = ungrouped.filter((row) => sessionSectionOf(row.id) === null && !pinnedSet.has(row.id) && matchesSession(row));
-      if (matchedUngrouped.length > 0) {
-        bodyRows.push(E("div", { key: "ungrouped-label", className: "bw-header-title", style: { padding: "10px 6px 2px" } }, t("group.ungrouped")));
-        for (const row of matchedUngrouped) bodyRows.push(renderSessionRow(row, 0, null));
-      }
-    }
     const isEmpty = bodyRows.length === 0;
     if (isEmpty) {
       let emptyText = t("empty.sessions");
-      if (searching) emptyText = t("empty.search");
-      else if (phase === "pending") emptyText = "\u2026";
+      if (phase === "pending") emptyText = "\u2026";
       else if (archivedFilter === "only") emptyText = t("empty.archived");
       else if (groupedView && visibleItems.length === 0) emptyText = t("empty");
       bodyRows = [E(
@@ -3356,7 +3585,7 @@
         archivedFilter !== "show" && phase !== "pending" ? E(BTN, { variant: "outline", onClick: () => actions.setArchivedFilter("show") }, t("empty.showAll")) : null
       )];
     }
-    return { bodyRows, isEmpty, matchesSession, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSearchedFolder, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, searchSessionNode, sectionRowsOf };
+    return { bodyRows, isEmpty, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, sectionRowsOf };
   }
 
   // src/client/tabs-strip.ts
@@ -3496,7 +3725,7 @@
       StyleNode(),
       tabs.map((id) => {
         const active = sessionId === id;
-        const state = stateOf(id);
+        const state2 = stateOf(id);
         const title = titleOf(id);
         const activeStyle = active ? { boxShadow: "inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)" } : void 0;
         return E(
@@ -3528,7 +3757,7 @@
             // wins at runtime; the wide record view keeps TS from flagging the repeat.
             ...eventsFor(id)
           },
-          statusDots ? state ? E(StatusDot, { state, label: t("tabs." + state) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }) : null,
+          statusDots ? state2 ? E(StatusDot, { state: state2, label: t("tabs." + state2) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }) : null,
           E("span", { className: "bw-tab-label", style: active ? { color: "var(--dsw-alias-brand-primary, #5b8def)", fontWeight: 600 } : void 0 }, title),
           E("button", {
             type: "button",
@@ -3821,7 +4050,7 @@
     "IconClockOutline16",
     "IconDatabaseOutline16"
   ];
-  function CustomizeDialog({ open, initial, kind, onChange, onReset, onClose, t }) {
+  function CustomizeDialog({ open, initial: initial2, kind, onChange, onReset, onClose, t }) {
     const allowIcon = kind === "folder" || kind === "workspace";
     const [color, setColor] = React.useState("");
     const [glow, setGlow] = React.useState(0);
@@ -3830,12 +4059,12 @@
     const [shadow, setShadow] = React.useState(false);
     React.useEffect(() => {
       if (!open) return;
-      setColor(initial && initial.color ? initial.color : "");
-      setGlow(initial && initial.glow ? Number(initial.glow) || 0 : 0);
-      setIconMode(initial && initial.icon ? initial.icon : "solid");
-      setWeight(initial && initial.weight ? Number(initial.weight) || 0 : 0);
-      setShadow(initial && initial.shadow === true);
-    }, [open, initial]);
+      setColor(initial2 && initial2.color ? initial2.color : "");
+      setGlow(initial2 && initial2.glow ? Number(initial2.glow) || 0 : 0);
+      setIconMode(initial2 && initial2.icon ? initial2.icon : "solid");
+      setWeight(initial2 && initial2.weight ? Number(initial2.weight) || 0 : 0);
+      setShadow(initial2 && initial2.shadow === true);
+    }, [open, initial2]);
     if (!open) return null;
     const commit = () => {
       const empty = allowIcon ? color === "" && glow === 0 && iconMode === "solid" && weight === 0 && !shadow : color === "" && glow === 0 && weight === 0 && !shadow;
@@ -4022,11 +4251,10 @@
       handleCtxPick,
       items,
       notice,
+      openSearch,
       ownMenuRoot,
       pickDirectory,
-      query,
       renameWorkspace,
-      searchOpen,
       sessionSectionOf,
       setCtx,
       setCtxSubmenu,
@@ -4035,8 +4263,6 @@
       setErrorText,
       setFlowOpen,
       setFlowParent,
-      setQuery,
-      setSearchOpen,
       styleEntry,
       submitFolderDelete,
       submitFolderNew,
@@ -4064,7 +4290,7 @@
           StyleNode(),
           E("button", { type: "button", className: "bw-rail-btn", "aria-label": t("rail.search"), onClick: () => {
             expandSidebar();
-            setSearchOpen(true);
+            openSearch();
           } }, icon("IconSearchOutline16", 18)),
           E("button", { type: "button", className: "bw-rail-btn", "aria-label": t("rail.add"), onClick: () => {
             expandSidebar();
@@ -4271,23 +4497,6 @@
           "div",
           { className: "bw-header" },
           E("div", { className: "bw-header-title" }, t("title")),
-          searchOpen || query !== "" ? E("input", {
-            className: "bw-input",
-            style: { width: 130, flex: "none" },
-            value: query,
-            autoFocus: true,
-            placeholder: t("search.placeholder"),
-            onChange: (e) => setQuery(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Escape") {
-                setQuery("");
-                setSearchOpen(false);
-              }
-            },
-            onBlur: () => {
-              if (query === "") setSearchOpen(false);
-            }
-          }) : null,
           E("button", {
             type: "button",
             className: "bw-icon-btn",
@@ -4300,7 +4509,7 @@
               setCtx({ kind: "view", payload: {}, x: e.clientX, y: e.clientY });
             }
           }, viewGlyph()),
-          E("button", { type: "button", className: "bw-icon-btn", "aria-label": t("search.placeholder"), onClick: () => setSearchOpen((v) => !v) }, icon("IconSearchOutline16")),
+          E("button", { type: "button", className: "bw-icon-btn", "aria-label": t("search.label"), title: t("search.label"), onClick: () => openSearch() }, icon("IconSearchOutline16")),
           E("button", { type: "button", className: "bw-icon-btn", "aria-label": t("add"), onClick: () => {
             setFlowParent("");
             setFlowOpen(true);
@@ -4477,6 +4686,8 @@
           unarchiveSession,
           createWorkspace,
           pickDirectory,
+          searchSessions,
+          searchResultLimit,
           insertWorkspaceBefore,
           insertSessionBefore,
           deleteSession,
@@ -4544,8 +4755,6 @@
           const segs = splitTitleSegs(workspace.title);
           return segs.length > 0 ? segs[segs.length - 1] : workspace.leaf || "";
         };
-        const [query, setQuery] = React.useState("");
-        const [searchOpen, setSearchOpen] = React.useState(false);
         const [flowOpen, setFlowOpen] = React.useState(false);
         const [flowParent, setFlowParent] = React.useState("");
         const [dialog, setDialog] = React.useState(null);
@@ -4675,7 +4884,6 @@
           }
           for (const id of current) seen.add(id);
         }, [list, pinnedList]);
-        const normalizedQuery = query.trim().toLowerCase();
         const now = Date.now();
         React.useEffect(() => {
           if (wsDragArmTimer.current !== null) {
@@ -4686,7 +4894,7 @@
           return () => {
             if (wsDragArmTimer.current !== null) clearTimeout(wsDragArmTimer.current);
           };
-        }, [viewMode, sortOrder, archivedFilter, normalizedQuery]);
+        }, [viewMode, sortOrder, archivedFilter]);
         const fail = (text) => {
           setFlowOpen(false);
           setDialog(null);
@@ -4717,7 +4925,6 @@
           return String(kind);
         };
         const {
-          searching,
           accounted,
           workspaceIndexOf,
           sessionRowOf,
@@ -4729,8 +4936,6 @@
           projectItems,
           tree,
           sessionsOf,
-          searchAgent,
-          searched,
           nodePulseOf,
           wsPulseOf,
           wsAllPulseOf,
@@ -4739,7 +4944,6 @@
           sessionsOpenOf,
           sessionGroupOpen
         } = createBrowserModel({
-          normalizedQuery,
           items,
           list,
           archivedSet,
@@ -4760,6 +4964,26 @@
           sessionsExpandedMap,
           sessionGroupsMap
         });
+        const searchLimit = Number(searchResultLimit) > 0 ? Number(searchResultLimit) : 20;
+        const searchRows = React.useMemo(() => {
+          const workspaceLabelOf = (id) => {
+            const workspaceId = workspaceIndexOf.get(id);
+            return workspaceId !== void 0 ? workspaceTitleOf(workspaceId) : "";
+          };
+          return searchCandidates(list, workspaceLabelOf).filter((row) => {
+            const archived = archivedSet.has(row.id);
+            return archivedFilter === "only" ? archived : !archived;
+          });
+        }, [list, items, archivedSessionIds, archivedFilter]);
+        React.useEffect(() => {
+          searchHost.publish({
+            candidates: searchRows,
+            limit: searchLimit,
+            searchSessions: typeof searchSessions === "function" ? searchSessions : null,
+            openSession: typeof open === "function" ? open : null,
+            t
+          });
+        }, [searchRows, searchLimit, searchSessions, open, t]);
         React.useEffect(() => {
           if (!tabsHost) return void 0;
           const host = tabsHost;
@@ -4855,7 +5079,6 @@
           recency,
           renameByUser,
           renameWorkspace,
-          searching,
           sessionsOf,
           setDrag,
           tree,
@@ -4868,13 +5091,11 @@
         const {
           bodyRows,
           isEmpty,
-          matchesSession,
           pinnedTray,
           renderCustomWorkspaceGroups,
           renderPinnedSection,
           renderPlainFolder,
           renderProjectsHeader,
-          renderSearchedFolder,
           renderSectionedSession,
           renderSessionNode,
           renderSessionRow,
@@ -4882,7 +5103,6 @@
           renderTimeBuckets,
           renderWorkspaceEntry,
           restoreSession,
-          searchSessionNode,
           sectionRowsOf
         } = createTreeView({
           actions,
@@ -4899,7 +5119,6 @@
           items,
           list,
           nodePulseOf,
-          normalizedQuery,
           now,
           open,
           openCtx,
@@ -4909,9 +5128,6 @@
           projectItems,
           recency,
           rowStyleOf,
-          searchAgent,
-          searched,
-          searching,
           sectionedSessions,
           sessDropHalf,
           sessionDragEvents,
@@ -5005,9 +5221,8 @@
           notice,
           ownMenuRoot,
           pickDirectory,
-          query,
           renameWorkspace,
-          searchOpen,
+          openSearch: () => searchHost.show(),
           sessionSectionOf,
           setCtx,
           setCtxSubmenu,
@@ -5016,8 +5231,6 @@
           setErrorText,
           setFlowOpen,
           setFlowParent,
-          setQuery,
-          setSearchOpen,
           styleEntry,
           submitFolderDelete,
           submitFolderNew,
@@ -5182,6 +5395,11 @@
             } })
           },
           TabsStrip
+        ));
+        slots.inject("shell.overlay", guarded(
+          "shell.overlay",
+          { name: "shell.overlay", id: "dsh-workspace-plus.search" },
+          SearchOverlaySeat
         ));
         slots.inject("sidebar.workspaces", guarded(
           "sidebar.workspaces",

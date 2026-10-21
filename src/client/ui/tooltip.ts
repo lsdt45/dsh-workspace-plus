@@ -58,7 +58,7 @@ interface TipRectSize extends TipRect, TipSize {}
 interface TipPlacement {
   left: number
   top: number
-  side: 'top' | 'bottom'
+  side: 'right' | 'left' | 'top' | 'bottom'
 }
 
 /** Inclusive containment test: a pointer exactly on an edge still counts as inside. */
@@ -67,21 +67,31 @@ export const pointInRect = (rect: TipRect | null | undefined, point: TipPoint | 
   && point.y >= rect.top && point.y <= rect.bottom
 
 /**
- * Clamp the bubble inside the viewport and flip it above the anchor only when
- * the requested side cannot fit. `anchor` and `size` are border-box rects;
- * `left` is the bubble's centered x (the CSS transform does the centering).
- * A bubble wider than the viewport lands on the left margin (the clamp floor).
+ * Place the bubble beside the anchor, Codex-style: flush to the row's right
+ * edge and vertically centred on it, so the row title stays readable while the
+ * bubble floats over the conversation pane. It flips to the left only when the
+ * right side lacks room, and falls back to the below/above placement (the host
+ * Tooltip's own behaviour) only when neither side fits a narrow window.
+ * `left`/`top` are the bubble's top-left corner; the CSS adds no transform.
  */
 export const placeTip = (anchor: TipRectSize, size: TipSize, viewport: TipSize, gap = 8): TipPlacement => {
-  const lo = TIP_EDGE + size.width / 2
-  const hi = viewport.width - TIP_EDGE - size.width / 2
-  const left = Math.max(lo, Math.min(anchor.left + anchor.width / 2, hi))
+  const top = Math.max(TIP_EDGE, Math.min(
+    anchor.top + anchor.height / 2 - size.height / 2,
+    Math.max(TIP_EDGE, viewport.height - TIP_EDGE - size.height),
+  ))
+  const right = anchor.right + gap
+  if (right + size.width <= viewport.width - TIP_EDGE) return { left: right, top, side: 'right' }
+  const left = anchor.left - gap - size.width
+  if (left >= TIP_EDGE) return { left, top, side: 'left' }
+  // Neither side fits (a very narrow window): centre it under/over the anchor.
+  const centred = anchor.left + anchor.width / 2 - size.width / 2
+  const x = Math.max(TIP_EDGE, Math.min(centred, viewport.width - TIP_EDGE - size.width))
   const below = anchor.bottom + gap
   const above = anchor.top - gap - size.height
   const fitsBelow = below + size.height <= viewport.height - TIP_EDGE
   const fitsAbove = above >= TIP_EDGE
   const flipped = !fitsBelow && fitsAbove
-  return { left, top: flipped ? above : below, side: flipped ? 'top' : 'bottom' }
+  return { left: x, top: flipped ? above : below, side: flipped ? 'top' : 'bottom' }
 }
 
 /** Bubble text, or a resolver evaluated only while the bubble is visible. */
@@ -226,8 +236,9 @@ export function useHoverTip(options?: HoverTipOptions) {
     }
   }, [open])
 
-  // Measure the bubble once it is in the DOM, then place it: its width drives
-  // the horizontal clamp and its height decides the flip above the anchor.
+  // Measure the bubble once it is in the DOM, then place it beside the row:
+  // its width decides whether it fits on the right (else the left), and its
+  // height centres it on the row before the viewport clamp.
   React.useEffect(() => {
     if (!open) { setSize(null); return }
     const el = bubbleRef.current

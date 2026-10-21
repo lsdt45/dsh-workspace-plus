@@ -81,15 +81,23 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 
 ### Search
 
-<table>
-<tr>
-<td align="center" width="45%"><img src="docs/screenshots/12-search.png" alt="Sidebar search filtering"/></td>
-<td valign="top" width="55%">
-  <b>Filter by name as you type</b><br/>
-  Typing filters instantly (local title matching) across <b>workspaces, independent groups and sessions</b>; the tree force-expands while searching, and time buckets keep working (the screenshot searches for "测试"). Host-level content search (<code>session.search</code>) is planned.
-</td>
-</tr>
-</table>
+The sidebar search button (header icon, or the magnifier in the collapsed rail) opens a **floating search panel** in the Codex App style:
+
+- **Title matches (instant)**: sessions whose title or workspace label contains the query, newest first;
+- **Content matches (Host full-text)**: after a short debounce the panel also asks the Host's session full-text search (`sessions.search`, SQLite FTS5); sessions that only matched message history are appended with their snippet on a second line;
+- **Keyboard**: ↑/↓ to move, Enter to open, Esc to close, ⌃/⌘ + 1–9 to open one of the first nine results; hovering and clicking work too;
+- Opening lists **recent sessions** first; the panel degrades to title-only matching when the Host has no content index.
+
+> This replaces the old inline filter row. The panel rides the shell's `shell.overlay` seat, so the sidebar width never clips it.
+
+**Content matches need the Host's full-text index.** DSH ships it off (`openAt: never`; exact reads stay available), and the panel then stays title-only. To turn content search on, append this row to the profile's `cordis.patch.yml` and restart DSH:
+
+```yaml
+- id: session-query-sqlite
+  config:
+    path: !!js dshHomePath('storages/session-search.db')
+    openAt: first-search
+```
 
 ### Workspace and session sections
 
@@ -107,7 +115,7 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 
 Right-click a workspace or session → **Section**, then choose an existing section, **Ungrouped (Projects)** or **New section…**. A session action moves only that session. A workspace action moves the workspace and all its sessions, including previously sectioned sessions. Sessions can choose **Follow workspace** to restore their original placement. Creation assigns the right-clicked object; section-heading menus can create an empty section. Section creation and session forking are available through context menus, with no toolbar entries.
 
-Sections have one level and share the same list for workspaces and sessions. Individually sectioned sessions appear directly under their section with a workspace badge. Section headings collapse. Drag a workspace or session onto a section heading to move it, or onto Projects to ungroup it. Empty and collapsed sections accept drops and expand afterward. Pinned, archived and unassigned sessions also support section moves. Recency sorting preserves local section moves without changing host order. Search disables dragging.
+Sections have one level and share the same list for workspaces and sessions. Individually sectioned sessions appear directly under their section with a workspace badge. Section headings collapse. Drag a workspace or session onto a section heading to move it, or onto Projects to ungroup it. Empty and collapsed sections accept drops and expand afterward. Pinned, archived and unassigned sessions also support section moves. Recency sorting preserves local section moves without changing host order.
 
 Workspaces and sessions have separate ID-based membership without changing names, directories or host workspace/session associations. Section-heading menus offer rename and confirmed deletion; deleting a section moves its workspaces back to Projects and individually sectioned sessions back to their workspace. Sections and collapse state persist in the current browser. Sections appear in workspace-tree and workspace views; flat and time views continue to flatten sessions. Existing title-based folders remain under Projects, while custom sections show full workspace names.
 
@@ -121,7 +129,7 @@ Workspaces and sessions have separate ID-based membership without changing names
   <b>One-click view switching</b><br/>
   The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; **Settings → Plugins → dsh-workspace-plus** exposes the same choices (see the Plugin settings page section below).<br/><br/>
   <b>Time view (Global timeline)</b><br/>
-  ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with a popup bubble styled like the official Tooltip; the plugin owns that bubble, so it withdraws the moment the pointer leaves, the row re-sorts away or the list scrolls.
+  ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with a Codex-style hover card pinned to the row's right edge and vertically centred on it (it flips to the left when short of room and only falls back below/above in a very narrow window); the plugin owns that bubble, so it withdraws the moment the pointer leaves, the row re-sorts away or the list scrolls.
 </td>
 </tr>
 </table>
@@ -131,7 +139,7 @@ Workspaces and sessions have separate ID-based membership without changing names
 - **Single list**: sessions across workspaces, with a workspace badge on hover. Manual order follows host workspace and session order; drag in a workspace view to adjust it.
 - **Time**: global date buckets with latest-first or oldest-first ordering across buckets.
 - **Sorting**: manual or recently updated, independent of grouping. Recency sorts workspaces, folders and sessions by visible session activity without changing host order; manual mode restores that order. Automatic sorting, flat and time views disable drag reordering. The pinned tray keeps pin-recency order.
-- **Archive filter**: hide archived (default), all conversations, or archived only; shared by every view and search. Archived-only mode omits empty workspaces and folders, with a show-all action for empty results. Archived rows have a badge and hover/context-menu restore actions; unarchive before opening. Restore is disabled when an older host lacks the action.
+- **Archive filter**: hide archived (default), all conversations, or archived only; shared by every view and the floating search panel. Archived-only mode omits empty workspaces and folders, with a show-all action for empty results. Archived rows have a badge and hover/context-menu restore actions; unarchive before opening. Restore is disabled when an older host lacks the action.
 - Preferences persist per browser; legacy projects/time and sorting preferences remain compatible.
 
 ### Plugin settings page

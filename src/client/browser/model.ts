@@ -65,23 +65,8 @@ export interface BrowserTreeNode {
   workspace?: WorkspaceRow
 }
 
-/**
- * A pruned search projection of one tree node. Folder hits keep the matching
- * children; a workspace-chain hit keeps its raw row in `workspaces`, hence the
- * untyped entries. `node` is only absent on the no-query early return, which
- * hands the node itself back unpruned.
- */
-export interface SearchHit {
-  node?: BrowserTreeNode
-  kind?: 'ws' | 'folder'
-  workspace?: WorkspaceRow
-  folders: SearchHit[]
-  workspaces: any[]
-}
-
 /** Inputs are host snapshots, view preferences and two injected predicates. */
 export interface BrowserModelInput {
-  normalizedQuery: string
   items?: ReadonlyArray<WorkspaceInput> | null
   list?: BrowserSessionList | null
   archivedSet: ReadonlySet<string>
@@ -105,7 +90,7 @@ export interface BrowserModelInput {
 
 export function createBrowserModel(input: BrowserModelInput) {
   const {
-    normalizedQuery, items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
+    items, list, archivedSet, archivedFilter, subCounts, pending, statuses, t,
     sessionSectionOf, drag, sortOrder, viewMode, storeFolders, compactChains,
     workspaceGroupOf, statusPulse, expandedMap, sessionsExpandedMap, sessionGroupsMap,
   } = input
@@ -187,35 +172,6 @@ const sessionsOf = (workspace: WorkspaceInput, includeSectioned = false): Browse
   return orderRows(rows, sortOrder)
 }
 
-const searchAgent = (agent: BrowserTreeNode): SearchHit | null => {
-  // Returns a pruned copy of the tree node, or null when nothing matches.
-  if (!normalizedQuery) return agent
-  if (agent.kind === 'ws') {
-    const ws = agent.workspace!
-    const sessions = sessionsOf(ws)
-    const wsHit = ws.leaf.toLowerCase().includes(normalizedQuery) || ws.title.toLowerCase().includes(normalizedQuery)
-    if (wsHit || sessions.some(s => s.title.toLowerCase().includes(normalizedQuery))) {
-      return { ...agent, node: agent, folders: [], workspaces: [ws] }
-    }
-    return null
-  }
-  const folders = []
-  for (const folder of agent.folders) {
-    const hit = searchAgent(folder)
-    if (hit) folders.push(hit)
-  }
-  const workspaces = []
-  for (const workspace of agent.workspaces) {
-    const sessions = sessionsOf(workspace)
-    const wsHit = workspace.leaf.toLowerCase().includes(normalizedQuery) || workspace.title.toLowerCase().includes(normalizedQuery)
-    const matchedSessions = wsHit ? sessions : sessions.filter(s => s.title.toLowerCase().includes(normalizedQuery))
-    if (wsHit || matchedSessions.length > 0) workspaces.push({ workspace, matchedSessions })
-  }
-  if (folders.length === 0 && workspaces.length === 0) return null
-  return { node: agent, folders, workspaces }
-}
-const searched = normalizedQuery ? searchAgent(tree) : null
-const searching = normalizedQuery !== ''
 // The session on screen is read by definition, so a collapse relay must not
 // bubble its completion reminder either (the row suppresses it on its own).
 const viewedSessionId = currentSessionId
@@ -233,12 +189,12 @@ const nodePulseOf = (sessionNode: SessionTreeNode): SessionState | null => {
 }
 // A COLLAPSED workspace row relays its whole session tree; an open row
 // shows the real dots (deeper collapsed groups relay on their own rows).
-const wsPulseOf = (workspace: WorkspaceRow): SessionState | null => (!statusPulse || searching || sessionsOpenOf(workspace.workspaceId))
+const wsPulseOf = (workspace: WorkspaceRow): SessionState | null => (!statusPulse || sessionsOpenOf(workspace.workspaceId))
   ? null
   : nodePulseOf(buildSessionTree(sessionsOf(workspace)))
 // A collapsed FOLDER hides everything below — including open workspaces —
 // so its aggregation ignores inner expansion states entirely.
-const wsAllPulseOf = (workspace: WorkspaceRow): SessionState | null => (!statusPulse || searching)
+const wsAllPulseOf = (workspace: WorkspaceRow): SessionState | null => !statusPulse
   ? null
   : nodePulseOf(buildSessionTree(sessionsOf(workspace)))
 const folderPulseOf = (node: BrowserTreeNode): SessionState | null => {
@@ -262,9 +218,9 @@ const sessionGroupOpen = (key: string) => (sessionGroupsMap ? sessionGroupsMap[k
   /* --------------------- status breathing relay -------------------- */
 
   return {
-    searching, accounted, workspaceIndexOf, sessionRowOf, ungrouped,
+    accounted, workspaceIndexOf, sessionRowOf, ungrouped,
     sectionedSessions, visibleItems, workspaceRecency, recency, projectItems, tree,
-    sessionsOf, searchAgent, searched, nodePulseOf, wsPulseOf, wsAllPulseOf,
+    sessionsOf, nodePulseOf, wsPulseOf, wsAllPulseOf,
     folderPulseOf, folderExpanded, sessionsOpenOf, sessionGroupOpen,
   }
 }

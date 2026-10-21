@@ -71,13 +71,44 @@ test('the factory returns the cordis plugin face and answers only platform modul
   assert.equal(typeof plugin.apply, 'function')
 })
 
+/**
+ * Slot kinds the frame declares for the seats this plugin occupies. The real
+ * slot core validates every registration against its declaration and THROWS on
+ * a mismatch (a LIST slot without an id, a KEYED slot without a key); the
+ * plugin's own guard swallows such a throw, so an omitted option would drop the
+ * seat silently. Mirroring the kinds here makes that failure visible.
+ */
+const SLOT_KINDS: Record<string, 'single' | 'keyed' | 'list'> = {
+  'conversation.header.leading': 'single',
+  'conversation.hero.workspace.directoryFlow': 'single',
+  'plugins.bundle.config': 'keyed',
+  'shell.overlay': 'list',
+  'sidebar.workspaces': 'single',
+  'sidebar.workspaces.directoryFlow': 'single',
+}
+
 /** Capture what apply() registers against a stub client context. */
 function applyAgainstStubContext() {
   const injected: Array<[string, any]> = []
   const dictionaries: Array<[string, any]> = []
+  /** Every registration options object the injected factories produced. */
+  const registered: Array<Record<string, any>> = []
   const slots = {
-    register: () => () => {},
-    inject: (hole: string, factory: any) => { injected.push([hole, factory]) },
+    register: (options: Record<string, any>) => {
+      const kind = SLOT_KINDS[options.name]
+      if (kind === 'list' && (typeof options.id !== 'string' || options.id === '')) {
+        throw new Error('list slot "' + options.name + '" requires options.id')
+      }
+      if (kind === 'keyed' && options.key === undefined) {
+        throw new Error('keyed slot "' + options.name + '" requires options.key')
+      }
+      registered.push(options)
+      return () => {}
+    },
+    // The frame calls the injected factory once the hole is declared. Running it
+    // here is what exposes per-kind registration requirements (a LIST slot
+    // rejects a registration without an id) to the contract tests below.
+    inject: (hole: string, factory: any) => { injected.push([hole, factory]); factory() },
     entries: () => [],
     subscribe: () => () => {},
   }
@@ -95,10 +126,10 @@ function applyAgainstStubContext() {
   }
   const plugin = registration.factory(hostRequire)
   plugin.apply(ctx)
-  return { injected, dictionaries }
+  return { injected, dictionaries, registered }
 }
 
-test('apply() occupies the five seats and registers the dictionary', () => {
+test('apply() occupies the six seats and registers the dictionary', () => {
   const { injected, dictionaries } = applyAgainstStubContext()
   const holes = injected.map(([hole]) => hole).sort()
   assert.deepEqual(holes, [
@@ -110,11 +141,41 @@ test('apply() occupies the five seats and registers the dictionary', () => {
     // bundle's package name; the older settings.plugin.item card slot is not
     // dispatched by this shell.
     'plugins.bundle.config',
+    // Search panel: a root-scoped overlay seat, so the floating panel is not
+    // clipped by the sidebar's own container.
+    'shell.overlay',
     'sidebar.workspaces',
     'sidebar.workspaces.directoryFlow',
   ])
   assert.equal(dictionaries.length, 1)
   assert.equal(dictionaries[0][0], 'betterWorkspace')
+})
+
+test('every seat registration satisfies its slot kind', () => {
+  const { registered } = applyAgainstStubContext()
+  const byName = new Map(registered.map((options) => [options.name, options]))
+  assert.deepEqual(registered.map((options) => options.name).sort(), [
+    'conversation.header.leading',
+    'conversation.hero.workspace.directoryFlow',
+    'plugins.bundle.config',
+    'shell.overlay',
+    'sidebar.workspaces',
+    'sidebar.workspaces.directoryFlow',
+  ])
+  // The frame declares shell.overlay as a LIST slot and the slot core throws
+  // "list slot requires options.id" on a registration without one; the thrown
+  // register is swallowed by the guard, which would silently drop the panel.
+  assert.equal(typeof byName.get('shell.overlay')!.id, 'string')
+  assert.ok(byName.get('shell.overlay')!.id.length > 0, 'list slots need a non-empty id')
+  // plugins.bundle.config is a KEYED slot: the shell renders the entry whose
+  // key equals the bundle's package name.
+  assert.equal(byName.get('plugins.bundle.config')!.key, 'dsh-workspace-plus')
+  // Every other seat is a SINGLE slot: no key/id may be passed (single slots
+  // throw when two entries share one priority).
+  for (const name of ['conversation.header.leading', 'conversation.hero.workspace.directoryFlow', 'sidebar.workspaces', 'sidebar.workspaces.directoryFlow']) {
+    assert.equal(byName.get(name)!.id, undefined, name + ' is single and must not carry an id')
+    assert.equal(byName.get(name)!.key, undefined, name + ' is single and must not carry a key')
+  }
 })
 
 test('the zh and en dictionaries carry the same keys', () => {

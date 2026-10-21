@@ -70,7 +70,6 @@ export interface DndInput {
   recency: Map<string, number> | null | undefined
   renameByUser: any
   renameWorkspace: any
-  searching: boolean
   sessionsOf: any
   setDrag: any
   tree: WorkspaceTreeLike
@@ -105,7 +104,7 @@ export interface TabReorder {
 
 export function createDnd(input: DndInput) {
   const {
-    archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, fail, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, searching, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
+    archivedSet, assignSessionSection, assignWorkspaceGroup, automaticSort, drag, fail, findTreeNode, groupedView, insertSessionBefore, insertWorkspaceBefore, items, pinnedSet, recency, renameByUser, renameWorkspace, sessionsOf, setDrag, tree, viewMode, visibleItems, workspaceGroupOf, workspaceGroups, wsDragArmTimer
   } = input
 
 /* ------------------------- drag & drop -------------------------- */
@@ -146,9 +145,9 @@ const wsDropHalf = (workspaceId: string) => {
 }
 const wsDropInto = (path: string) => dragMatches('workspace') && drag.over && drag.over.kind === 'folder' && drag.over.target === path
 const workspaceDragEvents = (workspace: WorkspaceInput) => ({
-  draggable: !searching && canDragWorkspace,
+  draggable: canDragWorkspace,
   onDragStart: (event: any) => {
-    if (searching || !canDragWorkspace) return
+    if (!canDragWorkspace) return
     event.stopPropagation()
     try {
       event.dataTransfer.effectAllowed = 'move'
@@ -177,7 +176,7 @@ const workspaceDragEvents = (workspace: WorkspaceInput) => ({
     setDrag(null)
   },
   onDragOver: (event: any) => {
-    if (!dragMatches('workspace') || !canDragWorkspace || searching) return
+    if (!dragMatches('workspace') || !canDragWorkspace) return
     if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return
     event.preventDefault()
     event.stopPropagation()
@@ -188,7 +187,7 @@ const workspaceDragEvents = (workspace: WorkspaceInput) => ({
       : (current ? { ...current, over: { kind: 'workspace', target: workspace.workspaceId, half } } : current))
   },
   onDrop: (event: any) => {
-    if (!dragMatches('workspace') || !canDragWorkspace || searching) return
+    if (!dragMatches('workspace') || !canDragWorkspace) return
     if (!canReorderWorkspaces && workspaceGroupOf(drag.source.workspaceId) === workspaceGroupOf(workspace.workspaceId)) return
     event.preventDefault()
     event.stopPropagation()
@@ -198,7 +197,7 @@ const workspaceDragEvents = (workspace: WorkspaceInput) => ({
 })
 const folderDropEvents = (path: string) => ({
   onDragOver: (event: any) => {
-    if (!dragMatches('workspace') || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return
+    if (!dragMatches('workspace') || !canReorderWorkspaces || workspaceGroupOf(drag.source.workspaceId)) return
     event.preventDefault()
     event.stopPropagation()
     try { event.dataTransfer.dropEffect = 'move' } catch { }
@@ -207,7 +206,7 @@ const folderDropEvents = (path: string) => ({
       : (current ? { ...current, over: { kind: 'folder', target: path } } : current))
   },
   onDrop: (event: any) => {
-    if (!dragMatches('workspace') || !canReorderWorkspaces || searching || workspaceGroupOf(drag.source.workspaceId)) return
+    if (!dragMatches('workspace') || !canReorderWorkspaces || workspaceGroupOf(drag.source.workspaceId)) return
     event.preventDefault()
     event.stopPropagation()
     commitWorkspaceMoveInto(path)
@@ -230,7 +229,7 @@ const nextWorkspaceAfter = (folderPath: string, workspaceId: string) => {
   return index === -1 ? undefined : (node.workspaces[index + 1] ? node.workspaces[index + 1].workspaceId : undefined)
 }
 const commitWorkspaceDrop = (targetWorkspace: WorkspaceInput, half: DropHalf) => {
-  if (!drag || !canDragWorkspace || searching) { setDrag(null); return }
+  if (!drag || !canDragWorkspace) { setDrag(null); return }
   const source = drag.source
   setDrag(null)
   if (source.workspaceId === targetWorkspace.workspaceId) return
@@ -253,7 +252,7 @@ const commitWorkspaceDrop = (targetWorkspace: WorkspaceInput, half: DropHalf) =>
     .catch(fail)
 }
 const commitWorkspaceMoveInto = (folderPath: string) => {
-  if (!drag || !canReorderWorkspaces || searching || viewMode !== 'projects' || workspaceGroupOf(drag.source.workspaceId)) { setDrag(null); return }
+  if (!drag || !canReorderWorkspaces || viewMode !== 'projects' || workspaceGroupOf(drag.source.workspaceId)) { setDrag(null); return }
   const source = drag.source
   setDrag(null)
   if (source.folderPath === folderPath) return
@@ -265,7 +264,7 @@ const commitWorkspaceMoveInto = (folderPath: string) => {
 }
 const workspaceGroupDropEvents = (groupId: string) => ({
   onDragOver: (event: any) => {
-    if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup || searching) return
+    if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup) return
     event.preventDefault()
     event.stopPropagation()
     try { event.dataTransfer.dropEffect = 'move' } catch {}
@@ -275,7 +274,7 @@ const workspaceGroupDropEvents = (groupId: string) => ({
     })
   },
   onDrop: (event: any) => {
-    if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup || searching) return
+    if ((!dragMatches('workspace') && !dragMatches('session')) || !canMoveWorkspaceGroup) return
     event.preventDefault()
     event.stopPropagation()
     if (drag.kind === 'session') assignSessionSection(drag.source.sessionId, groupId)
@@ -298,14 +297,14 @@ const sgroupDropInto = (workspaceId: string, path: string) => !automaticSort && 
 // Section moves are local and allow pins and archives. Legacy title
 // grouping and host reorder targets retain their stricter guards.
 const sessionDraggable = (session: SessionDragRow) => {
-  if (searching || !groupedView || session.blank) return false
+  if (!groupedView || session.blank) return false
   if (workspaceGroups.length > 0) return true
   return !automaticSort && !session.archived && !pinnedSet.has(session.id)
 }
 const sessionDragEvents = (session: SessionDragRow, workspaceId: string | null | undefined, sectioned = false) => ({
   draggable: sessionDraggable(session),
   onDragStart: (event: any) => {
-    if (searching || !sessionDraggable(session)) return
+    if (!sessionDraggable(session)) return
     event.stopPropagation()
     try {
       event.dataTransfer.effectAllowed = 'move'
@@ -318,7 +317,7 @@ const sessionDragEvents = (session: SessionDragRow, workspaceId: string | null |
     // Pinned rows are not reorder anchors (visible position ≠ host
     // order); drop targets stay plain rows only. Belt-and-braces: the
     // source side already refuses to arm for pinned rows.
-    if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching
+    if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView
       || drag.source.workspaceId !== workspaceId
       || session.archived || archivedSet.has(drag.source.sessionId)
       || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return
@@ -331,7 +330,7 @@ const sessionDragEvents = (session: SessionDragRow, workspaceId: string | null |
       : (current ? { ...current, over: { kind: 'session', target: session.id, half } } : current))
   },
   onDrop: (event: any) => {
-    if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView || searching
+    if (!dragMatches('session') || drag.source.sectioned || sectioned || !canReorderSessions || automaticSort || !groupedView
       || drag.source.workspaceId !== workspaceId
       || session.archived || archivedSet.has(drag.source.sessionId)
       || pinnedSet.has(session.id) || pinnedSet.has(drag.source.sessionId)) return
@@ -343,7 +342,7 @@ const sessionDragEvents = (session: SessionDragRow, workspaceId: string | null |
 })
 const sgroupDropEvents = (workspaceId: string, path: string) => ({
   onDragOver: (event: any) => {
-    if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView || searching
+    if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView
       || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return
     event.preventDefault()
     event.stopPropagation()
@@ -353,7 +352,7 @@ const sgroupDropEvents = (workspaceId: string, path: string) => ({
       : (current ? { ...current, over: { kind: 'sgroup', target: path } } : current))
   },
   onDrop: (event: any) => {
-    if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView || searching
+    if (!dragMatches('session') || drag.source.sectioned || automaticSort || !groupedView
       || archivedSet.has(drag.source.sessionId) || drag.source.workspaceId !== workspaceId) return
     event.preventDefault()
     event.stopPropagation()
@@ -366,7 +365,7 @@ const commitSessionDrop = (workspaceId: string | null | undefined, targetSession
   setDrag(null)
   // Same guards as the drop handlers (time views / pinned rows are not
   // reorder surfaces) — a stale drag never commits an invisible move.
-  if (!canReorderSessions || automaticSort || !groupedView || searching) return
+  if (!canReorderSessions || automaticSort || !groupedView) return
   if (archivedSet.has(source.sessionId) || archivedSet.has(targetSessionId)) return
   if (pinnedSet.has(source.sessionId) || pinnedSet.has(targetSessionId)) return
   if (source.sessionId === targetSessionId) return
@@ -382,7 +381,7 @@ const commitSessionDrop = (workspaceId: string | null | undefined, targetSession
     .catch(fail)
 }
 const commitSessionMoveInto = (workspaceId: string | null | undefined, groupPath: string) => {
-  if (!drag || automaticSort || !groupedView || searching || archivedSet.has(drag.source.sessionId)) { setDrag(null); return }
+  if (!drag || automaticSort || !groupedView || archivedSet.has(drag.source.sessionId)) { setDrag(null); return }
   const source = drag.source
   setDrag(null)
   const newTitle = groupPath !== '' ? groupPath + '/' + source.leaf : source.leaf

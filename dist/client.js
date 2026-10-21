@@ -973,10 +973,10 @@
     ".bw-tip{display:inline-flex;align-items:center;gap:8px;position:fixed;z-index:100;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,rgba(24,24,28,.95));color:var(--dsw-static-neutral-bluish-00,#fff);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;animation:bw-tip-in 150ms var(--ds-ease-in-out,ease)}",
     "@keyframes bw-tip-in{from{opacity:0}}",
     "@media (prefers-reduced-motion:reduce){.bw-tip{animation:none}}",
-    // Floating search overlay (ui/search-overlay.ts): one dark card pinned near
-    // the sidebar's top-left corner, matching the shell's menu surfaces.
-    ".bw-search-overlay{position:fixed;inset:0;z-index:130}",
-    ".bw-search-panel{position:absolute;left:16px;top:64px;width:min(560px,calc(100vw - 32px));max-height:min(72vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));overflow:hidden}",
+    // Floating search overlay (ui/search-overlay.ts): one dark card centred in
+    // the viewport, matching the shell's menu surfaces.
+    ".bw-search-overlay{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}",
+    ".bw-search-panel{position:relative;width:min(640px,100%);max-height:min(70vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));overflow:hidden}",
     ".bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}",
     ".bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}",
     ".bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}",

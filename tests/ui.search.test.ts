@@ -13,6 +13,7 @@ import { test } from 'node:test'
 
 import { installPlatform } from '../src/client/platform.ts'
 import { createLayout } from '../src/client/browser/layout.ts'
+import { CSS_TEXT } from '../src/client/styles.ts'
 import { SearchOverlay } from '../src/client/ui/search-overlay.ts'
 
 // ------------------------------------------------------------- hook runtime
@@ -254,6 +255,18 @@ test('the collapsed rail magnifier expands the sidebar and opens the overlay', (
 })
 
 // ----------------------------------------------------------- overlay panel
+test('the overlay backdrop centres the panel in the viewport', () => {
+  const overlay = /\.bw-search-overlay\{([^}]*)\}/.exec(CSS_TEXT)
+  assert.ok(overlay, 'no .bw-search-overlay rule in the stylesheet')
+  assert.match(overlay[1], /display:flex/, 'the backdrop lays the panel out')
+  assert.match(overlay[1], /align-items:center/, 'the panel is vertically centred')
+  assert.match(overlay[1], /justify-content:center/, 'the panel is horizontally centred')
+  const panel = /\.bw-search-panel\{([^}]*)\}/.exec(CSS_TEXT)
+  assert.ok(panel, 'no .bw-search-panel rule in the stylesheet')
+  assert.doesNotMatch(panel[1], /left:\d/, 'no absolute corner anchor: the backdrop centres it')
+  assert.doesNotMatch(panel[1], /top:\d/, 'the panel carries no fixed top offset')
+})
+
 test('the overlay renders nothing while closed', () => {
   const runtime = new Runtime()
   runtime.component = SearchOverlay

@@ -81,7 +81,7 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 
 ### Search
 
-The sidebar search button (header icon, or the magnifier in the collapsed rail) opens a **floating search panel** in the Codex App style:
+The sidebar search button (header icon, or the magnifier in the collapsed rail) opens a **floating search panel centred in the window**, in the Codex App style:
 
 - **Title matches (instant)**: sessions whose title or workspace label contains the query, newest first;
 - **Content matches (Host full-text)**: after a short debounce the panel also asks the Host's session full-text search (`sessions.search`, SQLite FTS5); sessions that only matched message history are appended with their snippet on a second line;

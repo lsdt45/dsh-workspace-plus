@@ -10,10 +10,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "exports": {
-    ".": "./src/index.js",
-    "./client": "./src/client.js",
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js",
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json"
   },
@@ -36,10 +36,7 @@
     }
   },
   "files": [
-    "src/index.js",
-    "src/client.js",
-    "src/client.js.map",
-    "src/client",
+    "dist",
     "cordis.patch.yml",
     "dsh.plugin.json",
     "locale",
@@ -48,11 +45,12 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/build-client.mjs",
-    "dev": "node scripts/build-client.mjs --watch",
-    "check": "node scripts/build-client.mjs --check",
+    "build": "node scripts/build.ts",
+    "dev": "node scripts/build.ts --watch",
+    "check": "node scripts/build.ts --check",
+    "typecheck": "tsc --noEmit",
     "test": "node --test",
-    "verify": "npm run build && npm run check && npm test",
+    "verify": "npm run typecheck && npm run build && npm run check && npm test",
     "prepack": "npm run build && npm run check",
     "version": "node -e \"const fs=require('fs');const m=JSON.parse(fs.readFileSync('dsh.plugin.json','utf8'));const v=JSON.parse(fs.readFileSync('package.json','utf8')).version;m.version=v;fs.writeFileSync('dsh.plugin.json',JSON.stringify(m,null,2)+'\\n')\" && git add dsh.plugin.json"
   },
@@ -76,6 +74,8 @@
     "url": "https://github.com/lsdt45/dsh-workspace-plus/issues"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
   }
 }

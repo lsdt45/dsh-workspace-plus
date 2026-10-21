@@ -274,26 +274,28 @@ DSH 的侧边栏浏览区是一个公开插槽 `sidebar.workspaces`(single),官�
 
 ### 构建
 
-浏览器侧源码在 `src/client/**`(`src/client/index.js` 为 bundle 入口),`src/client.js` 是 **esbuild 生成的单文件产物**
-(DSH 客户端模块表每个包只接受一个 bundle:`exports["./client"]`,模块图扁平,拆分源码必须打包回单一产物)。
-产物与 sourcemap 一并提交进仓库,**从 git / tarball 安装依旧零构建**。
+整个插件是 TypeScript 工程:浏览器侧源码在 `src/client/**`(`src/client/index.ts` 为 bundle 入口),宿主侧在 `src/index.ts`,
+由 `scripts/build.ts` 用 esbuild 产出 `dist/client.js`(+ sourcemap)与 `dist/index.js`(DSH 客户端模块表每个包只接受一个
+bundle:`exports["./client"]`,模块图扁平,拆分源码必须打包回单一产物)。产物一并提交进仓库,**从 git / tarball 安装依旧零构建**。
+开发需要 Node ≥ 22.18:构建脚本与测试直接运行 `.ts`(原生类型擦除),不额外引入 ts-node / tsx。
 
 ```bash
-npm run build     # 源码 → src/client.js(+ .map),原子替换
-npm run dev       # 监听 src/client/**,改动即重打包(宿主每 500ms 轮询产物,HMR 自动重载插件)
-npm run check     # 校验已提交产物与源码一致(不同步则失败)
+npm run build     # 源码 → dist/client.js(+ .map) + dist/index.js,原子替换
+npm run dev       # 监听 src/client/** 与 src/index.ts,改动即重打包(宿主每 500ms 轮询产物,HMR 自动重载插件)
+npm run check     # 校验已提交 dist/ 与 TypeScript 源码一致(不同步则失败)
+npm run typecheck # tsc --noEmit:src / tests / scripts 全量类型检查
 npm test          # node --test:纯逻辑单测 + 产物契约 + 渲染冒烟 + 架构守卫
-npm run verify    # build + check + test
+npm run verify    # typecheck + build + check + test
 npm pack          # 出 tarball 后可本地安装验证(prepack 会先构建并校验)
 ```
 
-**不要手改 `src/client.js`**;改源码后至少跑一次 `npm run dev` 或 `npm run build`。
+**不要手改 `dist/` 里的产物**;改 `src/**/*.ts` 后至少跑一次 `npm run dev` 或 `npm run build`。
 
 ### 产物一致性守卫
 
-产物是提交物,所以有两道防线防止「改了源码忘构建」把旧产物发出去:
+`dist/` 是提交物,所以有两道防线防止「改了源码忘构建」把旧产物发出去:
 
-- **本地 pre-commit 钩子**(`.githooks/pre-commit`,随仓库版本化):提交时跑 `npm run check`,产物与源码不一致就**阻止提交**并打印修复命令;
+- **本地 pre-commit 钩子**(`.githooks/pre-commit`,随仓库版本化):提交时跑 `npm run check`,`dist/` 与源码不一致就**阻止提交**并打印修复命令;
   未安装依赖(没有 esbuild)时只提示并跳过,不会卡住全新 clone。每个 clone 启用一次:
 
   ```bash
@@ -302,7 +304,8 @@ npm pack          # 出 tarball 后可本地安装验证(prepack 会先构建并
 
   紧急绕过:`git commit --no-verify`;停用:`git config --unset core.hooksPath`。
 
-- **CI**(`.github/workflows/verify.yml`,push / PR):`npm install` → `npm run check`(**在任何构建之前**比对已提交产物)→ `npm test`。
+- **CI**(`.github/workflows/verify.yml`,push / PR):`npm install` → `npm run check`(**在任何构建之前**比对已提交产物)
+  → `npm run typecheck` → `npm test`。
 
 两道防线只覆盖产物同步与测试;完整本地校验仍是 `npm run verify`。
 
@@ -318,17 +321,23 @@ npm pack          # 出 tarball 后可本地安装验证(prepack 会先构建并
 
 | 路径 | 职责 |
 |---|---|
-| `src/client/index.js` | bundle 入口 + `BetterBrowser` 组件(探针、状态、装配);把各模块工厂的返回值解构回原名 |
-| `src/client/platform.js` | **唯一平台边界**:`installPlatform(hostRequire)` 注入 react / client-store / ui-primitives,其余模块从它 import |
+| `src/client/index.ts` | bundle 入口 + `BetterBrowser` 组件(探针、状态、装配);把各模块工厂的返回值解构回原名 |
+| `src/client/platform.ts` | **唯一平台边界**:`installPlatform(hostRequire)` 注入 react / client-store / ui-primitives,其余模块从它 import |
 | `src/client/core/*` | 纯逻辑(文本切分、时间分桶、视图规则、虚拟树与单链压缩),零 React/DOM,可直接单测 |
 | `src/client/browser/*` | `model`(派生模型)、`dnd`、`actions`、`tree-view`、`menu`、`layout`:都是 `createX(input)` 工厂,依赖经 `input` 显式注入 |
-| `src/client/{store,host,icons,styles}.js`、`ui/*`、`rows.js`、`customize.js`、`settings.js` | 视图状态、宿主调用、图标、样式、行组件、外观与设置 |
-| `src/client/{tabs,tabs-strip}.js` | 标签规则(纯函数:打开/替换/排序/关闭/对账)与顶栏标签条组件(含 HTML5 拖拽排序、右键菜单桥) |
-| `src/index.js` | 宿主半(Node):只有会话永久删除路由 |
+| `src/client/{store,host,icons,styles}.ts`、`ui/*`、`rows.ts`、`customize.ts`、`settings.ts` | 视图状态、宿主调用、图标、样式、行组件、外观与设置 |
+| `src/client/{tabs,tabs-strip}.ts` | 标签规则(纯函数:打开/替换/排序/关闭/对账)与顶栏标签条组件(含 HTML5 拖拽排序、右键菜单桥) |
+| `src/index.ts` | 宿主半(Node):只有会话永久删除路由 |
+| `scripts/build.ts` | 构建/校验入口:esbuild 产出 `dist/client.js`(浏览器 bundle)与 `dist/index.js`(宿主机半) |
+| `dist/` | **提交进仓库的产物**(bundle + sourcemap + 宿主机半),不要手改;`npm run check` 校验其与 `src/**/*.ts` 一致 |
 
-`tests/architecture.test.mjs` 守卫这些边界:只有入口/平台层能拿平台模块、core/i18n/styles/host 不得引用平台句柄、
-跨模块引用必须 import、组件作用域的名字必须经 `input` 注入;`tests/browser.render.test.mjs` 用 stub React 真正渲染侧栏
+`tests/architecture.test.ts` 守卫这些边界:只有入口/平台层能拿平台模块、core/i18n/styles/host 不得引用平台句柄、
+跨模块引用(含类型引用)必须 import、组件作用域的名字必须经 `input` 注入;`tests/browser.render.test.ts` 用 stub React 真正渲染侧栏
 (四种视图、归档筛选、置顶托盘、分组与自定义外观),拆分中漏接输入会立刻以 ReferenceError 暴露。
+
+测试与构建脚本都是 `.ts`,由 Node 22 的原生类型擦除直接执行(无 ts-node/tsx 依赖);类型检查由 `tsconfig.json` 的 strict 模式覆盖
+`src/`、`tests/`、`scripts/` 三处。平台模块没有发布类型声明,因此它们集中在 `platform.ts` 的 `any` 句柄(唯一的动态边界),
+其余模块各自的 props / 数据结构都显式声明类型。
 
 ### 本地验证
 

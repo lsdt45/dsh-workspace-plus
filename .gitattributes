@@ -3,11 +3,13 @@
 *.yaml text eol=lf
 *.js text eol=lf
 *.mjs text eol=lf
+*.ts text eol=lf
 *.json text eol=lf
 *.md text eol=lf
 
-# Generated browser bundle: src/client.js is built from src/client/** by
-# scripts/build-client.mjs. Keep it out of line-level diffs and review noise;
-# the sources are the review surface.
-src/client.js linguist-generated=true -diff
-src/client.js.map linguist-generated=true -diff
+# Generated artifacts: dist/client.js and dist/index.js are built from
+# src/**/*.ts by scripts/build.ts. Keep them out of line-level diffs and review
+# noise; the TypeScript sources are the review surface.
+dist/client.js linguist-generated=true -diff
+dist/client.js.map linguist-generated=true -diff
+dist/index.js linguist-generated=true -diff

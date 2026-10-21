@@ -1,8 +1,8 @@
-# Continuous verification for the committed browser bundle.
+# Continuous verification for the committed build artifacts.
 #
-# The artifact src/client.js is committed (git/tarball installs must stay
-# build-free), so CI's job is to prove it still matches src/client/**: run
-# `npm run check` BEFORE anything builds, then the test suite.
+# dist/client.js and dist/index.js are committed (git/tarball installs must stay
+# build-free), so CI first proves they still match src/**/*.ts, then type-checks
+# and runs the test suite.
 name: verify
 
 on:
@@ -17,9 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
+          # Node >= 22.18 runs the TypeScript sources directly (native type
+          # stripping) for scripts/build.ts and the tests/*.test.ts files.
           node-version: '22'
-      # No lockfile is committed; esbuild is the only devDependency.
+      # No lockfile is committed; the devDeps are esbuild, typescript and @types/node.
       - run: npm install --no-audit --no-fund
-      # Must run before any build: it compares the committed artifact to the sources.
+      # Must run before any build: it compares the committed artifacts to the sources.
       - run: npm run check
+      - run: npm run typecheck
       - run: npm test

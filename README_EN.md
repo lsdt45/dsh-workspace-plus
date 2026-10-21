@@ -274,28 +274,31 @@ View state (folder collapse, session expansion, explicit empty folders, tab orde
 
 ### Build
 
-The browser half's sources live in `src/client/**` (`src/client/index.js` is the bundle entry); `src/client.js` is the
-**esbuild-generated single-file artifact**. The DSH client module table accepts exactly one bundle per package
-(`exports["./client"]`, flat module graph), so split sources must be bundled back into one artifact. Artifact and
-sourcemap are committed, which keeps git/tarball installs build-free.
+The whole plugin is a TypeScript project: the browser half's sources live in `src/client/**` (`src/client/index.ts` is the
+bundle entry) and the host half in `src/index.ts`. `scripts/build.ts` uses esbuild to produce `dist/client.js`
+(+ sourcemap) and `dist/index.js`. The DSH client module table accepts exactly one bundle per package
+(`exports["./client"]`, flat module graph), so split sources must be bundled back into one artifact. The artifacts are
+committed, which keeps git/tarball installs build-free. Development requires Node ≥ 22.18: the build script and the tests
+run `.ts` directly through the native type-stripping support (no ts-node / tsx).
 
 ```bash
-npm run build     # sources -> src/client.js (+ .map), atomic replace
-npm run dev       # watch src/client/**, repackage on change (the host polls the artifact; HMR reloads the plugin)
-npm run check     # fail when the committed artifact is out of sync with the sources
+npm run build     # sources -> dist/client.js (+ .map) + dist/index.js, atomic replace
+npm run dev       # watch src/client/** and src/index.ts, repackage on change (the host polls the artifact; HMR reloads it)
+npm run check     # fail when the committed dist/ is out of sync with the TypeScript sources
+npm run typecheck # tsc --noEmit: full type check over src / tests / scripts
 npm test          # node --test: pure-logic units + artifact contract + render smoke + architecture guards
-npm run verify    # build + check + test
+npm run verify    # typecheck + build + check + test
 npm pack          # tarball for local install verification (prepack builds and checks first)
 ```
 
-**Never edit `src/client.js` by hand** — edit `src/client/**` and run `npm run dev` (or `npm run build`).
+**Never edit anything under `dist/` by hand** — edit `src/**/*.ts` and run `npm run dev` (or `npm run build`).
 
 ### Stale-artifact guards
 
-Because the artifact is committed, two guards stop a forgotten build from shipping old code:
+Because `dist/` is committed, two guards stop a forgotten build from shipping old code:
 
 - **Local pre-commit hook** (`.githooks/pre-commit`, versioned with the repo): runs `npm run check` on commit and
-  **blocks the commit** when the artifact no longer matches `src/client/**`, printing the fix. With no installed
+  **blocks the commit** when `dist/` no longer matches the TypeScript sources, printing the fix. With no installed
   dependencies (no esbuild) it warns and skips instead of blocking a fresh clone. Enable once per clone:
 
   ```bash
@@ -305,7 +308,7 @@ Because the artifact is committed, two guards stop a forgotten build from shippi
   Emergency bypass: `git commit --no-verify`. Disable: `git config --unset core.hooksPath`.
 
 - **CI** (`.github/workflows/verify.yml`, push / PR): `npm install` → `npm run check` (**before any build**, comparing
-  the committed artifact) → `npm test`.
+  the committed artifacts) → `npm run typecheck` → `npm test`.
 
 Both guards cover sync and tests only; `npm run verify` remains the full local check.
 
@@ -321,18 +324,26 @@ The card title and one-line description in Settings → Plugins come from the pl
 
 | Path | Responsibility |
 |---|---|
-| `src/client/index.js` | bundle entry + the `BetterBrowser` component (probes, state, wiring); destructures each module factory's result back into the previous names |
-| `src/client/platform.js` | **the only platform boundary**: `installPlatform(hostRequire)` installs react / client-store / ui-primitives; every other module imports the handles from here |
+| `src/client/index.ts` | bundle entry + the `BetterBrowser` component (probes, state, wiring); destructures each module factory's result back into the previous names |
+| `src/client/platform.ts` | **the only platform boundary**: `installPlatform(hostRequire)` installs react / client-store / ui-primitives; every other module imports the handles from here |
 | `src/client/core/*` | pure logic (text splitting, time buckets, view rules, virtual tree + chain compression), no React/DOM, unit-tested directly |
 | `src/client/browser/*` | `model`, `dnd`, `actions`, `tree-view`, `menu`, `layout` — all `createX(input)` factories whose dependencies arrive through an explicit input object |
-| `src/client/{store,host,icons,styles}.js`, `ui/*`, `rows.js`, `customize.js`, `settings.js` | view store, host calls, icons, stylesheet, row components, appearance and settings |
-| `src/client/{tabs,tabs-strip}.js` | tab rules (pure: open / replace / reorder / close / reconcile) and the header strip component (HTML5 drag reordering, context-menu bridge) |
-| `src/index.js` | host half (Node): only the permanent session-delete route |
+| `src/client/{store,host,icons,styles}.ts`, `ui/*`, `rows.ts`, `customize.ts`, `settings.ts` | view store, host calls, icons, stylesheet, row components, appearance and settings |
+| `src/client/{tabs,tabs-strip}.ts` | tab rules (pure: open / replace / reorder / close / reconcile) and the header strip component (HTML5 drag reordering, context-menu bridge) |
+| `src/index.ts` | host half (Node): only the permanent session-delete route |
+| `scripts/build.ts` | build/check entry: esbuild emits `dist/client.js` (browser bundle) and `dist/index.js` (host half) |
+| `dist/` | **committed artifacts** (bundle + sourcemap + host half); never hand-edit them — `npm run check` proves they match `src/**/*.ts` |
 
-`tests/architecture.test.mjs` guards those boundaries (only the entry/platform layer may request platform modules;
-core/i18n/styles/host may not touch platform handles; cross-module references need an import; component-scope names must
-arrive through `input`). `tests/browser.render.test.mjs` really renders the sidebar with a stub React — all four views,
-the archive filter, the pinned tray, sections and custom styling — so a module that lost an input fails here immediately.
+`tests/architecture.test.ts` guards those boundaries (only the entry/platform layer may request platform modules;
+core/i18n/styles/host may not touch platform handles; cross-module references — including type references — need an import;
+component-scope names must arrive through `input`). `tests/browser.render.test.ts` really renders the sidebar with a stub
+React — all four views, the archive filter, the pinned tray, sections and custom styling — so a module that lost an input
+fails here immediately.
+
+The tests and the build script are `.ts` files executed by Node 22's native type stripping (no ts-node/tsx dependency);
+the strict `tsconfig.json` type check covers `src/`, `tests/` and `scripts/`. The shell's seeded platform modules ship no
+type declarations, so they are the documented `any` boundary in `platform.ts`; every other module declares its props and
+data shapes explicitly.
 
 ### Local verification
 

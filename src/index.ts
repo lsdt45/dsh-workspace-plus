@@ -26,8 +26,10 @@
  */
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { homedir } from 'node:os'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { createSessionSearchIndex } from './search-index.ts'
 
 export const name = 'dsh-workspace-plus'
 
@@ -114,6 +116,12 @@ interface HostContext {
 
 /** Exact route the client half probes and calls. */
 const SESSION_DELETE_ROUTE = '/dsh-workspace-plus/delete-session'
+/** Exact route the search panel polls for content hits. */
+const SESSION_SEARCH_ROUTE = '/dsh-workspace-plus/search'
+/** Content results per page (the panel caps its merged list at the same value). */
+const SEARCH_DEFAULT_LIMIT = 20
+/** Hard ceiling accepted from the browser. */
+const SEARCH_MAX_LIMIT = 50
 /** Request-body ceiling for the JSON POST. */
 const MAX_BODY_BYTES = 64 * 1024
 /** Session ids double as directory names; anything else is refused up front. */
@@ -395,6 +403,69 @@ function registerSessionDeleteRoute(ctx: HostContext): () => void {
   })
 }
 
+/* ============================ content search ============================ */
+
+/** Stored-session root: the persistence service when mounted, else DSH_HOME. */
+function resolveSessionsRoot(ctx: HostContext): string | null {
+  const configured = ctx.get('sessionPersistence')?.root
+  if (typeof configured === 'string' && configured !== '') return configured
+  const home = process.env.DSH_HOME && process.env.DSH_HOME !== '' ? process.env.DSH_HOME : join(homedir(), '.dsh')
+  return resolve(home, 'sessions')
+}
+
+/**
+ * Register the exact search route; returns its disposer.
+ *
+ * The index is created lazily on the first query (a profile without a sessions
+ * root simply refuses) and closed with the plugin. It reads stored logs
+ * directly instead of going through the persistence migration pipeline, so a
+ * damaged or legacy log degrades that one session instead of the whole search.
+ */
+function registerSessionSearchRoute(ctx: HostContext): () => void {
+  let index: ReturnType<typeof createSessionSearchIndex> | null = null
+  let indexRoot = ''
+  const ensureIndex = (): ReturnType<typeof createSessionSearchIndex> | null => {
+    const root = resolveSessionsRoot(ctx)
+    if (root === null) return null
+    if (index !== null && indexRoot === root) return index
+    try { index?.close() } catch { /* replacing a stale root */ }
+    index = createSessionSearchIndex({
+      sessionsRoot: root,
+      dbPath: join(dirname(root), 'storages', 'workspace-plus-search.db'),
+      logger: { warn: (message: string, ...args: unknown[]) => { ctx.logger.warn(message, ...args) } },
+    })
+    indexRoot = root
+    return index
+  }
+  const dispose = ctx.webServer.register({
+    kind: 'exact',
+    path: SESSION_SEARCH_ROUTE,
+    handler: async (request: IncomingMessage, response: ServerResponse) => {
+      // The client probes availability with GET and expects exactly this 405.
+      if (request.method !== 'POST') return respond(response, 405, { ok: false, error: 'method-not-allowed' })
+      const validation = isSameOriginJsonRequest(request)
+      if (!validation.ok) return respond(response, validation.status, { ok: false, error: validation.error })
+      let body: any
+      try { body = await readJsonBody(request) } catch { return respond(response, 400, { ok: false, error: 'bad-request' }) }
+      const query = typeof body?.query === 'string' ? body.query.trim() : ''
+      if (query === '') return respond(response, 400, { ok: false, error: 'invalid-query' })
+      const requested = Number(body?.limit)
+      const limit = Number.isFinite(requested) ? Math.max(1, Math.min(SEARCH_MAX_LIMIT, Math.trunc(requested))) : SEARCH_DEFAULT_LIMIT
+      const content = ensureIndex()
+      if (content === null) return respond(response, 503, { ok: false, status: 'failed', error: 'sessions-root-unavailable' })
+      content.kick()
+      const result = content.search(query, limit)
+      if (result.state === 'building') return respond(response, 200, { ok: true, status: 'building', progress: result.progress })
+      if (result.state === 'failed') return respond(response, 200, { ok: false, status: 'failed', error: result.message })
+      return respond(response, 200, { ok: true, status: 'ready', items: result.items, hasMore: result.hasMore })
+    },
+  })
+  return () => {
+    try { index?.close() } catch { /* already closed */ }
+    dispose()
+  }
+}
+
 /* =============================== plugin =============================== */
 
 export function apply(ctx: HostContext | null | undefined): void {
@@ -412,6 +483,15 @@ export function apply(ctx: HostContext | null | undefined): void {
     const dispose = registerSessionDeleteRoute(sctx)
     if (typeof sctx.effect === 'function') sctx.effect(() => dispose, 'dsh-workspace-plus session delete route')
     log('[dsh-workspace-plus] session delete route registered: ' + SESSION_DELETE_ROUTE)
+  })
+
+  // Content search for the floating panel: searched through this plugin's own
+  // resilient index, so the route only needs the web server; the sessions root
+  // is resolved per request (a profile without persistence simply refuses).
+  ctx.inject(['webServer'], (sctx) => {
+    const dispose = registerSessionSearchRoute(sctx)
+    if (typeof sctx.effect === 'function') sctx.effect(() => dispose, 'dsh-workspace-plus session search route')
+    log('[dsh-workspace-plus] session search route registered: ' + SESSION_SEARCH_ROUTE)
   })
 
 }

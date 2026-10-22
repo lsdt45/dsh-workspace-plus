@@ -31,7 +31,8 @@
     "search.scope": "\u5185\u5BB9",
     "search.scope.title": "\u540C\u65F6\u641C\u7D22\u4F1A\u8BDD\u5185\u5BB9",
     "search.scope.unavailable": "\u5BBF\u4E3B\u672A\u542F\u7528\u5185\u5BB9\u7D22\u5F15",
-    "search.scope.offlineHint": "\u5185\u5BB9\u68C0\u7D22\u672A\u5F00\u542F\uFF1A\u5BBF\u4E3B\u7684\u4F1A\u8BDD\u7D22\u5F15\u5904\u4E8E\u5173\u95ED\u72B6\u6001\uFF08openAt: never\uFF09\u3002\u542F\u7528\u5E76\u91CD\u542F DSH \u540E\u53EF\u6309\u6D88\u606F\u5185\u5BB9\u5339\u914D\u3002",
+    "search.scope.offlineHint": "\u5185\u5BB9\u7D22\u5F15\u4E0D\u53EF\u7528\uFF1A\u641C\u7D22\u9762\u677F\u6682\u65F6\u53EA\u80FD\u5339\u914D\u4F1A\u8BDD\u6807\u9898\u3002",
+    "search.failed": "\u5185\u5BB9\u68C0\u7D22\u5931\u8D25\uFF1A{reason}",
     "search.indexing": "\u6B63\u5728\u5EFA\u7ACB\u5185\u5BB9\u7D22\u5F15\uFF08\u9996\u6B21\u8F83\u6162\uFF09\u2026",
     "add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
     "rail.search": "\u641C\u7D22",
@@ -219,7 +220,8 @@
     "search.scope": "Content",
     "search.scope.title": "Also search message content",
     "search.scope.unavailable": "Host content index is off",
-    "search.scope.offlineHint": "Content search is off: the host session index runs with openAt: never. Enable it and restart DSH to match message history.",
+    "search.scope.offlineHint": "Content search is unavailable; the panel matches session titles only.",
+    "search.failed": "Content search failed: {reason}",
     "search.indexing": "Building the content index (first run only)\u2026",
     "add": "Add workspace",
     "rail.search": "Search",
@@ -1555,6 +1557,7 @@
     const [unavailable, setUnavailable] = React.useState(false);
     const [slow, setSlow] = React.useState(false);
     const [composing, setComposing] = React.useState(false);
+    const [failure, setFailure] = React.useState(null);
     const inputRef = React.useRef(null);
     const requestRef = React.useRef(0);
     const cappedLimit = Math.max(1, Math.trunc(Number(limit) || DEFAULT_LIMIT));
@@ -1571,6 +1574,7 @@
       setUnavailable(false);
       setSlow(false);
       setComposing(false);
+      setFailure(null);
       const timer = setTimeout(() => {
         const input = inputRef.current;
         if (input && typeof input.focus === "function") input.focus({ preventScroll: true });
@@ -1588,7 +1592,7 @@
     React.useEffect(() => {
       if (!open) return void 0;
       const trimmed2 = normalizeQuery(query);
-      if (typeof searchSessions !== "function" || !contentEnabled || unavailable || composing || !isContentQueryReady(trimmed2)) {
+      if (typeof searchSessions !== "function" || !contentEnabled || unavailable || failure !== null || composing || !isContentQueryReady(trimmed2)) {
         requestRef.current += 1;
         setRemote({ status: "idle", items: [], hasMore: false });
         return void 0;
@@ -1619,14 +1623,17 @@
             setRemote({ status: "idle", items: [], hasMore: false });
             return;
           }
+          const message = reason instanceof Error ? reason.message : String(reason);
+          setFailure(message.length > 180 ? message.slice(0, 177) + "\u2026" : message);
           setRemote({ status: "error", items: [], hasMore: false });
+          console.warn("[dsh-workspace-plus] content search failed", reason);
         });
       }, SEARCH_DEBOUNCE_MS);
       return () => {
         clearTimeout(timer);
         if (controller !== null) controller.abort();
       };
-    }, [open, query, contentEnabled, unavailable, composing, searchSessions, cache]);
+    }, [open, query, contentEnabled, unavailable, failure, composing, searchSessions, cache]);
     React.useEffect(() => {
       if (remote.status !== "loading") {
         setSlow(false);
@@ -1818,7 +1825,7 @@
           ),
           empty ? pending ? null : E("div", { className: "bw-search-empty" }, trimmed === "" ? t("search.emptyRecent") : t("search.empty")) : rows
         ),
-        contentEnabled && unavailable && typeof searchSessions === "function" ? E("div", { className: "bw-search-hint", role: "note" }, t("search.scope.offlineHint")) : null
+        contentEnabled && typeof searchSessions === "function" && (unavailable || failure !== null) ? E("div", { className: "bw-search-hint", role: "note" }, unavailable ? t("search.scope.offlineHint") : t("search.failed", { reason: failure ?? "" })) : null
       )
     );
   }
@@ -5511,11 +5518,77 @@
             }
           }, "better-workspace: dictionaries");
         }
-        const searchSessions = typeof sessions.search === "function" ? async (query, signal) => {
+        const SESSION_SEARCH_ROUTE = "/dsh-workspace-plus/search";
+        const SEARCH_POLL_MS = 700;
+        const SEARCH_BUILD_WAIT_MS = 10 * 6e4;
+        const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
+          if (signal && signal.aborted) {
+            reject(signal.reason);
+            return;
+          }
+          const onAbort = () => {
+            clearTimeout(timer);
+            reject(signal.reason);
+          };
+          const timer = setTimeout(() => {
+            if (signal && typeof signal.removeEventListener === "function") signal.removeEventListener("abort", onAbort);
+            resolve();
+          }, ms);
+          if (signal && typeof signal.addEventListener === "function") signal.addEventListener("abort", onAbort, { once: true });
+        });
+        const upstreamSearch = typeof sessions.search === "function" ? async (query, signal) => {
           const result = await sessions.search(query, signal);
           if (!result || !result.ok) throw searchFailure(result);
           return result.value;
         } : null;
+        const routeUnavailable = () => {
+          const failure = new Error("content search route unavailable");
+          failure.routeUnavailable = true;
+          return failure;
+        };
+        const searchContentViaRoute = async (query, signal) => {
+          const deadline = Date.now() + SEARCH_BUILD_WAIT_MS;
+          for (; ; ) {
+            if (signal && signal.aborted) throw signal.reason ?? new Error("aborted");
+            let response;
+            try {
+              response = await fetch(SESSION_SEARCH_ROUTE, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ query }),
+                signal
+              });
+            } catch (error) {
+              if (signal && signal.aborted) throw error;
+              throw routeUnavailable();
+            }
+            if (response.status === 404 || response.status === 405) throw routeUnavailable();
+            let body = null;
+            try {
+              body = await response.json();
+            } catch {
+              body = null;
+            }
+            if (body === null) throw routeUnavailable();
+            if (!response.ok) throw new Error(body.error || "content search failed (HTTP " + response.status + ")");
+            if (body.status === "building") {
+              if (Date.now() > deadline) throw new Error("content index build timed out");
+              await abortableDelay(SEARCH_POLL_MS, signal);
+              continue;
+            }
+            if (body.status === "ready") return { items: Array.isArray(body.items) ? body.items : [], hasMore: body.hasMore === true };
+            throw new Error(body.error || "content index failed");
+          }
+        };
+        const searchSessions = async (query, signal) => {
+          try {
+            return await searchContentViaRoute(query, signal);
+          } catch (error) {
+            if (signal && signal.aborted) throw error;
+            if (error?.routeUnavailable === true && upstreamSearch !== null) return upstreamSearch(query, signal);
+            throw error;
+          }
+        };
         const renameSession = async (sessionId, title) => {
           const binding = sessions.binding(sessionId);
           const session = binding && binding.session;
@@ -5537,7 +5610,7 @@
           open: (sessionId) => {
             openSessionCompat(sessionId);
           },
-          searchSessions: typeof searchSessions === "function" ? searchSessions : void 0,
+          searchSessions,
           searchResultLimit: sessions.searchResultLimit !== void 0 ? sessions.searchResultLimit : 20,
           renameSession,
           forkSession,

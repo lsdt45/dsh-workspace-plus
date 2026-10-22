@@ -534,17 +534,81 @@ window.__ModuleLoader__.load({
         }, 'better-workspace: dictionaries')
       }
 
-      // Older hosts expose no session search at all; keep the panel title-only
-      // by publishing null instead of a function that would throw a TypeError.
-      const searchSessions = typeof sessions.search === 'function'
+      // Content search goes through this plugin's own host route. DSH's session
+      // index aborts the whole build when one stored log cannot be migrated, and
+      // its tokenizer cannot match CJK substrings; the plugin's route indexes the
+      // stored logs itself (skipping unreadable ones, one token per CJK glyph).
+      // It answers "building" until the first pass completes, so the panel polls.
+      const SESSION_SEARCH_ROUTE = '/dsh-workspace-plus/search'
+      /** Pause between "index still building" polls. */
+      const SEARCH_POLL_MS = 700
+      /** A first build over a large corpus can take minutes; stay patient. */
+      const SEARCH_BUILD_WAIT_MS = 10 * 60_000
+      const abortableDelay = (ms: number, signal?: any): Promise<void> => new Promise((resolve, reject) => {
+        if (signal && signal.aborted) { reject(signal.reason); return }
+        const onAbort = (): void => { clearTimeout(timer); reject(signal.reason) }
+        const timer = setTimeout(() => {
+          if (signal && typeof signal.removeEventListener === 'function') signal.removeEventListener('abort', onAbort)
+          resolve()
+        }, ms)
+        if (signal && typeof signal.addEventListener === 'function') signal.addEventListener('abort', onAbort, { once: true })
+      })
+      // Fallback for a profile whose host half did not register the route: the
+      // old Host search still works on deployments that enabled its index.
+      const upstreamSearch = typeof sessions.search === 'function'
         ? async (query: string, signal?: any) => {
           const result = await sessions.search(query, signal)
-          // Keep the Host's stable error code: the panel tells "content index
-          // disabled" (SESSION_QUERY_SEARCH_DISABLED) from a transient failure.
           if (!result || !result.ok) throw searchFailure(result)
           return result.value
         }
         : null
+      const routeUnavailable = (): Error & { routeUnavailable?: boolean } => {
+        const failure = new Error('content search route unavailable') as Error & { routeUnavailable?: boolean }
+        failure.routeUnavailable = true
+        return failure
+      }
+      const searchContentViaRoute = async (query: string, signal?: any) => {
+        const deadline = Date.now() + SEARCH_BUILD_WAIT_MS
+        for (;;) {
+          if (signal && signal.aborted) throw signal.reason ?? new Error('aborted')
+          let response: any
+          try {
+            response = await fetch(SESSION_SEARCH_ROUTE, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ query }),
+              signal,
+            })
+          } catch (error) {
+            if (signal && signal.aborted) throw error
+            throw routeUnavailable()
+          }
+          if (response.status === 404 || response.status === 405) throw routeUnavailable()
+          let body: any = null
+          try { body = await response.json() } catch { body = null }
+          // The route always answers JSON. A non-JSON body means the request fell
+          // through to the SPA shell (host half not loaded): use the old Host
+          // search instead of reporting a content failure.
+          if (body === null) throw routeUnavailable()
+          if (!response.ok) throw new Error(body.error || ('content search failed (HTTP ' + response.status + ')'))
+          if (body.status === 'building') {
+            if (Date.now() > deadline) throw new Error('content index build timed out')
+            await abortableDelay(SEARCH_POLL_MS, signal)
+            continue
+          }
+          if (body.status === 'ready') return { items: Array.isArray(body.items) ? body.items : [], hasMore: body.hasMore === true }
+          throw new Error(body.error || 'content index failed')
+        }
+      }
+      const searchSessions = async (query: string, signal?: any): Promise<{ items: Array<{ sessionId: string; snippet?: string }>; hasMore?: boolean }> => {
+        try {
+          return await searchContentViaRoute(query, signal)
+        } catch (error) {
+          if (signal && signal.aborted) throw error
+          if ((error as any)?.routeUnavailable === true && upstreamSearch !== null) return upstreamSearch(query, signal)
+          throw error
+        }
+      }
       const renameSession = async (sessionId: string, title: string) => {
         const binding = sessions.binding(sessionId)
         const session = binding && binding.session
@@ -565,7 +629,7 @@ window.__ModuleLoader__.load({
       const browserInjected = () => ({
         startSession: (workspaceId: string) => { uiWorkspace.startSession(workspaceId) },
         open: (sessionId: string) => { openSessionCompat(sessionId) },
-        searchSessions: typeof searchSessions === 'function' ? searchSessions : undefined,
+        searchSessions,
         searchResultLimit: sessions.searchResultLimit !== undefined ? sessions.searchResultLimit : 20,
         renameSession,
         forkSession,

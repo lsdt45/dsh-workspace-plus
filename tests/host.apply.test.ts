@@ -26,3 +26,18 @@ test('the host half applies without any context', () => {
 test('the plugin has the name the profile registers', () => {
   assert.equal(plugin.name, 'dsh-workspace-plus')
 })
+
+test('apply() registers both host routes through the injected web server', () => {
+  const routes: string[] = []
+  const webServer = { register: (route: { path: string }) => { routes.push(route.path); return () => {} } }
+  const ctx = {
+    logger: { info: () => {}, warn: () => {}, error: () => {} },
+    get: () => undefined,
+    effect: (factory: () => () => void) => { factory() },
+    inject: (_deps: string[], callback: (sctx: any) => void) => {
+      callback({ get: () => undefined, logger: ctx.logger, effect: () => {}, webServer })
+    },
+  }
+  ;(plugin.apply as any)(ctx)
+  assert.deepEqual(routes.sort(), ['/dsh-workspace-plus/delete-session', '/dsh-workspace-plus/search'])
+})

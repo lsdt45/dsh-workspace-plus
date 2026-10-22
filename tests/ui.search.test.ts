@@ -690,6 +690,30 @@ test('Enter on the content switch does not open a result', () => {
   assert.equal(closed, 1, 'Escape still closes the panel from the switch')
 })
 
+
+
+test('a content backend failure is explained instead of leaving an empty panel', async () => {
+  let calls = 0
+  const { runtime, tree } = renderOverlay({
+    onContentToggle: () => {},
+    searchSessions: async () => {
+      calls += 1
+      throw new Error('session index build failed: no space left on device')
+    },
+  })
+  typeQuery(runtime, tree, 'plan')
+  await wait(260)
+  await runtime.settle()
+  assert.equal(calls, 1)
+  assert.equal(textOf(byClass(runtime.tree, 'bw-search-hint')), 'search.failed', 'the failure reason is surfaced')
+  assert.deepEqual(byClass(runtime.tree, 'bw-search-row').map((row) => textOf(byClass(row, 'bw-search-row-title'))), ['Plan review'], 'title matches survive')
+
+  typeQuery(runtime, runtime.tree, 'git')
+  await wait(260)
+  await runtime.settle()
+  assert.equal(calls, 1, 'a failed backend is not retried for every keystroke')
+})
+
 test('a slow first content search says it is building the index', async () => {
   const { runtime, tree } = renderOverlay({
     onContentToggle: () => {},

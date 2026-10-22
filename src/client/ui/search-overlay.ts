@@ -90,6 +90,9 @@ export function SearchOverlay({
   const [slow, setSlow] = React.useState(false)
   // An IME composition owns the input; searching partial pinyin is wasteful.
   const [composing, setComposing] = React.useState(false)
+  // Content search is down (index build failed): keep title matching and say so
+  // instead of leaving the panel looking empty.
+  const [failure, setFailure] = React.useState(null as string | null)
   const inputRef = React.useRef(null)
   const requestRef = React.useRef(0)
   const cappedLimit = Math.max(1, Math.trunc(Number(limit) || DEFAULT_LIMIT))
@@ -114,6 +117,7 @@ export function SearchOverlay({
     setUnavailable(false)
     setSlow(false)
     setComposing(false)
+    setFailure(null)
     const timer = setTimeout(() => {
       const input = inputRef.current
       if (input && typeof input.focus === 'function') input.focus({ preventScroll: true })
@@ -132,7 +136,7 @@ export function SearchOverlay({
   React.useEffect(() => {
     if (!open) return undefined
     const trimmed = normalizeQuery(query)
-    if (typeof searchSessions !== 'function' || !contentEnabled || unavailable || composing || !isContentQueryReady(trimmed)) {
+    if (typeof searchSessions !== 'function' || !contentEnabled || unavailable || failure !== null || composing || !isContentQueryReady(trimmed)) {
       requestRef.current += 1
       setRemote({ status: 'idle', items: [], hasMore: false })
       return undefined
@@ -163,14 +167,17 @@ export function SearchOverlay({
           setRemote({ status: 'idle', items: [], hasMore: false })
           return
         }
+        const message = reason instanceof Error ? reason.message : String(reason)
+        setFailure(message.length > 180 ? message.slice(0, 177) + '…' : message)
         setRemote({ status: 'error', items: [], hasMore: false })
+        console.warn('[dsh-workspace-plus] content search failed', reason)
       })
     }, SEARCH_DEBOUNCE_MS)
     return () => {
       clearTimeout(timer)
       if (controller !== null) controller.abort()
     }
-  }, [open, query, contentEnabled, unavailable, composing, searchSessions, cache])
+  }, [open, query, contentEnabled, unavailable, failure, composing, searchSessions, cache])
 
   // Long wait -> the first content search is building the index. A timer in the
   // renderer keeps the message visible even though the Host is busy in SQLite.
@@ -350,8 +357,8 @@ export function SearchOverlay({
           ? (pending ? null : E('div', { className: 'bw-search-empty' }, trimmed === '' ? t('search.emptyRecent') : t('search.empty')))
           : rows,
       ),
-      contentEnabled && unavailable && typeof searchSessions === 'function'
-        ? E('div', { className: 'bw-search-hint', role: 'note' }, t('search.scope.offlineHint'))
+      contentEnabled && typeof searchSessions === 'function' && (unavailable || failure !== null)
+        ? E('div', { className: 'bw-search-hint', role: 'note' }, unavailable ? t('search.scope.offlineHint') : t('search.failed', { reason: failure ?? '' }))
         : null,
     ),
   )

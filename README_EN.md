@@ -84,27 +84,20 @@ Right-click any folder row: new subfolder (parent prefix pre-filled), new worksp
 The sidebar search button (header icon, or the magnifier in the collapsed rail) opens a **floating search panel centred in the window**, in the Codex App style:
 
 - **Title matches (instant)**: sessions whose title or workspace label contains the query, newest first;
-- **Content matches (Host full-text)**: after a short debounce the panel also asks the Host's session full-text search (`sessions.search`, SQLite FTS5); sessions that only matched message history are appended with their snippet on a second line;
-- **Content switch**: the "Content" switch in the field row controls whether message history is searched; off keeps title matching and stops Host requests. The choice persists in the current browser;
+- **Content matches (plugin-owned index)**: after a short debounce the panel also searches message history; sessions that only matched message text are appended with their snippet on a second line;
+- **Content switch**: the "Content" switch in the field row controls whether message history is searched; off keeps title matching and stops searches. The choice persists in the current browser;
 - **Keyboard**: ↑/↓ to move, Enter to open, Esc to close, ⌃/⌘ + 1–9 to open one of the first nine results; hovering and clicking work too;
-- Opening lists **recent sessions** first; when the Host has no content index the panel degrades to title-only matching and says so.
+- Opening lists **recent sessions** first; when the content index is unavailable the panel degrades to title-only matching and says why.
 
 > This replaces the old inline filter row. The panel rides the shell's `shell.overlay` seat, so the sidebar width never clips it.
 
-**Performance**: title matching is per-keystroke and instant; content search is debounced (180 ms), skipped below two code points and during IME composition, and cached per open, so backspacing or retyping never repeats a Host request. Results keep the Host's 20-row cap. The content index is built on the **first content search** (the panel shows "Building the content index"), then reconciled incrementally and usually answers in milliseconds; it persists in `~/.dsh/storages/session-search.db`.
+**Performance and resilience**: title matching is per-keystroke and instant; content search is debounced (180 ms), skipped below two code points and during IME composition, cached per open (so backspacing never repeats a search), and capped at 20 results.
 
-**Works out of the box**: the plugin's own bundle patch overrides the Host's `session-query-sqlite` from `openAt: never` to `openAt: first-search` with a durable index, so no manual configuration is needed. A deployment that wants content search off can override the same id in the profile's `cordis.patch.yml` (a later layer):
+The index is owned by the plugin: it reads the stored logs under `~/.dsh/sessions` directly, and **skips an unreadable or legacy log per session** instead of failing the whole pass (the Host's strict index aborts on such logs, which is why the panel does not use it). The first content search builds the index in the background (the panel says "Building the content index"; tens of seconds for a large corpus, title matching keeps working), then refreshes incrementally by file mtime/size and normally answers in milliseconds. The index file lives at `~/.dsh/storages/workspace-plus-search.db` and is rebuilt when deleted.
 
-```yaml
-- id: session-query-sqlite
-  config:
-    path: !!js dshHomePath('storages/session-search.db')
-    openAt: never
-```
+**Matching semantics**: English matches by word; CJK is tokenized per character, so a CJK substring (for example "模型") matches. Only user and assistant message bodies are indexed — no reasoning, tool calls or tool outputs.
 
-The panel then degrades to title matching and shows a "Host content index is off" hint; title matches and the recent list keep working.
-
-**Matching semantics**: the Host indexes with SQLite FTS5's `unicode61` tokenizer, which matches tokens and phrases — English words match as words; a run of CJK text is one token, so a CJK substring (for example "模型") usually does not match. This is the Host's existing search behavior; substring matching for CJK would need a separate index.
+**When the index is unavailable**: the panel shows "Content search failed: <reason>" while title matching and the recent list keep working; reopen the panel to retry.
 
 ### Workspace and session sections
 

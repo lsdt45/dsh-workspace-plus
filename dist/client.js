@@ -89,6 +89,9 @@
     "tabs.ongoing": "\u8FD0\u884C\u4E2D",
     "tabs.done": "\u5DF2\u5B8C\u6210\u672A\u8BFB",
     "tabs.warning": "\u7B49\u5F85\u4F60\u5904\u7406",
+    "tabs.menu": "\u5168\u90E8\u6807\u7B7E\u9875",
+    "tabs.menuCount": "\u5171 {n} \u4E2A\u6807\u7B7E\u9875",
+    "tabs.menuHint": "\u70B9\u51FB\u5207\u6362\uFF0C\u53F3\u952E\u6253\u5F00\u4F1A\u8BDD\u83DC\u5355",
     "menu.newSubfolder": "\u65B0\u589E\u5B50\u5206\u7EC4",
     "menu.newSubWorkspace": "\u65B0\u589E\u5B50\u5DE5\u4F5C\u533A",
     "menu.renameFolder": "\u91CD\u547D\u540D\u5206\u7EC4",
@@ -278,6 +281,9 @@
     "tabs.ongoing": "Running",
     "tabs.done": "Finished, unread",
     "tabs.warning": "Waiting for you",
+    "tabs.menu": "All tabs",
+    "tabs.menuCount": "{n} open tabs",
+    "tabs.menuHint": "Click to switch, right-click for the session menu",
     "menu.newSubfolder": "New subfolder",
     "menu.newSubWorkspace": "New workspace here",
     "menu.renameFolder": "Rename folder",
@@ -937,6 +943,12 @@
   var ListIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
     E("path", { key: "lines", d: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" })
   ]);
+  var ChevronDownIcon16 = ({ size = 12, className }) => lucideSvg(size, className, [
+    E("path", { d: "m6 9 6 6 6-6" })
+  ]);
+  var CheckIcon16 = ({ size = 13, className }) => lucideSvg(size, className, [
+    E("path", { d: "M20 6 9 17l-5-5" })
+  ]);
   var CalendarDaysIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
     E("path", { d: "M8 2v4" }),
     E("path", { d: "M16 2v4" }),
@@ -1056,9 +1068,28 @@
     // session. The chip's dot is .bw-state-dot, so the three states stay identical.
     // Session tab strip, modelled on the reference: dot + label chips with a
     // thick active underline, no fill or border, and a quiet close cross.
-    ".bw-tabs{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;overflow-x:auto;scrollbar-width:none;-webkit-app-region:no-drag;app-region:no-drag}",
+    //
+    // Overflow (browser-like): the row is widened by tabs-strip.ts to the measured
+    // header space (chips grow to fill it), and 52vw is only the fallback when the
+    // right-hand utilities cannot be measured yet. The chips are the first tier —
+    // they shrink from their natural width to a readable floor; only past that
+    // floor does the row scroll, which is when the edge fades and the chevron
+    // appear. The fade is a mask on the scroller itself (not an overlay), so it
+    // stays correct on every header background and theme.
+    // no-drag on the WHOLE bar: the conversation header is the window's drag region,
+    // and a button inside a drag region never receives clicks — the chevron lived
+    // outside .bw-tabs, whose own no-drag only covered the chips.
+    ".bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}",
+    ".bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}",
     ".bw-tabs::-webkit-scrollbar{display:none}",
-    ".bw-tab{display:flex;align-items:center;gap:6px;flex:none;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
+    '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
+    '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
+    '.bw-tabs[data-bw-fade-left="1"][data-bw-fade-right="1"]{-webkit-mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent)}',
+    // flex-grow: once useStripFill widens the row to the header utilities, the
+    // chips share the extra space (browser-style equal spread) instead of ending
+    // in a dead band; shrink still floors them at 96px before the row scrolls
+    // (100px left the row overflowing by a couple of pixels just before it fit).
+    ".bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:96px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
     ".bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}",
     ".bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
     ".bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}",
@@ -1069,6 +1100,29 @@
     ".bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}",
     ".bw-tab:hover .bw-tab-close{opacity:1}",
     ".bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    // Overflow trigger: the chevron sits at the end of the row (Firefox/Edge's
+    // "list all tabs"), so a cut-off chip always has a visible way out.
+    ".bw-tabs-more{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}",
+    ".bw-tabs-more:hover,.bw-tabs-more-open{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    ".bw-tabs-more:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
+    // The overflow list: a fixed panel anchored to the chevron so neither the
+    // header's clipping nor the row's scroll position can crop it.
+    ".bw-tabs-menu-layer{position:fixed;inset:0;z-index:119;pointer-events:none;-webkit-app-region:no-drag;app-region:no-drag}",
+    ".bw-tabs-menu-overlay{position:absolute;inset:0;pointer-events:auto}",
+    ".bw-tabs-menu{position:fixed;z-index:120;-webkit-app-region:no-drag;app-region:no-drag;display:flex;flex-direction:column;min-width:232px;max-width:min(360px,calc(100vw - 16px));overflow:hidden;padding:4px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:8px;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.92)));-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));box-shadow:0 8px 24px rgba(0,0,0,.35);outline:none;pointer-events:auto}",
+    ".bw-tabs-menu-head{flex:none;padding:4px 8px 5px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-quaternary,#8a8a8a);user-select:none}",
+    ".bw-tabs-menu-list{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}",
+    ".bw-tabs-menu-row{flex:none;display:flex;align-items:center;gap:8px;height:28px;padding:0 4px 0 8px;border-radius:6px;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:12.5px;cursor:pointer;user-select:none}",
+    ".bw-tabs-menu-row:hover,.bw-tabs-menu-row-cursor{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}",
+    ".bw-tabs-menu-row-active{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#5b8def) 12%,transparent)}",
+    ".bw-tabs-menu-row-active .bw-tabs-menu-label{color:var(--dsw-alias-brand-primary,#5b8def);font-weight:600}",
+    ".bw-tabs-menu-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}",
+    ".bw-tabs-menu-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".bw-tabs-menu-check{flex:none;display:grid;place-items:center;color:var(--dsw-alias-brand-primary,#5b8def)}",
+    ".bw-tabs-menu-close{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font-size:13px;line-height:1;cursor:pointer;opacity:.4}",
+    ".bw-tabs-menu-row:hover .bw-tabs-menu-close,.bw-tabs-menu-row-cursor .bw-tabs-menu-close{opacity:1}",
+    ".bw-tabs-menu-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    ".bw-tabs-menu-hint{flex:none;margin-top:4px;padding:5px 8px 3px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));font-size:11px;line-height:15px;color:var(--dsw-alias-label-quaternary,#8a8a8a);user-select:none}",
     // The plugin-drawn status dot (all three states): geometry only, the colour is
     // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
     // display:inline-block is load-bearing — the dot sits inside the .bw-pulse
@@ -3405,6 +3459,30 @@
     copy.splice(Math.min(target, copy.length), 0, moved);
     return copy;
   }
+  function scrollDeltaFor(container, item, pad = 6) {
+    const left = Number(container.left);
+    const right = Number(container.right);
+    const itemLeft = Number(item.left);
+    const itemRight = Number(item.right);
+    if (!Number.isFinite(left) || !Number.isFinite(right) || !Number.isFinite(itemLeft) || !Number.isFinite(itemRight)) return 0;
+    if (itemLeft < left + pad) return itemLeft - left - pad;
+    if (itemRight > right - pad) return itemRight - right + pad;
+    return 0;
+  }
+  function stripFillWidth(limitLeft, barLeft, headerWidth, minimum = 220, reserve = 40) {
+    const limit = Number(limitLeft);
+    const left = Number(barLeft);
+    const header = Number(headerWidth);
+    if (!Number.isFinite(limit) || !Number.isFinite(left) || limit <= left) return 0;
+    const cap = Number.isFinite(header) && header > 0 ? header - Math.max(40, reserve) : limit - left;
+    const width = Math.round(Math.min(limit - left - 12, cap));
+    return width >= minimum ? width : 0;
+  }
+  function stripCapacity(tabCount, chipMax = 212, gap = 2) {
+    const count = Math.max(0, Math.floor(Number(tabCount) || 0));
+    if (!count) return 0;
+    return count * chipMax + (count - 1) * gap;
+  }
   function closeTab(tabs, sessionId, activeSessionId) {
     const id = tabIdOf(sessionId);
     const list = normalizeTabs(tabs);
@@ -3887,6 +3965,276 @@
       }));
     }, [sessions, archivedIds]);
   }
+  var NO_OVERFLOW = { overflowing: false, canLeft: false, canRight: false };
+  var sameOverflow = (left, right) => left.overflowing === right.overflowing && left.canLeft === right.canLeft && left.canRight === right.canRight;
+  var isChipNode = (node) => !!node && typeof node.className === "string" && node.className.split(/\s+/).indexOf("bw-tab") !== -1;
+  function useStripOverflow(stripRef, deps) {
+    const [state2, setState] = React.useState(() => NO_OVERFLOW);
+    const measure = () => {
+      const el = stripRef.current;
+      if (!el) return;
+      const next = {
+        overflowing: el.scrollWidth > el.clientWidth + 1,
+        canLeft: el.scrollLeft > 1,
+        canRight: el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+      };
+      setState((previous) => sameOverflow(previous, next) ? previous : next);
+    };
+    React.useLayoutEffect(() => {
+      measure();
+      const el = stripRef.current;
+      if (!el || typeof el.addEventListener !== "function") return void 0;
+      const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => measure()) : null;
+      if (observer) {
+        observer.observe(el);
+        for (const node of Array.from(el.children || [])) if (isChipNode(node)) observer.observe(node);
+      }
+      el.addEventListener("scroll", measure, { passive: true });
+      return () => {
+        el.removeEventListener("scroll", measure);
+        if (observer) observer.disconnect();
+      };
+    }, deps);
+    React.useEffect(() => {
+      if (typeof window === "undefined" || typeof window.addEventListener !== "function") return void 0;
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }, []);
+    return state2;
+  }
+  function useRevealActive(stripRef, sessionId, tabCount) {
+    React.useLayoutEffect(() => {
+      const reveal = () => {
+        const el = stripRef.current;
+        if (!el || typeof el.querySelector !== "function") return;
+        const chip = el.querySelector('[data-bw-active="1"]');
+        if (!chip || typeof chip.getBoundingClientRect !== "function") return;
+        const delta = scrollDeltaFor(el.getBoundingClientRect(), chip.getBoundingClientRect(), 6);
+        if (delta) el.scrollLeft += delta;
+      };
+      reveal();
+      if (typeof setTimeout !== "function") return void 0;
+      const timer = setTimeout(reveal, 120);
+      return () => clearTimeout(timer);
+    }, [sessionId, tabCount]);
+  }
+  function useWheelScroll(stripRef) {
+    React.useEffect(() => {
+      const el = stripRef.current;
+      if (!el || typeof el.addEventListener !== "function") return void 0;
+      const onWheel = (event) => {
+        if (el.scrollWidth <= el.clientWidth + 1) return;
+        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+        if (!delta) return;
+        const before = el.scrollLeft;
+        el.scrollLeft = before + delta;
+        if (el.scrollLeft !== before && typeof event.preventDefault === "function") event.preventDefault();
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      return () => el.removeEventListener("wheel", onWheel);
+    }, []);
+  }
+  function useStripFill(barRef, deps, tabCount) {
+    const [width, setWidth] = React.useState(0);
+    const epochRef = React.useRef({ headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false });
+    const measure = (steady) => {
+      const bar = barRef.current;
+      if (!bar || typeof document === "undefined" || typeof bar.getBoundingClientRect !== "function") return;
+      const header = typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : document.querySelector("header[data-window-drag]");
+      if (!header || typeof header.getBoundingClientRect !== "function") return;
+      const barRect = bar.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      if (!barRect.width || !headerRect.width) return;
+      if (Math.abs(epochRef.current.headerWidth - headerRect.width) > 1) {
+        epochRef.current = { headerWidth: headerRect.width, width: 0, limit: 0, locked: false, unstable: false };
+      }
+      const epoch = epochRef.current;
+      if (epoch.unstable) return;
+      let gridItem = bar;
+      while (gridItem && gridItem.parentElement && gridItem.parentElement !== header) gridItem = gridItem.parentElement;
+      const leadingRight = gridItem && gridItem !== bar ? gridItem.getBoundingClientRect().right : barRect.right;
+      let limit = 0;
+      const nodes = Array.from(header.querySelectorAll("*"));
+      for (const node of nodes) {
+        if (bar === node || typeof bar.contains === "function" && bar.contains(node)) continue;
+        if (typeof node.contains === "function" && node.contains(bar)) continue;
+        const rect = node.getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) continue;
+        if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) continue;
+        if (typeof getComputedStyle === "function") {
+          const style = getComputedStyle(node);
+          if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") continue;
+        }
+        if (rect.left <= leadingRight + 8 && rect.right >= headerRect.right - 40) continue;
+        if (headerRect.right - rect.right > 120) continue;
+        if (rect.left <= barRect.left + 8) continue;
+        if (!limit || rect.left < limit) limit = rect.left;
+      }
+      let next = stripFillWidth(limit, barRect.left, headerRect.width, 220, 100);
+      if (next > 0) next = Math.min(next, stripCapacity(tabCount));
+      if (next > 0 && steady && epoch.locked && limit > epoch.limit + 24) {
+        epoch.unstable = true;
+        epoch.width = 0;
+        setWidth(0);
+        return;
+      }
+      if (next > 0 && epoch.locked) next = Math.min(next, epoch.width);
+      if (next > 0) {
+        epoch.locked = true;
+        epoch.width = next;
+        epoch.limit = limit;
+      } else if (!steady) {
+        epoch.locked = false;
+      }
+      setWidth((previous) => previous === next ? previous : next);
+    };
+    React.useLayoutEffect(() => {
+      measure();
+      if (typeof setTimeout !== "function") return void 0;
+      const retry = () => {
+        if (!epochRef.current.locked && !epochRef.current.unstable) measure();
+      };
+      const timers = [400, 1500, 3200].map((delay) => setTimeout(retry, delay));
+      return () => {
+        for (const timer of timers) clearTimeout(timer);
+      };
+    }, deps);
+    React.useEffect(() => {
+      if (!width || typeof setTimeout !== "function") return void 0;
+      const timer = setTimeout(() => measure(true), 260);
+      return () => clearTimeout(timer);
+    }, [width]);
+    React.useEffect(() => {
+      if (typeof window === "undefined" || typeof window.addEventListener !== "function") return void 0;
+      const reset = () => {
+        epochRef.current = { headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false };
+        setWidth(0);
+        if (typeof setTimeout === "function") setTimeout(() => measure(), 240);
+      };
+      window.addEventListener("resize", reset);
+      const bar = barRef.current;
+      const header = bar && typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : null;
+      let lastHeaderWidth = header ? header.getBoundingClientRect().width : 0;
+      const observer = typeof ResizeObserver === "function" && header ? new ResizeObserver(() => {
+        const next = header.getBoundingClientRect().width;
+        if (Math.abs(next - lastHeaderWidth) > 1) {
+          lastHeaderWidth = next;
+          reset();
+        }
+      }) : null;
+      if (observer && header) observer.observe(header);
+      return () => {
+        window.removeEventListener("resize", reset);
+        if (observer) observer.disconnect();
+      };
+    }, []);
+    return width;
+  }
+  function TabsOverflowMenu(props) {
+    const { tabs, activeId, titleOf, stateOf, statusDots, t, anchor, onSelect, onClose, onCloseTab, onContextMenu } = props;
+    const menuRef = React.useRef(null);
+    const [cursor, setCursor] = React.useState(() => {
+      const at = activeId === null ? -1 : tabs.indexOf(activeId);
+      return at < 0 ? 0 : at;
+    });
+    React.useEffect(() => {
+      const node = menuRef.current;
+      if (node && typeof node.focus === "function") node.focus();
+    }, []);
+    const viewportWidth = typeof window === "undefined" ? 0 : window.innerWidth || 0;
+    const viewportHeight = typeof window === "undefined" ? 0 : window.innerHeight || 0;
+    const style = anchor ? {
+      top: Math.round(anchor.bottom + 6) + "px",
+      right: Math.max(8, Math.round(viewportWidth - anchor.right)) + "px",
+      maxHeight: Math.max(160, viewportHeight - Math.round(anchor.bottom) - 14) + "px"
+    } : void 0;
+    const activeIndex = tabs.length === 0 ? -1 : Math.min(Math.max(cursor, 0), tabs.length - 1);
+    const onKeyDown = (event) => {
+      const key = event && event.key;
+      if (key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (key === "ArrowDown" || key === "ArrowUp") {
+        if (!tabs.length) return;
+        event.preventDefault();
+        const step = key === "ArrowDown" ? 1 : -1;
+        setCursor((current) => (Math.min(Math.max(current, 0), tabs.length - 1) + step + tabs.length) % tabs.length);
+        return;
+      }
+      if (key === "Home" || key === "End") {
+        if (!tabs.length) return;
+        event.preventDefault();
+        setCursor(key === "Home" ? 0 : tabs.length - 1);
+        return;
+      }
+      if (key === "Enter" || key === " ") {
+        const id = tabs[activeIndex];
+        if (!id) return;
+        event.preventDefault();
+        onSelect(id);
+      }
+    };
+    return E(
+      "div",
+      { className: "bw-tabs-menu-layer" },
+      E("div", { className: "bw-tabs-menu-overlay", onClick: onClose }),
+      E(
+        "div",
+        {
+          ref: menuRef,
+          className: "bw-tabs-menu",
+          role: "menu",
+          "aria-label": t("tabs.menu"),
+          tabIndex: -1,
+          style,
+          onKeyDown
+        },
+        E("div", { className: "bw-tabs-menu-head" }, t("tabs.menuCount", { n: tabs.length })),
+        E(
+          "div",
+          { className: "bw-tabs-menu-list" },
+          tabs.map((id, index) => {
+            const active = id === activeId;
+            const state2 = stateOf(id);
+            return E(
+              "div",
+              {
+                key: id,
+                className: cls("bw-tabs-menu-row", active && "bw-tabs-menu-row-active", index === activeIndex && "bw-tabs-menu-row-cursor"),
+                role: "menuitem",
+                "aria-current": active ? "true" : "false",
+                "data-bw-tab-id": id,
+                onMouseEnter: () => setCursor(index),
+                onClick: () => onSelect(id),
+                onContextMenu: (event) => {
+                  if (!onContextMenu) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onContextMenu(id, event);
+                }
+              },
+              statusDots ? state2 ? E(StatusDot, { state: state2, label: t("tabs." + state2) }) : E("span", { className: "bw-tabs-menu-dot", "aria-hidden": "true" }) : null,
+              E("span", { className: "bw-tabs-menu-label" }, titleOf(id)),
+              active ? E(CheckIcon16, { size: 13, className: "bw-tabs-menu-check" }) : null,
+              E("button", {
+                type: "button",
+                className: "bw-tabs-menu-close",
+                "aria-label": t("tabs.close"),
+                title: t("tabs.close"),
+                onClick: (event) => {
+                  event.stopPropagation();
+                  onCloseTab(event, id);
+                }
+              }, "\xD7")
+            );
+          })
+        ),
+        E("div", { className: "bw-tabs-menu-hint" }, t("tabs.menuHint"))
+      )
+    );
+  }
   function TabsStrip(props) {
     const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open } = props;
     const prefs = typeof useStore === "function" ? useStore((s) => s.prefs) || {} : {};
@@ -3903,12 +4251,30 @@
     const sessions = typeof useSessions === "function" ? useSessions((s) => s) : null;
     useTabSync(sessions, useWorkspaces);
     const statuses = typeof useSessionStatus === "function" ? useSessionStatus((s) => s) : null;
-    if (sessions === null && typeof useSessions !== "function") return null;
-    if (!showTabs) return null;
     const bound = props.sessionId === void 0 || props.sessionId === null ? null : String(props.sessionId);
     const liveCurrent = currentSessionIdOf(sessions);
     const sessionId = liveCurrent || tabsActive() || bound || null;
     const tabs = stored.length ? stored : sessionId ? [sessionId] : [];
+    const barRef = React.useRef(null);
+    const stripRef = React.useRef(null);
+    const moreRef = React.useRef(null);
+    const anchorRef = React.useRef(null);
+    const [menuOpen, setMenuOpen] = React.useState(false);
+    const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs]);
+    const fillWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs], tabs.length);
+    useRevealActive(stripRef, sessionId, tabs.length);
+    useWheelScroll(stripRef);
+    React.useEffect(() => {
+      if (menuOpen && !overflow.overflowing) setMenuOpen(false);
+    }, [menuOpen, overflow.overflowing]);
+    React.useEffect(() => {
+      if (!menuOpen || typeof window === "undefined") return void 0;
+      const close = () => setMenuOpen(false);
+      window.addEventListener("resize", close);
+      return () => window.removeEventListener("resize", close);
+    }, [menuOpen]);
+    if (sessions === null && typeof useSessions !== "function") return null;
+    if (!showTabs) return null;
     if (tabs.length === 0) return null;
     const titleOf = (id) => {
       const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
@@ -3934,56 +4300,136 @@
       saveTabs(result.tabs);
       if (result.next) switchTo(result.next);
     };
+    const chipOf = (id) => {
+      const strip = stripRef.current;
+      if (!strip || typeof strip.children === "undefined") return null;
+      for (const node of Array.from(strip.children)) {
+        if (node && typeof node.getAttribute === "function" && node.getAttribute("data-bw-tab-id") === id) return node;
+      }
+      return null;
+    };
+    const moveSelection = (id, key) => {
+      const at = tabs.indexOf(id);
+      const step = key === "ArrowRight" ? 1 : key === "ArrowLeft" ? -1 : 0;
+      if (!step || at < 0) return false;
+      const next = tabs[at + step];
+      if (!next) return false;
+      switchTo(next);
+      const focusNext = () => {
+        const node = chipOf(next);
+        if (node && typeof node.focus === "function") node.focus();
+      };
+      const schedule = (fn, delay) => typeof setTimeout === "function" ? setTimeout(fn, delay) : fn();
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(focusNext);
+      else schedule(focusNext, 0);
+      schedule(focusNext, 80);
+      return true;
+    };
+    const openMenu = () => {
+      const node = moreRef.current;
+      anchorRef.current = node && typeof node.getBoundingClientRect === "function" ? node.getBoundingClientRect() : null;
+      setMenuOpen((current) => !current);
+    };
     return E(
       "div",
-      { className: "bw-tabs", role: "tablist", "aria-label": t("tabs.label"), "data-bw-tabs": String(tabs.length) },
+      {
+        ref: barRef,
+        className: "bw-tabbar",
+        "data-bw-overflow": overflow.overflowing ? "1" : "0",
+        // Measured room to the header utilities; undefined keeps the CSS fallback.
+        style: fillWidth > 0 ? { width: fillWidth + "px", maxWidth: "none" } : void 0
+      },
       StyleNode(),
-      tabs.map((id) => {
-        const active = sessionId === id;
-        const state2 = stateOf(id);
-        const title = titleOf(id);
-        const activeStyle = active ? { boxShadow: "inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)" } : void 0;
-        return E(
-          "div",
-          {
-            key: id,
-            className: cls("bw-tab", active && "bw-tab-active", draggingId === id && "bw-tab-dragging"),
-            "data-bw-active": active ? "1" : "0",
-            role: "tab",
-            tabIndex: active ? 0 : -1,
-            "aria-selected": active,
-            title,
-            draggable: true,
-            style: activeStyle,
-            onClick: () => switchTo(id),
-            onKeyDown: (event) => {
-              if (event.key === "Enter" || event.key === " ") {
+      E(
+        "div",
+        {
+          ref: stripRef,
+          className: "bw-tabs",
+          role: "tablist",
+          "aria-label": t("tabs.label"),
+          "data-bw-tabs": String(tabs.length),
+          "data-bw-fade-left": overflow.canLeft ? "1" : "0",
+          "data-bw-fade-right": overflow.canRight ? "1" : "0"
+        },
+        tabs.map((id) => {
+          const active = sessionId === id;
+          const state2 = stateOf(id);
+          const title = titleOf(id);
+          const activeStyle = active ? { boxShadow: "inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)" } : void 0;
+          return E(
+            "div",
+            {
+              key: id,
+              className: cls("bw-tab", active && "bw-tab-active", draggingId === id && "bw-tab-dragging"),
+              "data-bw-active": active ? "1" : "0",
+              "data-bw-tab-id": id,
+              role: "tab",
+              tabIndex: active ? 0 : -1,
+              "aria-selected": active,
+              title,
+              draggable: true,
+              style: activeStyle,
+              onClick: () => switchTo(id),
+              onKeyDown: (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  switchTo(id);
+                  return;
+                }
+                moveSelection(id, event.key);
+              },
+              onContextMenu: (event) => {
+                if (!tabsHost.openSessionMenu) return;
                 event.preventDefault();
-                switchTo(id);
-              }
+                event.stopPropagation();
+                tabsHost.openSessionMenu(id, event);
+              },
+              // The spread re-declares `draggable` (eventsFor always arms it) and still
+              // wins at runtime; the wide record view keeps TS from flagging the repeat.
+              ...eventsFor(id)
             },
-            onContextMenu: (event) => {
-              if (!tabsHost.openSessionMenu) return;
-              event.preventDefault();
-              event.stopPropagation();
-              tabsHost.openSessionMenu(id, event);
-            },
-            // The spread re-declares `draggable` (eventsFor always arms it) and still
-            // wins at runtime; the wide record view keeps TS from flagging the repeat.
-            ...eventsFor(id)
-          },
-          statusDots ? state2 ? E(StatusDot, { state: state2, label: t("tabs." + state2) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }) : null,
-          E("span", { className: "bw-tab-label", style: active ? { color: "var(--dsw-alias-brand-primary, #5b8def)", fontWeight: 600 } : void 0 }, title),
-          E("button", {
-            type: "button",
-            className: "bw-tab-close",
-            draggable: false,
-            "aria-label": t("tabs.close"),
-            title: t("tabs.close"),
-            onClick: (event) => closeOne(event, id)
-          }, "\xD7")
-        );
-      })
+            statusDots ? state2 ? E(StatusDot, { state: state2, label: t("tabs." + state2) }) : E("span", { className: "bw-tab-dot", "aria-hidden": "true" }) : null,
+            E("span", { className: "bw-tab-label", style: active ? { color: "var(--dsw-alias-brand-primary, #5b8def)", fontWeight: 600 } : void 0 }, title),
+            E("button", {
+              type: "button",
+              className: "bw-tab-close",
+              draggable: false,
+              "aria-label": t("tabs.close"),
+              title: t("tabs.close"),
+              onClick: (event) => closeOne(event, id)
+            }, "\xD7")
+          );
+        })
+      ),
+      overflow.overflowing ? E("button", {
+        ref: moreRef,
+        type: "button",
+        className: cls("bw-tabs-more", menuOpen && "bw-tabs-more-open"),
+        "aria-haspopup": "menu",
+        "aria-expanded": menuOpen,
+        "aria-label": t("tabs.menu"),
+        title: t("tabs.menuCount", { n: tabs.length }),
+        onClick: openMenu
+      }, E(ChevronDownIcon16, { size: 13 })) : null,
+      menuOpen ? E(TabsOverflowMenu, {
+        tabs,
+        activeId: sessionId,
+        titleOf,
+        stateOf,
+        statusDots,
+        t,
+        anchor: anchorRef.current,
+        onSelect: (id) => {
+          setMenuOpen(false);
+          switchTo(id);
+        },
+        onClose: () => setMenuOpen(false),
+        onCloseTab: (event, id) => closeOne(event, id),
+        onContextMenu: tabsHost.openSessionMenu ? (id, event) => {
+          setMenuOpen(false);
+          if (tabsHost.openSessionMenu) tabsHost.openSessionMenu(id, event);
+        } : null
+      }) : null
     );
   }
 

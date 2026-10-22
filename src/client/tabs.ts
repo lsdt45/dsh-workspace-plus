@@ -132,6 +132,74 @@ export function moveTab(tabs: unknown, fromId: unknown, toId: unknown): string[]
   return copy
 }
 
+/** One horizontal rectangle, in viewport coordinates (getBoundingClientRect shape). */
+export interface Span {
+  left: number
+  right: number
+}
+
+/**
+ * How far to add to a scroll container's scrollLeft to bring an item fully
+ * into view.
+ *
+ * `pad` keeps a sliver of the neighbouring chip visible, so an edge chip does
+ * not sit flush against the fade. Returns 0 when the item is already visible;
+ * negative values scroll left, positive right. Pure numbers: the strip feeds it
+ * two rects and applies the result, which keeps the reveal rule testable
+ * without a DOM.
+ */
+export function scrollDeltaFor(container: Span, item: Span, pad = 6): number {
+  const left = Number(container.left)
+  const right = Number(container.right)
+  const itemLeft = Number(item.left)
+  const itemRight = Number(item.right)
+  // A detached/hidden node measures NaN: writing that into scrollLeft would be
+  // silently ignored (or worse, reset the row), so missing geometry scrolls nothing.
+  if (!Number.isFinite(left) || !Number.isFinite(right) || !Number.isFinite(itemLeft) || !Number.isFinite(itemRight)) return 0
+  if (itemLeft < left + pad) return itemLeft - left - pad
+  if (itemRight > right - pad) return itemRight - right + pad
+  return 0
+}
+
+/**
+ * Width the strip should take so the chips fill the header instead of stopping
+ * after the last chip and leaving dead space.
+ *
+ * `limitLeft` is the left edge of the first control to the right of the strip
+ * (the header utilities cluster), `barLeft` the strip's own left edge. The row
+ * ends a small gap before that control; a measurement that collapses the strip
+ * (no control found, or one sitting right next to the chips) is rejected with 0,
+ * which leaves the CSS fallback in charge. `headerWidth` caps the result so a
+ * stray full-width node can never push the row across the header.
+ */
+export function stripFillWidth(limitLeft: number, barLeft: number, headerWidth: number, minimum = 220, reserve = 40): number {
+  const limit = Number(limitLeft)
+  const left = Number(barLeft)
+  const header = Number(headerWidth)
+  if (!Number.isFinite(limit) || !Number.isFinite(left) || limit <= left) return 0
+  // The limit already sits inside the header (left of the right-hand controls),
+  // so it is normally the binding constraint. `reserve` additionally guarantees
+  // the host's own right-hand controls some room: clamping the row here means the
+  // strip can never squeeze those controls out of the header.
+  const cap = Number.isFinite(header) && header > 0 ? header - Math.max(40, reserve) : limit - left
+  const width = Math.round(Math.min(limit - left - 12, cap))
+  return width >= minimum ? width : 0
+}
+
+/**
+ * Widest row the open chips can actually fill.
+ *
+ * A chip never grows past 200px (+12px padding), so widening the row beyond
+ * that capacity would only create invisible empty space while pushing the
+ * host's right-hand controls away. With two or three tabs the strip therefore
+ * keeps its natural width instead of stretching.
+ */
+export function stripCapacity(tabCount: number, chipMax = 212, gap = 2): number {
+  const count = Math.max(0, Math.floor(Number(tabCount) || 0))
+  if (!count) return 0
+  return count * chipMax + (count - 1) * gap
+}
+
 /** Remaining tabs plus the neighbour that should take over when the closed tab was active. */
 export interface CloseTabResult {
   tabs: string[]

@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { MAX_TABS, closeTab, moveTab, normalizeTabs, openTab, reconcileTabs, replaceTab, saveTabs, subscribeTabs, tabsSnapshot } from '../src/client/tabs.ts'
+import { MAX_TABS, closeTab, moveTab, normalizeTabs, openTab, reconcileTabs, replaceTab, saveTabs, scrollDeltaFor, stripCapacity, stripFillWidth, subscribeTabs, tabsSnapshot } from '../src/client/tabs.ts'
 
 test('normalizeTabs keeps unique string ids and drops junk', () => {
   assert.deepEqual(normalizeTabs(undefined), [])
@@ -71,6 +71,55 @@ test('reconcileTabs drops abandoned provisional and archived tabs', () => {
   assert.deepEqual(reconcileTabs(['a', 'arch'], 'a', 'a', { isArchived: (id) => id === 'arch' }), ['a'])
   // Unknown ids stay put: a partial session snapshot must never lose a tab.
   assert.deepEqual(reconcileTabs(['a', 'zzz'], 'a', 'a'), ['a', 'zzz'])
+})
+
+test('scrollDeltaFor reveals an edge chip with a small breathing pad', () => {
+  const strip = { left: 300, right: 900 }
+  // Already fully visible: nothing to scroll.
+  assert.equal(scrollDeltaFor(strip, { left: 320, right: 500 }), 0)
+  // Right overhang scrolls right by exactly (right edge - container right + pad).
+  assert.equal(scrollDeltaFor(strip, { left: 850, right: 1090 }), 196)
+  assert.equal(scrollDeltaFor(strip, { left: 900, right: 940 }), 46, 'a chip starting at the edge still scrolls into view')
+  // Left overhang scrolls left by exactly (container left - left edge + pad), negated.
+  assert.equal(scrollDeltaFor(strip, { left: 100, right: 240 }), -206)
+  assert.equal(scrollDeltaFor(strip, { left: 300, right: 340 }), -6, 'flush-left chip gets the pad')
+  // Custom pad.
+  assert.equal(scrollDeltaFor(strip, { left: 850, right: 1090 }, 0), 190)
+  assert.equal(scrollDeltaFor(strip, { left: 850, right: 1090 }, 12), 202)
+  // Degenerate rects (detached/hidden nodes) never produce NaN scroll writes.
+  assert.equal(scrollDeltaFor({ left: 300, right: 900 }, { left: NaN as unknown as number, right: undefined as unknown as number }), 0, 'missing geometry never scrolls')
+  assert.equal(scrollDeltaFor({ left: NaN as unknown as number, right: 900 }, { left: 320, right: 500 }), 0)
+})
+
+test('stripFillWidth stretches the row to the first control on its right', () => {
+  // Room from the strip's left edge to the utilities, minus the 12px breathing gap.
+  assert.equal(stripFillWidth(1361, 300, 1280), 1049)
+  assert.equal(stripFillWidth(1901, 300, 1820), 1589)
+  // Never past the header edge (a stray full-width node cannot push it).
+  assert.equal(stripFillWidth(1901, 300, 1000), 960)
+  // No control found yet, or one sitting right next to the chips: leave the CSS
+  // fallback in charge rather than collapsing the row.
+  assert.equal(stripFillWidth(0, 300, 1820), 0)
+  assert.equal(stripFillWidth(310, 300, 1820), 0)
+  assert.equal(stripFillWidth(500, 300, 1820), 0, 'room below the minimum falls back')
+  assert.equal(stripFillWidth(600, 300, 1820), 288, 'just past the minimum the measured room wins')
+  // Degenerate geometry never yields a width.
+  assert.equal(stripFillWidth(NaN as unknown as number, 300, 1820), 0)
+  assert.equal(stripFillWidth(1901, NaN as unknown as number, 1820), 0)
+  assert.equal(stripFillWidth(1901, 300, 0), 1589)
+  // The reserve keeps a minimum slice of the header for the host's own controls.
+  assert.equal(stripFillWidth(1901, 300, 1820, 220, 100), 1589, 'reserve above the limit does not bind')
+  assert.equal(stripFillWidth(1901, 300, 1000, 220, 100), 900, 'reserve clamps the row before the header edge')
+  assert.equal(stripFillWidth(1500, 300, 1000, 220, 100), 900, 'reserve clamp wins over the measured limit')
+})
+
+test('stripCapacity bounds the row to the space the chips can fill', () => {
+  assert.equal(stripCapacity(0), 0)
+  assert.equal(stripCapacity(1), 212)
+  assert.equal(stripCapacity(3), 640)
+  assert.equal(stripCapacity(8), 1710)
+  // A couple of tabs must never stretch the strip into the host controls.
+  assert.equal(stripCapacity(2) < stripFillWidth(1901, 300, 1820, 220, 100), true)
 })
 
 test('the tab list persists and notifies subscribers', () => {

@@ -105,9 +105,28 @@ export const CSS_TEXT = [
   // session. The chip's dot is .bw-state-dot, so the three states stay identical.
   // Session tab strip, modelled on the reference: dot + label chips with a
   // thick active underline, no fill or border, and a quiet close cross.
-  '.bw-tabs{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;overflow-x:auto;scrollbar-width:none;-webkit-app-region:no-drag;app-region:no-drag}',
+  //
+  // Overflow (browser-like): the row is widened by tabs-strip.ts to the measured
+  // header space (chips grow to fill it), and 52vw is only the fallback when the
+  // right-hand utilities cannot be measured yet. The chips are the first tier —
+  // they shrink from their natural width to a readable floor; only past that
+  // floor does the row scroll, which is when the edge fades and the chevron
+  // appear. The fade is a mask on the scroller itself (not an overlay), so it
+  // stays correct on every header background and theme.
+  // no-drag on the WHOLE bar: the conversation header is the window's drag region,
+  // and a button inside a drag region never receives clicks — the chevron lived
+  // outside .bw-tabs, whose own no-drag only covered the chips.
+  '.bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}',
+  '.bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}',
   '.bw-tabs::-webkit-scrollbar{display:none}',
-  '.bw-tab{display:flex;align-items:center;gap:6px;flex:none;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
+  '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
+  '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
+  '.bw-tabs[data-bw-fade-left="1"][data-bw-fade-right="1"]{-webkit-mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent)}',
+  // flex-grow: once useStripFill widens the row to the header utilities, the
+  // chips share the extra space (browser-style equal spread) instead of ending
+  // in a dead band; shrink still floors them at 96px before the row scrolls
+  // (100px left the row overflowing by a couple of pixels just before it fit).
+  '.bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:96px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
   '.bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}',
   '.bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
   '.bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}',
@@ -118,6 +137,29 @@ export const CSS_TEXT = [
   '.bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}',
   '.bw-tab:hover .bw-tab-close{opacity:1}',
   '.bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  // Overflow trigger: the chevron sits at the end of the row (Firefox/Edge's
+  // "list all tabs"), so a cut-off chip always has a visible way out.
+  '.bw-tabs-more{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}',
+  '.bw-tabs-more:hover,.bw-tabs-more-open{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  '.bw-tabs-more:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
+  // The overflow list: a fixed panel anchored to the chevron so neither the
+  // header's clipping nor the row's scroll position can crop it.
+  '.bw-tabs-menu-layer{position:fixed;inset:0;z-index:119;pointer-events:none;-webkit-app-region:no-drag;app-region:no-drag}',
+  '.bw-tabs-menu-overlay{position:absolute;inset:0;pointer-events:auto}',
+  '.bw-tabs-menu{position:fixed;z-index:120;-webkit-app-region:no-drag;app-region:no-drag;display:flex;flex-direction:column;min-width:232px;max-width:min(360px,calc(100vw - 16px));overflow:hidden;padding:4px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:8px;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.92)));-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));box-shadow:0 8px 24px rgba(0,0,0,.35);outline:none;pointer-events:auto}',
+  '.bw-tabs-menu-head{flex:none;padding:4px 8px 5px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-quaternary,#8a8a8a);user-select:none}',
+  '.bw-tabs-menu-list{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}',
+  '.bw-tabs-menu-row{flex:none;display:flex;align-items:center;gap:8px;height:28px;padding:0 4px 0 8px;border-radius:6px;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:12.5px;cursor:pointer;user-select:none}',
+  '.bw-tabs-menu-row:hover,.bw-tabs-menu-row-cursor{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.14))}',
+  '.bw-tabs-menu-row-active{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#5b8def) 12%,transparent)}',
+  '.bw-tabs-menu-row-active .bw-tabs-menu-label{color:var(--dsw-alias-brand-primary,#5b8def);font-weight:600}',
+  '.bw-tabs-menu-dot{flex:none;width:6px;height:6px;border-radius:50%;background:transparent}',
+  '.bw-tabs-menu-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.bw-tabs-menu-check{flex:none;display:grid;place-items:center;color:var(--dsw-alias-brand-primary,#5b8def)}',
+  '.bw-tabs-menu-close{flex:none;width:20px;height:20px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font-size:13px;line-height:1;cursor:pointer;opacity:.4}',
+  '.bw-tabs-menu-row:hover .bw-tabs-menu-close,.bw-tabs-menu-row-cursor .bw-tabs-menu-close{opacity:1}',
+  '.bw-tabs-menu-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  '.bw-tabs-menu-hint{flex:none;margin-top:4px;padding:5px 8px 3px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));font-size:11px;line-height:15px;color:var(--dsw-alias-label-quaternary,#8a8a8a);user-select:none}',
   // The plugin-drawn status dot (all three states): geometry only, the colour is
   // inline (one source of truth with the glow, see rows.js PULSE_COLORS).
   // display:inline-block is load-bearing — the dot sits inside the .bw-pulse

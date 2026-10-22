@@ -100,6 +100,16 @@ export const ListIcon16 = ({ size = 14, className }: GlyphProps) => lucideSvg(si
   E('path', { key: 'lines', d: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01' }),
 ])
 
+/** Overflow-menu trigger: the downward chevron mainstream tab strips use. */
+export const ChevronDownIcon16 = ({ size = 12, className }: GlyphProps) => lucideSvg(size, className, [
+  E('path', { d: 'm6 9 6 6 6-6' }),
+])
+
+/** Marks the tab currently on screen inside the overflow list. */
+export const CheckIcon16 = ({ size = 13, className }: GlyphProps) => lucideSvg(size, className, [
+  E('path', { d: 'M20 6 9 17l-5-5' }),
+])
+
 export const CalendarDaysIcon16 = ({ size = 14, className }: GlyphProps) => lucideSvg(size, className, [
   E('path', { d: 'M8 2v4' }),
   E('path', { d: 'M16 2v4' }),

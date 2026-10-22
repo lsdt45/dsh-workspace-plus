@@ -37,7 +37,10 @@ export const CSS_TEXT = [
   // Floating search overlay (ui/search-overlay.ts): one dark card centred in
   // the viewport, matching the shell's menu surfaces.
   '.bw-search-overlay{position:fixed;inset:0;z-index:130;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}',
-  '.bw-search-panel{position:relative;width:min(640px,100%);max-height:min(70vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);-webkit-backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));backdrop-filter:var(--dsh-any-blur-card-panels,blur(12px) saturate(1.15));overflow:hidden}',
+  // Solid surface, matching the shell's own modal panels: no backdrop blur on a
+  // full-width floating card, whose per-hover recomposition was the other half
+  // of the pointer-tracking jank (row tints repaint the whole filtered layer).
+  '.bw-search-panel{position:relative;width:min(640px,100%);max-height:min(70vh,600px);display:flex;flex-direction:column;background:var(--dsw-specific-menu,var(--dsw-alias-bg-overlay,rgba(28,28,32,.94)));border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.3));border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45);overflow:hidden}',
   '.bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
   '.bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}',
   '.bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
@@ -45,8 +48,19 @@ export const CSS_TEXT = [
   '.bw-search-section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 2px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
   '.bw-search-status{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.bw-search-empty{padding:18px 10px;text-align:center;font-size:12px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
-  '.bw-search-row{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:7px 8px;border:none;background:transparent;border-radius:8px;text-align:left;cursor:pointer;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit}',
+  // Hover is a pure CSS highlight: the pointer never drives a React update, so
+  // the row under the cursor lights up on the next paint instead of waiting for
+  // a continuous-priority render (which made fast mouse moves feel laggy).
+  // While the pointer is inside the list it owns the highlight; the keyboard
+  // active row keeps its tint only when the pointer is elsewhere.
+  '.bw-search-row{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;padding:7px 8px;border:none;background:transparent;border-radius:8px;text-align:left;cursor:pointer;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit;transition:none}',
   '.bw-search-row-active{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.16))}',
+  '.bw-search-list:hover .bw-search-row-active{background:transparent}',
+  '.bw-search-list .bw-search-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.16))}',
+  // After arrow-key navigation the keyboard tint wins over the pointer until the
+  // pointer moves again (the component drops the -keys class on mousemove).
+  '.bw-search-list-keys:hover .bw-search-row-active{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.16))}',
+  '.bw-search-list-keys .bw-search-row:hover{background:transparent}',
   '.bw-search-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
   '.bw-search-row-title{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.bw-search-row-snippet{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#9a9a9a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',

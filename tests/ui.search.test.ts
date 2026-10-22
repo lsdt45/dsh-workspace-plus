@@ -265,6 +265,40 @@ test('the overlay backdrop centres the panel in the viewport', () => {
   assert.ok(panel, 'no .bw-search-panel rule in the stylesheet')
   assert.doesNotMatch(panel[1], /left:\d/, 'no absolute corner anchor: the backdrop centres it')
   assert.doesNotMatch(panel[1], /top:\d/, 'the panel carries no fixed top offset')
+  assert.doesNotMatch(panel[1], /backdrop-filter/, 'a blurred full-size surface would recompose on every hover repaint')
+})
+
+test('row hover is CSS-driven, never a React update', () => {
+  const { tree } = renderOverlay({})
+  const rows = byClass(tree, 'bw-search-row')
+  assert.ok(rows.length > 0, 'the recent list rendered no rows')
+  for (const row of rows) {
+    assert.equal(row.props.onMouseEnter, undefined, 'a hover handler would run a render per row crossing')
+    assert.equal(typeof row.props['data-session-id'], 'string', 'rows expose their session id for the hovered-Enter lookup')
+  }
+  assert.match(CSS_TEXT, /\.bw-search-row\{[^}]*transition:none/, 'no transition may delay the hover tint')
+  assert.match(CSS_TEXT, /\.bw-search-list \.bw-search-row:hover\{background:/, 'the hovered row lights up in CSS')
+  assert.match(CSS_TEXT, /\.bw-search-list:hover \.bw-search-row-active\{background:transparent\}/, 'the keyboard tint yields to the pointer')
+})
+
+test('Enter opens the row under the pointer when one is hovered', () => {
+  const opened: string[] = []
+  let closed = 0
+  const { tree } = renderOverlay({
+    onOpen: (sessionId: string) => { opened.push(sessionId) },
+    onClose: () => { closed += 1 },
+  })
+  const previous = (globalThis as any).document
+  ;(globalThis as any).document = {
+    querySelector: () => ({ getAttribute: (name: string) => (name === 'data-session-id' ? 'c' : null) }),
+  }
+  try {
+    pressKey(tree, 'Enter')
+  } finally {
+    ;(globalThis as any).document = previous
+  }
+  assert.deepEqual(opened, ['c'], 'Enter follows the pointer, not the stale keyboard index')
+  assert.equal(closed, 1)
 })
 
 test('the overlay renders nothing while closed', () => {
@@ -419,6 +453,19 @@ test('keyboard: ArrowDown/ArrowUp wrap the highlight, Enter opens the active row
   assert.equal(enter.defaultPrevented, true)
   assert.deepEqual(opened, ['a'])
   assert.equal(closed, 1, 'opening a result closes the panel')
+})
+
+test('keyboard navigation owns the highlight until the pointer moves again', () => {
+  const { runtime, tree } = renderOverlay({})
+  pressKey(tree, 'ArrowDown')
+  let current = runtime.render(runtime.props)
+  assert.equal(byClass(current, 'bw-search-list-keys').length, 1, 'arrow keys switch the list into keyboard-highlight mode')
+  const list = byClass(current, 'bw-search-list')[0]
+  list.props.onMouseMove()
+  current = runtime.render(runtime.props)
+  assert.equal(byClass(current, 'bw-search-list-keys').length, 0, 'pointer movement hands the highlight back to CSS :hover')
+  assert.match(CSS_TEXT, /\.bw-search-list-keys:hover \.bw-search-row-active\{background:/, 'the keyboard tint beats the pointer in keyboard mode')
+  assert.match(CSS_TEXT, /\.bw-search-list-keys \.bw-search-row:hover\{background:transparent\}/, 'the hover tint is suppressed in keyboard mode')
 })
 
 test('keyboard: Ctrl/Meta + 1-9 opens that row directly, Escape closes', () => {

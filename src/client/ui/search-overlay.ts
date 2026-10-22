@@ -50,6 +50,9 @@ interface RemoteState {
 export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchSessions, onOpen, onClose, t }: SearchOverlayProps) {
   const [query, setQuery] = React.useState('')
   const [active, setActive] = React.useState(0)
+  // True while arrow keys own the highlight: the CSS hover tint must not hide
+  // the keyboard-selected row. Cleared by the next pointer move over the list.
+  const [keyboardNav, setKeyboardNav] = React.useState(false)
   const [remote, setRemote] = React.useState({ status: 'idle', items: [], hasMore: false } as RemoteState)
   const inputRef = React.useRef(null)
   const requestRef = React.useRef(0)
@@ -62,6 +65,7 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
     const previous = typeof document !== 'undefined' ? document.activeElement : null
     setQuery('')
     setActive(0)
+    setKeyboardNav(false)
     setRemote({ status: 'idle', items: [], hasMore: false })
     const timer = setTimeout(() => {
       const input = inputRef.current
@@ -132,19 +136,37 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
     onClose()
   }
 
+  // Pointer hover is styled by CSS (:hover), so moving the mouse never runs a
+  // React update — the highlight tracks the cursor on the next paint and the
+  // continuous mouse events cannot be coalesced behind other render work.
+  // Enter therefore opens the row under the pointer when there is one, and
+  // falls back to the keyboard-active row otherwise.
+  const openHovered = (): boolean => {
+    if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return false
+    let hovered: Element | null = null
+    try { hovered = document.querySelector('.bw-search-row:hover') } catch { hovered = null }
+    const id = hovered === null ? null : hovered.getAttribute('data-session-id')
+    if (id === null) return false
+    onOpen(id)
+    onClose()
+    return true
+  }
+
   const onKeyDown = (event: any): void => {
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); return }
     if (event.key === 'ArrowDown') {
       event.preventDefault()
+      setKeyboardNav(true)
       setActive((index: number) => display.length === 0 ? 0 : (index + 1) % display.length)
       return
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault()
+      setKeyboardNav(true)
       setActive((index: number) => display.length === 0 ? 0 : (index - 1 + display.length) % display.length)
       return
     }
-    if (event.key === 'Enter') { event.preventDefault(); openAt(active); return }
+    if (event.key === 'Enter') { event.preventDefault(); if (!openHovered()) openAt(active); return }
     if ((event.ctrlKey || event.metaKey) && /^[1-9]$/.test(event.key)) { event.preventDefault(); openAt(Number(event.key) - 1) }
   }
 
@@ -156,8 +178,8 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
     type: 'button',
     role: 'option',
     'aria-selected': index === active,
+    'data-session-id': row.id,
     className: cls('bw-search-row', index === active && 'bw-search-row-active'),
-    onMouseEnter: () => setActive(index),
     onClick: () => { onOpen(row.id); onClose() },
   },
     E('span', { className: 'bw-search-row-main' },
@@ -203,7 +225,14 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
           onChange: (event: any) => setQuery(event.target.value),
         }),
       ),
-      E('div', { className: 'bw-search-list', role: 'listbox', 'aria-label': t('search.results') },
+      E('div', {
+        className: cls('bw-search-list', keyboardNav && 'bw-search-list-keys'),
+        role: 'listbox',
+        'aria-label': t('search.results'),
+        // One guarded state clear after keyboard navigation; while keyboardNav is
+        // false the handler is a no-op, so pointer movement stays render-free.
+        onMouseMove: () => { if (keyboardNav) setKeyboardNav(false) },
+      },
         E('div', { className: 'bw-search-section' },
           E('span', null, t('search.section.chats')),
           statusText !== '' ? E('span', { className: 'bw-search-status', role: 'status' }, statusText) : null,

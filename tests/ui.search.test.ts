@@ -203,6 +203,8 @@ const typeQuery = (runtime: Runtime, tree: any, query: string) => {
   return runtime.render(runtime.props)
 }
 
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
 const pressKey = (tree: any, key: string) => {
   const root = byClass(tree, 'bw-search-overlay')[0]
   assert.ok(root, 'the overlay root is missing')
@@ -517,4 +519,184 @@ test('an empty result set explains itself only once the search has settled', asy
   await new Promise((resolve) => setTimeout(resolve, 260))
   await runtime.settle()
   assert.equal(textOf(byClass(runtime.tree, 'bw-search-empty')), 'search.empty')
+})
+
+
+// ------------------------------------------------- content search controls
+test('the content switch shows the persisted scope and reports clicks', () => {
+  const toggles: boolean[] = []
+  const { runtime, tree } = renderOverlay({
+    searchSessions: async () => ({ items: [], hasMore: false }),
+    contentEnabled: true,
+    onContentToggle: (next: boolean) => { toggles.push(next) },
+  })
+  const switchButton = byClass(tree, 'bw-search-scope')[0]
+  assert.ok(switchButton, 'the content switch is missing')
+  assert.equal(switchButton.props.role, 'switch')
+  assert.equal(switchButton.props['aria-checked'], true)
+  assert.equal(switchButton.props.title, 'search.scope.title')
+  switchButton.props.onClick()
+  assert.deepEqual(toggles, [false], 'clicking reports the next state')
+  runtime.props = { ...runtime.props, contentEnabled: false }
+  const off = runtime.render(runtime.props)
+  const offButton = byClass(off, 'bw-search-scope')[0]
+  assert.equal(offButton.props['aria-checked'], false)
+  assert.doesNotMatch(String(offButton.props.className), /bw-search-scope-on/)
+})
+
+test('hosts without a content search render no switch', () => {
+  const { tree } = renderOverlay({})
+  assert.equal(byClass(tree, 'bw-search-scope').length, 0)
+})
+
+test('a content backend without a persistence hook searches but renders no switch', async () => {
+  const calls: string[] = []
+  const { runtime, tree } = renderOverlay({
+    searchSessions: async (query: string) => { calls.push(query); return { items: [], hasMore: false } },
+  })
+  assert.equal(byClass(tree, 'bw-search-scope').length, 0)
+  typeQuery(runtime, tree, 'plan')
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, ['plan'])
+})
+
+test('the content switch off keeps title matches and never asks the Host', async () => {
+  const calls: string[] = []
+  const { runtime, tree } = renderOverlay({
+    contentEnabled: false,
+    onContentToggle: () => {},
+    searchSessions: async (query: string) => {
+      calls.push(query)
+      return { items: [{ sessionId: 'a', snippet: '…content…' }], hasMore: false }
+    },
+  })
+  typeQuery(runtime, tree, 'plan')
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, [])
+  assert.deepEqual(byClass(runtime.tree, 'bw-search-row').map((row) => textOf(byClass(row, 'bw-search-row-title'))), ['Plan review'])
+  assert.equal(byClass(runtime.tree, 'bw-search-row-snippet').length, 0)
+
+  runtime.props = { ...runtime.props, contentEnabled: true }
+  runtime.render(runtime.props)
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, ['plan'], 'turning content back on re-runs the current query')
+  assert.equal(textOf(byClass(runtime.tree, 'bw-search-row-snippet')), '…content…')
+})
+
+test('a disabled host index is reported once and title matches stay', async () => {
+  let calls = 0
+  const { runtime, tree } = renderOverlay({
+    onContentToggle: () => {},
+    searchSessions: async () => {
+      calls += 1
+      const failure = new Error('session search is disabled: this deployment configures the session-query index with openAt "never"') as Error & { code?: string }
+      failure.code = 'SESSION_QUERY_SEARCH_DISABLED'
+      throw failure
+    },
+  })
+  typeQuery(runtime, tree, 'plan')
+  await wait(260)
+  await runtime.settle()
+  assert.equal(calls, 1)
+  assert.equal(textOf(byClass(runtime.tree, 'bw-search-hint')), 'search.scope.offlineHint')
+  const switchButton = byClass(runtime.tree, 'bw-search-scope')[0]
+  assert.equal(switchButton.props.disabled, true)
+  assert.equal(switchButton.props['aria-checked'], false)
+  assert.deepEqual(byClass(runtime.tree, 'bw-search-row').map((row) => textOf(byClass(row, 'bw-search-row-title'))), ['Plan review'])
+
+  typeQuery(runtime, runtime.tree, 'git')
+  await wait(260)
+  await runtime.settle()
+  assert.equal(calls, 1, 'a known-missing index is not asked again in the same open')
+})
+
+test('short queries and IME composition defer the Host search', async () => {
+  const calls: string[] = []
+  const { runtime, tree } = renderOverlay({
+    onContentToggle: () => {},
+    searchSessions: async (query: string) => { calls.push(query); return { items: [], hasMore: false } },
+  })
+  typeQuery(runtime, tree, 'p')
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, [], 'one code point stays local')
+
+  byClass(runtime.tree, 'bw-search-input')[0].props.onCompositionStart()
+  typeQuery(runtime, runtime.tree, 'pl')
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, [], 'a composing query does not hit the Host')
+
+  byClass(runtime.tree, 'bw-search-input')[0].props.onCompositionEnd({ target: { value: 'plan' } })
+  runtime.render(runtime.props)
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, ['plan'], 'the committed text searches once')
+})
+
+test('a repeated query is served from the in-panel cache', async () => {
+  const calls: string[] = []
+  const { runtime, tree } = renderOverlay({
+    onContentToggle: () => {},
+    searchSessions: async (query: string) => {
+      calls.push(query)
+      return { items: [{ sessionId: 'a', snippet: '…' + query + '…' }], hasMore: false }
+    },
+  })
+  typeQuery(runtime, tree, 'plan')
+  await wait(260)
+  await runtime.settle()
+  typeQuery(runtime, runtime.tree, 'git')
+  await wait(260)
+  await runtime.settle()
+  typeQuery(runtime, runtime.tree, 'plan')
+  const cached = runtime.render(runtime.props)
+  assert.equal(byClass(cached, 'bw-search-status').length, 0, 'a cached page is ready without a pending status')
+  await wait(260)
+  await runtime.settle()
+  assert.deepEqual(calls, ['plan', 'git'], 'backspacing to a cached query costs no Host call')
+  assert.equal(textOf(byClass(runtime.tree, 'bw-search-row-snippet')), '…plan…')
+})
+
+test('Enter on the content switch does not open a result', () => {
+  const opened: string[] = []
+  let closed = 0
+  const { tree } = renderOverlay({
+    onOpen: (id: string) => { opened.push(id) },
+    onClose: () => { closed += 1 },
+    onContentToggle: () => {},
+    searchSessions: async () => ({ items: [], hasMore: false }),
+  })
+  const root = byClass(tree, 'bw-search-overlay')[0]
+  const prevented: string[] = []
+  root.props.onKeyDown({
+    key: 'Enter',
+    target: { getAttribute: (name: string) => (name === 'data-search-control' ? 'true' : null) },
+    preventDefault: () => { prevented.push('prevented') },
+    stopPropagation: () => {},
+  })
+  assert.deepEqual(opened, [], 'the switch owns its Enter')
+  assert.deepEqual(prevented, [])
+  assert.equal(closed, 0)
+  root.props.onKeyDown({
+    key: 'Escape',
+    target: { getAttribute: () => 'true' },
+    preventDefault: () => {},
+    stopPropagation: () => {},
+  })
+  assert.equal(closed, 1, 'Escape still closes the panel from the switch')
+})
+
+test('a slow first content search says it is building the index', async () => {
+  const { runtime, tree } = renderOverlay({
+    onContentToggle: () => {},
+    searchSessions: () => new Promise(() => {}),
+  })
+  typeQuery(runtime, tree, 'plan')
+  await wait(760)
+  runtime.render(runtime.props)
+  assert.equal(textOf(byClass(runtime.tree, 'bw-search-status')), 'search.indexing')
 })

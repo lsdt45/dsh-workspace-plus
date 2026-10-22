@@ -28,6 +28,11 @@
     "search.emptyRecent": "\u6682\u65E0\u6700\u8FD1\u4F1A\u8BDD",
     "search.pending": "\u6B63\u5728\u641C\u7D22\u4F1A\u8BDD\u5386\u53F2\u2026",
     "search.hasMore": "\u4EC5\u663E\u793A\u524D {n} \u6761\u7ED3\u679C\uFF0C\u8BF7\u7F29\u5C0F\u641C\u7D22\u8303\u56F4\u3002",
+    "search.scope": "\u5185\u5BB9",
+    "search.scope.title": "\u540C\u65F6\u641C\u7D22\u4F1A\u8BDD\u5185\u5BB9",
+    "search.scope.unavailable": "\u5BBF\u4E3B\u672A\u542F\u7528\u5185\u5BB9\u7D22\u5F15",
+    "search.scope.offlineHint": "\u5185\u5BB9\u68C0\u7D22\u672A\u5F00\u542F\uFF1A\u5BBF\u4E3B\u7684\u4F1A\u8BDD\u7D22\u5F15\u5904\u4E8E\u5173\u95ED\u72B6\u6001\uFF08openAt: never\uFF09\u3002\u542F\u7528\u5E76\u91CD\u542F DSH \u540E\u53EF\u6309\u6D88\u606F\u5185\u5BB9\u5339\u914D\u3002",
+    "search.indexing": "\u6B63\u5728\u5EFA\u7ACB\u5185\u5BB9\u7D22\u5F15\uFF08\u9996\u6B21\u8F83\u6162\uFF09\u2026",
     "add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
     "rail.search": "\u641C\u7D22",
     "rail.add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
@@ -211,6 +216,11 @@
     "search.emptyRecent": "No recent sessions",
     "search.pending": "Searching session history\u2026",
     "search.hasMore": "Showing the first {n} results \u2014 refine your query.",
+    "search.scope": "Content",
+    "search.scope.title": "Also search message content",
+    "search.scope.unavailable": "Host content index is off",
+    "search.scope.offlineHint": "Content search is off: the host session index runs with openAt: never. Enable it and restart DSH to match message history.",
+    "search.indexing": "Building the content index (first run only)\u2026",
     "add": "Add workspace",
     "rail.search": "Search",
     "rail.add": "Add workspace",
@@ -983,10 +993,21 @@
     ".bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}",
     ".bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}",
     ".bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    // Content switch: one compact pill in the field row. The track/thumb are the
+    // only animated parts; result rows keep transition:none (hover stays instant).
+    ".bw-search-scope{flex:none;display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 6px 0 8px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.28));border-radius:11px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-family:inherit;font-size:11px;line-height:1;cursor:pointer}",
+    ".bw-search-scope:hover{border-color:var(--dsw-alias-border-l2,rgba(127,127,127,.45));color:var(--dsw-alias-label-secondary,#bdbdbd)}",
+    ".bw-search-scope-on{border-color:var(--dsw-alias-brand-primary,#5b8def);color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    ".bw-search-scope:disabled{opacity:.5;cursor:default}",
+    ".bw-search-scope-track{position:relative;flex:none;width:22px;height:12px;border-radius:6px;background:var(--dsw-alias-border-l3,rgba(127,127,127,.3));transition:background 120ms ease}",
+    ".bw-search-scope-thumb{position:absolute;top:2px;left:2px;width:8px;height:8px;border-radius:50%;background:var(--dsw-alias-label-primary-foreground,#fff);transition:transform 120ms ease}",
+    ".bw-search-scope-on .bw-search-scope-track{background:var(--dsw-alias-brand-primary,#5b8def)}",
+    ".bw-search-scope-on .bw-search-scope-thumb{transform:translateX(10px)}",
     ".bw-search-list{flex:1;min-height:0;overflow-y:auto;padding:6px 8px 8px}",
     ".bw-search-section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 2px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
     ".bw-search-status{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".bw-search-empty{padding:18px 10px;text-align:center;font-size:12px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    ".bw-search-hint{flex:none;padding:6px 12px 9px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));font-size:11px;line-height:1.5;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
     // Hover is a pure CSS highlight: the pointer never drives a React update, so
     // the row under the cursor lights up on the next paint instead of waiting for
     // a continuous-priority render (which made fast mouse moves feel laggy).
@@ -1399,6 +1420,69 @@
     const hasMore = items.length > max;
     return { items: items.slice(0, max), hasMore };
   }
+  var CONTENT_QUERY_MIN_CODE_POINTS = 2;
+  function isContentQueryReady(query) {
+    const normalized = normalizeQuery(query);
+    if (normalized === "") return false;
+    return Array.from(normalized).length >= CONTENT_QUERY_MIN_CODE_POINTS;
+  }
+  function createSearchPageCache(options = {}) {
+    const max = Math.max(1, Math.trunc(options.max ?? 32));
+    const ttlMs = Math.trunc(options.ttlMs ?? 6e4);
+    const now = options.now ?? Date.now;
+    const entries = /* @__PURE__ */ new Map();
+    const keyOf = (query) => normalizeQuery(query);
+    return {
+      get(query) {
+        if (ttlMs <= 0) return void 0;
+        const key = keyOf(query);
+        if (key === "") return void 0;
+        const entry = entries.get(key);
+        if (!entry) return void 0;
+        if (now() - entry.at > ttlMs) {
+          entries.delete(key);
+          return void 0;
+        }
+        entries.delete(key);
+        entries.set(key, entry);
+        return entry.page;
+      },
+      set(query, page) {
+        if (ttlMs <= 0) return;
+        const key = keyOf(query);
+        if (key === "") return;
+        entries.delete(key);
+        entries.set(key, { page, at: now() });
+        while (entries.size > max) {
+          const oldest = entries.keys().next();
+          if (oldest.done === true) break;
+          entries.delete(oldest.value);
+        }
+      },
+      clear() {
+        entries.clear();
+      },
+      get size() {
+        return entries.size;
+      }
+    };
+  }
+  var CONTENT_UNAVAILABLE = /SESSION_QUERY_SEARCH_DISABLED|session search is disabled|session search is unavailable/i;
+  function isContentSearchUnavailable(reason) {
+    if (reason === null || reason === void 0) return false;
+    const code = reason.code;
+    if (typeof code === "string" && CONTENT_UNAVAILABLE.test(code)) return true;
+    const message = reason instanceof Error ? reason.message : typeof reason === "string" ? reason : typeof reason.message === "string" ? String(reason.message) : "";
+    return CONTENT_UNAVAILABLE.test(message);
+  }
+  function searchFailure(result) {
+    const envelope = result || {};
+    const error = envelope.error;
+    const message = (typeof error === "object" && error !== null && typeof error.message === "string" && error.message !== "" ? error.message : void 0) || (typeof error === "string" && error !== "" ? error : void 0) || (typeof envelope.message === "string" && envelope.message !== "" ? envelope.message : void 0) || "session search failed";
+    const failure = new Error(message);
+    if (typeof error === "object" && error !== null && typeof error.code === "string" && error.code !== "") failure.code = error.code;
+    return failure;
+  }
 
   // src/client/ui/search-host.ts
   var initial = {
@@ -1406,6 +1490,8 @@
     candidates: [],
     limit: 20,
     searchSessions: null,
+    contentEnabled: true,
+    setContentEnabled: null,
     openSession: null,
     t: null
   };
@@ -1449,15 +1535,32 @@
 
   // src/client/ui/search-overlay.ts
   var SEARCH_DEBOUNCE_MS = 180;
+  var SEARCH_SLOW_MS = 600;
   var DEFAULT_LIMIT = 20;
-  function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchSessions, onOpen, onClose, t }) {
+  function SearchOverlay({
+    open,
+    candidates,
+    limit = DEFAULT_LIMIT,
+    searchSessions,
+    contentEnabled = true,
+    onContentToggle,
+    onOpen,
+    onClose,
+    t
+  }) {
     const [query, setQuery] = React.useState("");
     const [active, setActive] = React.useState(0);
     const [keyboardNav, setKeyboardNav] = React.useState(false);
     const [remote, setRemote] = React.useState({ status: "idle", items: [], hasMore: false });
+    const [unavailable, setUnavailable] = React.useState(false);
+    const [slow, setSlow] = React.useState(false);
+    const [composing, setComposing] = React.useState(false);
     const inputRef = React.useRef(null);
     const requestRef = React.useRef(0);
     const cappedLimit = Math.max(1, Math.trunc(Number(limit) || DEFAULT_LIMIT));
+    const cache = React.useMemo(() => createSearchPageCache(), [searchSessions]);
+    const showContentSwitch = typeof searchSessions === "function" && typeof onContentToggle === "function";
+    const contentOn = contentEnabled === true && !unavailable;
     React.useEffect(() => {
       if (!open) return void 0;
       const previous = typeof document !== "undefined" ? document.activeElement : null;
@@ -1465,6 +1568,9 @@
       setActive(0);
       setKeyboardNav(false);
       setRemote({ status: "idle", items: [], hasMore: false });
+      setUnavailable(false);
+      setSlow(false);
+      setComposing(false);
       const timer = setTimeout(() => {
         const input = inputRef.current;
         if (input && typeof input.focus === "function") input.focus({ preventScroll: true });
@@ -1482,33 +1588,53 @@
     React.useEffect(() => {
       if (!open) return void 0;
       const trimmed2 = normalizeQuery(query);
-      if (trimmed2 === "" || typeof searchSessions !== "function") {
+      if (typeof searchSessions !== "function" || !contentEnabled || unavailable || composing || !isContentQueryReady(trimmed2)) {
         requestRef.current += 1;
         setRemote({ status: "idle", items: [], hasMore: false });
+        return void 0;
+      }
+      const cached = cache.get(trimmed2);
+      if (cached) {
+        requestRef.current += 1;
+        setRemote({ status: "ready", items: cached.items, hasMore: cached.hasMore });
         return void 0;
       }
       const requestId = requestRef.current + 1;
       requestRef.current = requestId;
       const controller = typeof AbortController === "function" ? new AbortController() : null;
-      setRemote((previous) => ({ status: "loading", items: previous.items, hasMore: false }));
+      setRemote({ status: "loading", items: [], hasMore: false });
       const timer = setTimeout(() => {
         searchSessions(trimmed2, controller ? controller.signal : void 0).then((page) => {
           if (requestRef.current !== requestId) return;
-          setRemote({
-            status: "ready",
-            items: Array.isArray(page && page.items) ? page.items : [],
-            hasMore: !!(page && page.hasMore)
-          });
-        }).catch(() => {
+          if (controller !== null && controller.signal.aborted) return;
+          const items = Array.isArray(page && page.items) ? page.items : [];
+          const hasMore = !!(page && page.hasMore);
+          cache.set(trimmed2, { items, hasMore });
+          setRemote({ status: "ready", items, hasMore });
+        }).catch((reason) => {
           if (requestRef.current !== requestId) return;
+          if (controller !== null && controller.signal.aborted) return;
+          if (isContentSearchUnavailable(reason)) {
+            setUnavailable(true);
+            setRemote({ status: "idle", items: [], hasMore: false });
+            return;
+          }
           setRemote({ status: "error", items: [], hasMore: false });
         });
       }, SEARCH_DEBOUNCE_MS);
       return () => {
         clearTimeout(timer);
-        if (controller) controller.abort();
+        if (controller !== null) controller.abort();
       };
-    }, [open, query, searchSessions]);
+    }, [open, query, contentEnabled, unavailable, composing, searchSessions, cache]);
+    React.useEffect(() => {
+      if (remote.status !== "loading") {
+        setSlow(false);
+        return void 0;
+      }
+      const timer = setTimeout(() => setSlow(true), SEARCH_SLOW_MS);
+      return () => clearTimeout(timer);
+    }, [remote.status]);
     const byId = React.useMemo(() => {
       const map = /* @__PURE__ */ new Map();
       for (const candidate of candidates) if (!map.has(candidate.id)) map.set(candidate.id, candidate);
@@ -1525,6 +1651,17 @@
     React.useEffect(() => {
       setActive(0);
     }, [query]);
+    const toggleContent = () => {
+      if (unavailable || typeof onContentToggle !== "function") return;
+      onContentToggle(!contentEnabled);
+      const input = inputRef.current;
+      if (input && typeof input.focus === "function") {
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+        }
+      }
+    };
     const openAt = (index) => {
       const row = display[index];
       if (!row) return;
@@ -1546,6 +1683,8 @@
       return true;
     };
     const onKeyDown = (event) => {
+      const target = event && event.target;
+      if (target && typeof target.getAttribute === "function" && target.getAttribute("data-search-control") === "true" && event.key !== "Escape") return;
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -1601,7 +1740,7 @@
       index < 9 ? E("span", { className: "bw-search-row-idx", "aria-hidden": "true" }, "\u2303" + (index + 1)) : null
     ));
     const empty = display.length === 0;
-    const statusText = trimmed === "" ? "" : pending ? t("search.pending") : remote.hasMore || merged.hasMore ? t("search.hasMore", { n: cappedLimit }) : "";
+    const statusText = trimmed === "" ? "" : pending ? slow ? t("search.indexing") : t("search.pending") : remote.hasMore || merged.hasMore ? t("search.hasMore", { n: cappedLimit }) : "";
     return E(
       "div",
       {
@@ -1631,8 +1770,33 @@
             "aria-label": t("search.label"),
             autoComplete: "off",
             spellCheck: false,
-            onChange: (event) => setQuery(event.target.value)
-          })
+            onChange: (event) => setQuery(event.target.value),
+            onCompositionStart: () => setComposing(true),
+            onCompositionEnd: (event) => {
+              setComposing(false);
+              setQuery(event.target.value);
+            }
+          }),
+          showContentSwitch ? E(
+            "button",
+            {
+              type: "button",
+              role: "switch",
+              "aria-checked": contentOn,
+              "aria-label": t("search.scope.title"),
+              title: unavailable ? t("search.scope.unavailable") : t("search.scope.title"),
+              disabled: unavailable,
+              "data-search-control": "true",
+              className: cls("bw-search-scope", contentOn && "bw-search-scope-on"),
+              onClick: toggleContent
+            },
+            E("span", { className: "bw-search-scope-label" }, t("search.scope")),
+            E(
+              "span",
+              { className: "bw-search-scope-track", "aria-hidden": "true" },
+              E("span", { className: "bw-search-scope-thumb" })
+            )
+          ) : null
         ),
         E(
           "div",
@@ -1653,7 +1817,8 @@
             statusText !== "" ? E("span", { className: "bw-search-status", role: "status" }, statusText) : null
           ),
           empty ? pending ? null : E("div", { className: "bw-search-empty" }, trimmed === "" ? t("search.emptyRecent") : t("search.empty")) : rows
-        )
+        ),
+        contentEnabled && unavailable && typeof searchSessions === "function" ? E("div", { className: "bw-search-hint", role: "note" }, t("search.scope.offlineHint")) : null
       )
     );
   }
@@ -1666,6 +1831,8 @@
       candidates: host.candidates,
       limit: host.limit,
       searchSessions: host.searchSessions,
+      contentEnabled: host.contentEnabled,
+      onContentToggle: host.setContentEnabled,
       onOpen: (sessionId) => {
         if (host.openSession) host.openSession(sessionId);
       },
@@ -4771,6 +4938,7 @@
         const prefsMap = useStore ? useStore((s) => s.prefs) || {} : {};
         const stylingMap = useStore ? useStore((s) => s.styling) || {} : {};
         const compactChains = prefsMap.compactChains !== false;
+        const searchContent = prefsMap.searchContent !== false;
         const { mode: viewMode, dir: timeDirection, sortOrder, archivedFilter } = viewStateOf(prefsMap);
         const timeSorted = viewMode === "time";
         const automaticSort = timeSorted || sortOrder === "latest";
@@ -5016,15 +5184,20 @@
             return archivedFilter === "only" ? archived : !archived;
           });
         }, [list, items, archivedSessionIds, archivedFilter]);
+        const setSearchContent = React.useMemo(() => (next) => {
+          if (actions && typeof actions.setPref === "function") actions.setPref("searchContent", next);
+        }, [actions]);
         React.useEffect(() => {
           searchHost.publish({
             candidates: searchRows,
             limit: searchLimit,
             searchSessions: typeof searchSessions === "function" ? searchSessions : null,
+            contentEnabled: searchContent,
+            setContentEnabled: setSearchContent,
             openSession: typeof open === "function" ? open : null,
             t
           });
-        }, [searchRows, searchLimit, searchSessions, open, t]);
+        }, [searchRows, searchLimit, searchSessions, searchContent, setSearchContent, open, t]);
         React.useEffect(() => {
           if (!tabsHost) return void 0;
           const host = tabsHost;
@@ -5338,11 +5511,11 @@
             }
           }, "better-workspace: dictionaries");
         }
-        const searchSessions = async (query, signal) => {
+        const searchSessions = typeof sessions.search === "function" ? async (query, signal) => {
           const result = await sessions.search(query, signal);
-          if (!result || !result.ok) throw new Error(result && result.error ? result.error.message : "session search failed");
+          if (!result || !result.ok) throw searchFailure(result);
           return result.value;
-        };
+        } : null;
         const renameSession = async (sessionId, title) => {
           const binding = sessions.binding(sessionId);
           const session = binding && binding.session;
@@ -5364,7 +5537,7 @@
           open: (sessionId) => {
             openSessionCompat(sessionId);
           },
-          searchSessions,
+          searchSessions: typeof searchSessions === "function" ? searchSessions : void 0,
           searchResultLimit: sessions.searchResultLimit !== void 0 ? sessions.searchResultLimit : 20,
           renameSession,
           forkSession,

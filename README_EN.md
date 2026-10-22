@@ -85,19 +85,26 @@ The sidebar search button (header icon, or the magnifier in the collapsed rail) 
 
 - **Title matches (instant)**: sessions whose title or workspace label contains the query, newest first;
 - **Content matches (Host full-text)**: after a short debounce the panel also asks the Host's session full-text search (`sessions.search`, SQLite FTS5); sessions that only matched message history are appended with their snippet on a second line;
+- **Content switch**: the "Content" switch in the field row controls whether message history is searched; off keeps title matching and stops Host requests. The choice persists in the current browser;
 - **Keyboard**: ↑/↓ to move, Enter to open, Esc to close, ⌃/⌘ + 1–9 to open one of the first nine results; hovering and clicking work too;
-- Opening lists **recent sessions** first; the panel degrades to title-only matching when the Host has no content index.
+- Opening lists **recent sessions** first; when the Host has no content index the panel degrades to title-only matching and says so.
 
 > This replaces the old inline filter row. The panel rides the shell's `shell.overlay` seat, so the sidebar width never clips it.
 
-**Content matches need the Host's full-text index.** DSH ships it off (`openAt: never`; exact reads stay available), and the panel then stays title-only. To turn content search on, append this row to the profile's `cordis.patch.yml` and restart DSH:
+**Performance**: title matching is per-keystroke and instant; content search is debounced (180 ms), skipped below two code points and during IME composition, and cached per open, so backspacing or retyping never repeats a Host request. Results keep the Host's 20-row cap. The content index is built on the **first content search** (the panel shows "Building the content index"), then reconciled incrementally and usually answers in milliseconds; it persists in `~/.dsh/storages/session-search.db`.
+
+**Works out of the box**: the plugin's own bundle patch overrides the Host's `session-query-sqlite` from `openAt: never` to `openAt: first-search` with a durable index, so no manual configuration is needed. A deployment that wants content search off can override the same id in the profile's `cordis.patch.yml` (a later layer):
 
 ```yaml
 - id: session-query-sqlite
   config:
     path: !!js dshHomePath('storages/session-search.db')
-    openAt: first-search
+    openAt: never
 ```
+
+The panel then degrades to title matching and shows a "Host content index is off" hint; title matches and the recent list keep working.
+
+**Matching semantics**: the Host indexes with SQLite FTS5's `unicode61` tokenizer, which matches tokens and phrases — English words match as words; a run of CJK text is one token, so a CJK substring (for example "模型") usually does not match. This is the Host's existing search behavior; substring matching for CJK would need a separate index.
 
 ### Workspace and session sections
 

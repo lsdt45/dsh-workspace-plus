@@ -5,18 +5,34 @@
  *
  * The panel is plugin-owned: the shell's own search seat belongs to the shipped
  * workspace browser this plugin shadows, so nothing upstream renders for us.
+ *
+ * Content search rides the Host's SQLite FTS5 index through sessions.search:
+ * debounced, aborted on change, cached per open, and skipped for queries too
+ * short to be useful. The content switch persists in the plugin store; when the
+ * deployment has no index the panel says so once and keeps title matching.
  */
 
 import { E, React } from '../platform.ts'
 import { icon } from '../icons.ts'
 import { cls } from '../core/text.ts'
-import { localSearch, mergeSearchResults, normalizeQuery, recentSearchRows } from '../core/search.ts'
+import {
+  createSearchPageCache,
+  isContentQueryReady,
+  isContentSearchUnavailable,
+  localSearch,
+  mergeSearchResults,
+  normalizeQuery,
+  recentSearchRows,
+} from '../core/search.ts'
 import type { SearchCandidate, SearchContentItem, SearchResultRow } from '../core/search.ts'
 import type { Translate } from '../core/time.ts'
 import { searchHost, useSearchHost } from './search-host.ts'
 
 /** Debounce before asking the Host's content index (local matches are instant). */
 const SEARCH_DEBOUNCE_MS = 180
+
+/** A search slower than this is (almost always) the first index build. */
+const SEARCH_SLOW_MS = 600
 
 /** How many rows the panel shows at most. */
 const DEFAULT_LIMIT = 20
@@ -34,6 +50,10 @@ export interface SearchOverlayProps {
   limit?: number
   /** Host full-text search; absent on hosts without the content index. */
   searchSessions?: ((query: string, signal?: any) => Promise<ContentPage>) | null
+  /** Whether the content switch is on; defaults to on. */
+  contentEnabled?: boolean
+  /** Persist the content switch. Without it the panel renders no switch. */
+  onContentToggle?: ((next: boolean) => void) | null
   onOpen: (sessionId: string) => void
   onClose: () => void
   t: Translate
@@ -47,16 +67,40 @@ interface RemoteState {
 }
 
 /** The floating search panel. Renders nothing while closed. */
-export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchSessions, onOpen, onClose, t }: SearchOverlayProps) {
+export function SearchOverlay({
+  open,
+  candidates,
+  limit = DEFAULT_LIMIT,
+  searchSessions,
+  contentEnabled = true,
+  onContentToggle,
+  onOpen,
+  onClose,
+  t,
+}: SearchOverlayProps) {
   const [query, setQuery] = React.useState('')
   const [active, setActive] = React.useState(0)
   // True while arrow keys own the highlight: the CSS hover tint must not hide
   // the keyboard-selected row. Cleared by the next pointer move over the list.
   const [keyboardNav, setKeyboardNav] = React.useState(false)
   const [remote, setRemote] = React.useState({ status: 'idle', items: [], hasMore: false } as RemoteState)
+  // The Host index is absent/disabled: stop asking for the rest of this open.
+  const [unavailable, setUnavailable] = React.useState(false)
+  // The current request has been pending long enough to be an index build.
+  const [slow, setSlow] = React.useState(false)
+  // An IME composition owns the input; searching partial pinyin is wasteful.
+  const [composing, setComposing] = React.useState(false)
   const inputRef = React.useRef(null)
   const requestRef = React.useRef(0)
   const cappedLimit = Math.max(1, Math.trunc(Number(limit) || DEFAULT_LIMIT))
+  // One cache per Host search function: a new host (or a stub in tests) starts
+  // clean, and the cache only lives as long as this mounted panel.
+  const cache = React.useMemo(() => createSearchPageCache(), [searchSessions])
+  // The backend decides whether content search runs; the callback only decides
+  // whether the panel can render its switch (a host may publish one without the
+  // other, and tests exercise search without a persistence hook).
+  const showContentSwitch = typeof searchSessions === 'function' && typeof onContentToggle === 'function'
+  const contentOn = contentEnabled === true && !unavailable
 
   // A fresh open always starts from an empty query and the first row, then
   // hands focus back to whatever opened the panel when it closes.
@@ -67,6 +111,9 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
     setActive(0)
     setKeyboardNav(false)
     setRemote({ status: 'idle', items: [], hasMore: false })
+    setUnavailable(false)
+    setSlow(false)
+    setComposing(false)
     const timer = setTimeout(() => {
       const input = inputRef.current
       if (input && typeof input.focus === 'function') input.focus({ preventScroll: true })
@@ -79,37 +126,62 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
     }
   }, [open])
 
-  // Content search: debounced, aborted on change/unmount, last response wins.
+  // Content search: cached -> ready immediately; otherwise debounced, aborted
+  // on change/unmount, last response wins. Skipped while the switch is off, the
+  // query is too short, the IME is composing, or the index is known missing.
   React.useEffect(() => {
     if (!open) return undefined
     const trimmed = normalizeQuery(query)
-    if (trimmed === '' || typeof searchSessions !== 'function') {
+    if (typeof searchSessions !== 'function' || !contentEnabled || unavailable || composing || !isContentQueryReady(trimmed)) {
       requestRef.current += 1
       setRemote({ status: 'idle', items: [], hasMore: false })
+      return undefined
+    }
+    const cached = cache.get(trimmed)
+    if (cached) {
+      requestRef.current += 1
+      setRemote({ status: 'ready', items: cached.items, hasMore: cached.hasMore })
       return undefined
     }
     const requestId = requestRef.current + 1
     requestRef.current = requestId
     const controller = typeof AbortController === 'function' ? new AbortController() : null
-    setRemote((previous: RemoteState) => ({ status: 'loading', items: previous.items, hasMore: false }))
+    setRemote({ status: 'loading', items: [], hasMore: false })
     const timer = setTimeout(() => {
       searchSessions(trimmed, controller ? controller.signal : undefined).then((page) => {
         if (requestRef.current !== requestId) return
-        setRemote({
-          status: 'ready',
-          items: Array.isArray(page && page.items) ? page.items : [],
-          hasMore: !!(page && page.hasMore),
-        })
-      }).catch(() => {
+        if (controller !== null && controller.signal.aborted) return
+        const items = Array.isArray(page && page.items) ? page.items : []
+        const hasMore = !!(page && page.hasMore)
+        cache.set(trimmed, { items, hasMore })
+        setRemote({ status: 'ready', items, hasMore })
+      }).catch((reason: unknown) => {
         if (requestRef.current !== requestId) return
+        if (controller !== null && controller.signal.aborted) return
+        if (isContentSearchUnavailable(reason)) {
+          setUnavailable(true)
+          setRemote({ status: 'idle', items: [], hasMore: false })
+          return
+        }
         setRemote({ status: 'error', items: [], hasMore: false })
       })
     }, SEARCH_DEBOUNCE_MS)
     return () => {
       clearTimeout(timer)
-      if (controller) controller.abort()
+      if (controller !== null) controller.abort()
     }
-  }, [open, query, searchSessions])
+  }, [open, query, contentEnabled, unavailable, composing, searchSessions, cache])
+
+  // Long wait -> the first content search is building the index. A timer in the
+  // renderer keeps the message visible even though the Host is busy in SQLite.
+  React.useEffect(() => {
+    if (remote.status !== 'loading') {
+      setSlow(false)
+      return undefined
+    }
+    const timer = setTimeout(() => setSlow(true), SEARCH_SLOW_MS)
+    return () => clearTimeout(timer)
+  }, [remote.status])
 
   const byId = React.useMemo(() => {
     const map = new Map<string, SearchCandidate>()
@@ -128,6 +200,17 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
   }, [candidates, query, merged, cappedLimit])
 
   React.useEffect(() => { setActive(0) }, [query])
+
+  // Toggling the scope must not steal focus from the query: after the click the
+  // caret goes back to the input so typing continues where it left off.
+  const toggleContent = (): void => {
+    if (unavailable || typeof onContentToggle !== 'function') return
+    onContentToggle(!contentEnabled)
+    const input = inputRef.current
+    if (input && typeof input.focus === 'function') {
+      try { input.focus({ preventScroll: true }) } catch { /* the panel is closing */ }
+    }
+  }
 
   const openAt = (index: number): void => {
     const row = display[index]
@@ -153,6 +236,10 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
   }
 
   const onKeyDown = (event: any): void => {
+    // The content switch is a native button: let it handle its own Enter/Space
+    // (otherwise the panel's Enter handler would open the active result).
+    const target = event && event.target
+    if (target && typeof target.getAttribute === 'function' && target.getAttribute('data-search-control') === 'true' && event.key !== 'Escape') return
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); return }
     if (event.key === 'ArrowDown') {
       event.preventDefault()
@@ -187,14 +274,14 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
       row.snippet ? E('span', { className: 'bw-search-row-snippet' }, row.snippet) : null,
     ),
     row.workspace ? E('span', { className: 'bw-search-row-ws', title: row.workspace }, row.workspace) : null,
-    index < 9 ? E('span', { className: 'bw-search-row-idx', 'aria-hidden': 'true' }, '\u2303' + (index + 1)) : null,
+    index < 9 ? E('span', { className: 'bw-search-row-idx', 'aria-hidden': 'true' }, '⌃' + (index + 1)) : null,
   ))
 
   const empty = display.length === 0
   const statusText = trimmed === ''
     ? ''
     : pending
-      ? t('search.pending')
+      ? (slow ? t('search.indexing') : t('search.pending'))
       : remote.hasMore || merged.hasMore
         ? t('search.hasMore', { n: cappedLimit })
         : ''
@@ -223,7 +310,27 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
           autoComplete: 'off',
           spellCheck: false,
           onChange: (event: any) => setQuery(event.target.value),
+          onCompositionStart: () => setComposing(true),
+          onCompositionEnd: (event: any) => { setComposing(false); setQuery(event.target.value) },
         }),
+        showContentSwitch
+          ? E('button', {
+            type: 'button',
+            role: 'switch',
+            'aria-checked': contentOn,
+            'aria-label': t('search.scope.title'),
+            title: unavailable ? t('search.scope.unavailable') : t('search.scope.title'),
+            disabled: unavailable,
+            'data-search-control': 'true',
+            className: cls('bw-search-scope', contentOn && 'bw-search-scope-on'),
+            onClick: toggleContent,
+          },
+            E('span', { className: 'bw-search-scope-label' }, t('search.scope')),
+            E('span', { className: 'bw-search-scope-track', 'aria-hidden': 'true' },
+              E('span', { className: 'bw-search-scope-thumb' }),
+            ),
+          )
+          : null,
       ),
       E('div', {
         className: cls('bw-search-list', keyboardNav && 'bw-search-list-keys'),
@@ -243,12 +350,15 @@ export function SearchOverlay({ open, candidates, limit = DEFAULT_LIMIT, searchS
           ? (pending ? null : E('div', { className: 'bw-search-empty' }, trimmed === '' ? t('search.emptyRecent') : t('search.empty')))
           : rows,
       ),
+      contentEnabled && unavailable && typeof searchSessions === 'function'
+        ? E('div', { className: 'bw-search-hint', role: 'note' }, t('search.scope.offlineHint'))
+        : null,
     ),
   )
 }
 
 /**
- * The `shell.overlay` seat: renders the panel above the whole app from the
+ * The shell.overlay seat: renders the panel above the whole app from the
  * bridge state. Registered once at plugin start; the sidebar publishes into it.
  */
 export function SearchOverlaySeat() {
@@ -260,6 +370,8 @@ export function SearchOverlaySeat() {
     candidates: host.candidates,
     limit: host.limit,
     searchSessions: host.searchSessions,
+    contentEnabled: host.contentEnabled,
+    onContentToggle: host.setContentEnabled,
     onOpen: (sessionId: string) => { if (host.openSession) host.openSession(sessionId) },
     onClose: () => searchHost.hide(),
     t,

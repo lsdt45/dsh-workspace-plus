@@ -24,6 +24,10 @@ export interface SearchHostState {
   candidates: ReadonlyArray<SearchCandidate>
   limit: number
   searchSessions: ((query: string, signal?: any) => Promise<SearchHostPage>) | null
+  /** Whether the content switch is on (persisted in the plugin store). */
+  contentEnabled: boolean
+  /** Persist the content switch; null when the store has no setPref action. */
+  setContentEnabled: ((next: boolean) => void) | null
   openSession: ((sessionId: string) => void) | null
   t: Translate | null
 }
@@ -33,6 +37,8 @@ const initial: SearchHostState = {
   candidates: [],
   limit: 20,
   searchSessions: null,
+  contentEnabled: true,
+  setContentEnabled: null,
   openSession: null,
   t: null,
 }

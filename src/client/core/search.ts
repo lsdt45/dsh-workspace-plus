@@ -103,3 +103,130 @@ export function mergeSearchResults(
   const hasMore = items.length > max
   return { items: items.slice(0, max), hasMore }
 }
+
+
+/* ---------------------- content-search gates and helpers ------------------- */
+
+/** Minimum code points a query needs before the Host content index is asked. */
+export const CONTENT_QUERY_MIN_CODE_POINTS = 2
+
+/**
+ * True when a query is long enough for a content search. One letter or one CJK
+ * character matches too much and would cost a Host round trip per keystroke, so
+ * the panel keeps those to local title matches.
+ */
+export function isContentQueryReady(query: string): boolean {
+  const normalized = normalizeQuery(query)
+  if (normalized === '') return false
+  return Array.from(normalized).length >= CONTENT_QUERY_MIN_CODE_POINTS
+}
+
+/** One cached Host content page. */
+export interface SearchPage {
+  items: SearchContentItem[]
+  hasMore: boolean
+}
+
+/** Small LRU + TTL cache for Host content pages (backspace/repeat are free). */
+export interface SearchPageCache {
+  get(query: string): SearchPage | undefined
+  set(query: string, page: SearchPage): void
+  clear(): void
+  readonly size: number
+}
+
+/** Cache knobs; the clock is injected so tests can advance it. */
+export interface SearchPageCacheOptions {
+  max?: number
+  ttlMs?: number
+  now?: () => number
+}
+
+/** Build an LRU cache; a non-positive TTL disables caching entirely. */
+export function createSearchPageCache(options: SearchPageCacheOptions = {}): SearchPageCache {
+  const max = Math.max(1, Math.trunc(options.max ?? 32))
+  const ttlMs = Math.trunc(options.ttlMs ?? 60_000)
+  const now = options.now ?? Date.now
+  const entries = new Map<string, { page: SearchPage; at: number }>()
+  const keyOf = (query: string): string => normalizeQuery(query)
+  return {
+    get(query: string): SearchPage | undefined {
+      if (ttlMs <= 0) return undefined
+      const key = keyOf(query)
+      if (key === '') return undefined
+      const entry = entries.get(key)
+      if (!entry) return undefined
+      if (now() - entry.at > ttlMs) {
+        entries.delete(key)
+        return undefined
+      }
+      // Touch: Map insertion order is the LRU order.
+      entries.delete(key)
+      entries.set(key, entry)
+      return entry.page
+    },
+    set(query: string, page: SearchPage): void {
+      if (ttlMs <= 0) return
+      const key = keyOf(query)
+      if (key === '') return
+      entries.delete(key)
+      entries.set(key, { page, at: now() })
+      while (entries.size > max) {
+        const oldest = entries.keys().next()
+        if (oldest.done === true) break
+        entries.delete(oldest.value)
+      }
+    },
+    clear(): void {
+      entries.clear()
+    },
+    get size(): number {
+      return entries.size
+    },
+  }
+}
+
+/** Markers the Host uses when the session index is switched off / not mounted. */
+const CONTENT_UNAVAILABLE = /SESSION_QUERY_SEARCH_DISABLED|session search is disabled|session search is unavailable/i
+
+/**
+ * True when a Host search rejection means "no content index in this
+ * deployment" (as opposed to a transient failure). The panel then stops asking
+ * for the rest of the open instead of failing once per keystroke.
+ */
+export function isContentSearchUnavailable(reason: unknown): boolean {
+  if (reason === null || reason === undefined) return false
+  const code = (reason as { code?: unknown }).code
+  if (typeof code === 'string' && CONTENT_UNAVAILABLE.test(code)) return true
+  const message = reason instanceof Error
+    ? reason.message
+    : typeof reason === 'string'
+      ? reason
+      : typeof (reason as { message?: unknown }).message === 'string'
+        ? String((reason as { message?: string }).message)
+        : ''
+  return CONTENT_UNAVAILABLE.test(message)
+}
+
+/** The Host failure envelope the browser service returns for a rejected search. */
+interface SearchFailureEnvelope {
+  error?: string | { code?: string; message?: string }
+  message?: string
+  [key: string]: unknown
+}
+
+/**
+ * Turn the Host failure envelope into an Error that keeps the stable code, so
+ * the overlay can tell "index disabled" from a transient error.
+ */
+export function searchFailure(result: unknown): Error {
+  const envelope = (result || {}) as SearchFailureEnvelope
+  const error = envelope.error
+  const message = (typeof error === 'object' && error !== null && typeof error.message === 'string' && error.message !== '' ? error.message : undefined)
+    || (typeof error === 'string' && error !== '' ? error : undefined)
+    || (typeof envelope.message === 'string' && envelope.message !== '' ? envelope.message : undefined)
+    || 'session search failed'
+  const failure = new Error(message) as Error & { code?: string }
+  if (typeof error === 'object' && error !== null && typeof error.code === 'string' && error.code !== '') failure.code = error.code
+  return failure
+}

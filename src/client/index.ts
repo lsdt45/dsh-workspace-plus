@@ -43,7 +43,7 @@ import { icon, iconExport, resolveIcon, PinIcon16, lucideSvg, ListTreeIcon16, Li
 import { BTN, TextDialog, ConfirmDialog, createQuietBoundary, PickerList, renderWsTag, StyleNode } from './ui/base.ts'
 import { SearchOverlaySeat } from './ui/search-overlay.ts'
 import { searchHost } from './ui/search-host.ts'
-import { searchCandidates } from './core/search.ts'
+import { searchCandidates, searchFailure } from './core/search.ts'
 import type { SearchCandidate } from './core/search.ts'
 import { BetterFlow } from './ui/flow.ts'
 import { createBrowserModel } from './browser/model.ts'
@@ -165,6 +165,8 @@ window.__ModuleLoader__.load({
       const prefsMap = useStore ? (useStore(s => s.prefs) || {}) : {}
       const stylingMap = useStore ? (useStore(s => s.styling) || {}) : {}
       const compactChains = prefsMap.compactChains !== false
+      // Content search is on unless the user turned it off in the panel.
+      const searchContent = prefsMap.searchContent !== false
       const { mode: viewMode, dir: timeDirection, sortOrder, archivedFilter } = viewStateOf(prefsMap)
       const timeSorted = viewMode === 'time'
       const automaticSort = timeSorted || sortOrder === 'latest'
@@ -418,6 +420,12 @@ window.__ModuleLoader__.load({
         })
       }, [list, items, archivedSessionIds, archivedFilter])
 
+      // The panel's content switch writes the same store preference the rest of
+      // the sidebar uses; the memo keeps one identity for the bridge publish.
+      const setSearchContent = React.useMemo(() => (next: boolean) => {
+        if (actions && typeof actions.setPref === 'function') actions.setPref('searchContent', next)
+      }, [actions])
+
       // Publish into the bridge the shell.overlay seat reads: the panel lives
       // outside the sidebar's fixed-position container, so it cannot hold the
       // sidebar's React state directly.
@@ -426,10 +434,12 @@ window.__ModuleLoader__.load({
           candidates: searchRows,
           limit: searchLimit,
           searchSessions: typeof searchSessions === 'function' ? searchSessions : null,
+          contentEnabled: searchContent,
+          setContentEnabled: setSearchContent,
           openSession: typeof open === 'function' ? open : null,
           t,
         })
-      }, [searchRows, searchLimit, searchSessions, open, t])
+      }, [searchRows, searchLimit, searchSessions, searchContent, setSearchContent, open, t])
 
       // Highest-priority status across a whole session subtree (groups + rows).
 
@@ -524,11 +534,17 @@ window.__ModuleLoader__.load({
         }, 'better-workspace: dictionaries')
       }
 
-      const searchSessions = async (query: string, signal?: any) => {
-        const result = await sessions.search(query, signal)
-        if (!result || !result.ok) throw new Error(result && result.error ? result.error.message : 'session search failed')
-        return result.value
-      }
+      // Older hosts expose no session search at all; keep the panel title-only
+      // by publishing null instead of a function that would throw a TypeError.
+      const searchSessions = typeof sessions.search === 'function'
+        ? async (query: string, signal?: any) => {
+          const result = await sessions.search(query, signal)
+          // Keep the Host's stable error code: the panel tells "content index
+          // disabled" (SESSION_QUERY_SEARCH_DISABLED) from a transient failure.
+          if (!result || !result.ok) throw searchFailure(result)
+          return result.value
+        }
+        : null
       const renameSession = async (sessionId: string, title: string) => {
         const binding = sessions.binding(sessionId)
         const session = binding && binding.session
@@ -549,7 +565,7 @@ window.__ModuleLoader__.load({
       const browserInjected = () => ({
         startSession: (workspaceId: string) => { uiWorkspace.startSession(workspaceId) },
         open: (sessionId: string) => { openSessionCompat(sessionId) },
-        searchSessions,
+        searchSessions: typeof searchSessions === 'function' ? searchSessions : undefined,
         searchResultLimit: sessions.searchResultLimit !== undefined ? sessions.searchResultLimit : 20,
         renameSession,
         forkSession,

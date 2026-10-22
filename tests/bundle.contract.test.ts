@@ -198,3 +198,14 @@ test('the committed artifact carries the generated banner', () => {
   assert.match(text, /^\/\* GENERATED FILE — do not edit\./)
   assert.match(text, /window\.__ModuleLoader__\.load\(/)
 })
+
+test('the bundle patch enables the host session index lazily', () => {
+  // The search panel can only read message history when the Host's
+  // session-query-sqlite index is on. Every shipped layer sets openAt: never;
+  // this bundle layer is what turns it on, lazily and with a durable path.
+  const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+  assert.match(patch, /- id: session-query-sqlite/)
+  assert.match(patch, /openAt: first-search/)
+  assert.match(patch, /path: !!js dshHomePath\('storages\/session-search\.db'\)/)
+  assert.match(patch, /- insert:\n {4}- id: workspace-plus/)
+})

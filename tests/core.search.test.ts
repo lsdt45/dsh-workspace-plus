@@ -5,7 +5,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { localSearch, mergeSearchResults, normalizeQuery, recentSearchRows, searchCandidates } from '../src/client/core/search.ts'
+import { CONTENT_QUERY_MIN_CODE_POINTS, createSearchPageCache, isContentQueryReady, isContentSearchUnavailable, localSearch, mergeSearchResults, normalizeQuery, recentSearchRows, searchCandidates, searchFailure } from '../src/client/core/search.ts'
 
 const list = {
   ids: ['a', 'b', 'c', 'd'],
@@ -109,4 +109,71 @@ test('mergeSearchResults ignores malformed content items', () => {
   const byId = (id: string) => rows.find((row) => row.id === id)
   const merged = mergeSearchResults([], [{ sessionId: '' } as any, null as any], byId, 20)
   assert.deepEqual(merged.items, [])
+})
+
+
+test('isContentQueryReady needs two code points and ignores surrounding blanks', () => {
+  assert.equal(CONTENT_QUERY_MIN_CODE_POINTS, 2)
+  assert.equal(isContentQueryReady(''), false)
+  assert.equal(isContentQueryReady('   '), false)
+  assert.equal(isContentQueryReady('a'), false)
+  assert.equal(isContentQueryReady(' a '), false)
+  assert.equal(isContentQueryReady('ab'), true)
+  assert.equal(isContentQueryReady('git'), true)
+  // A CJK character is one code point, so a single character stays local.
+  assert.equal(isContentQueryReady('模'), false)
+  assert.equal(isContentQueryReady('模型'), true)
+})
+
+test('searchFailure keeps the Host error code and message', () => {
+  const failure = searchFailure({ ok: false, error: { code: 'SESSION_QUERY_SEARCH_DISABLED', message: 'disabled here' } })
+  assert.equal(failure.message, 'disabled here')
+  assert.equal((failure as any).code, 'SESSION_QUERY_SEARCH_DISABLED')
+  assert.equal(searchFailure({ error: 'plain text failure' }).message, 'plain text failure')
+  assert.equal(searchFailure({ message: 'envelope message' }).message, 'envelope message')
+  assert.equal(searchFailure(null).message, 'session search failed')
+})
+
+test('isContentSearchUnavailable recognizes the disabled index but not transient errors', () => {
+  assert.equal(isContentSearchUnavailable({ code: 'SESSION_QUERY_SEARCH_DISABLED' }), true)
+  assert.equal(isContentSearchUnavailable(new Error('session search is disabled: openAt "never"')), true)
+  assert.equal(isContentSearchUnavailable('session search is unavailable: not mounted'), true)
+  assert.equal(isContentSearchUnavailable(new Error('socket closed')), false)
+  assert.equal(isContentSearchUnavailable(null), false)
+  assert.equal(isContentSearchUnavailable(undefined), false)
+})
+
+test('createSearchPageCache serves hits, expires by TTL and evicts the oldest', () => {
+  let now = 1_000
+  const cache = createSearchPageCache({ max: 2, ttlMs: 100, now: () => now })
+  const page = { items: [{ sessionId: 'a', snippet: 'x' }], hasMore: false }
+  cache.set('plan', page)
+  assert.equal(cache.get('plan'), page)
+  assert.equal(cache.get('  plan  '), page, 'keys are normalized')
+  now = 1_101
+  assert.equal(cache.get('plan'), undefined, 'a stale page is dropped')
+  assert.equal(cache.size, 0)
+})
+
+test('createSearchPageCache keeps the most recently read entry (LRU)', () => {
+  const cache = createSearchPageCache({ max: 2, ttlMs: 60_000, now: () => 0 })
+  const page = { items: [], hasMore: false }
+  cache.set('a', page)
+  cache.set('b', page)
+  assert.equal(cache.get('a'), page, 'reading a refreshes its position')
+  cache.set('c', page)
+  assert.equal(cache.get('b'), undefined, 'the untouched entry is evicted')
+  assert.equal(cache.get('a'), page)
+  assert.equal(cache.get('c'), page)
+})
+
+test('createSearchPageCache can be disabled and cleared', () => {
+  const disabled = createSearchPageCache({ ttlMs: 0 })
+  disabled.set('plan', { items: [], hasMore: false })
+  assert.equal(disabled.get('plan'), undefined)
+  assert.equal(disabled.size, 0)
+  const cache = createSearchPageCache()
+  cache.set('git', { items: [], hasMore: false })
+  cache.clear()
+  assert.equal(cache.size, 0)
 })

@@ -44,10 +44,21 @@ export const CSS_TEXT = [
   '.bw-search-field{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));color:var(--dsw-alias-label-tertiary,#9a9a9a)}',
   '.bw-search-input{flex:1;min-width:0;height:22px;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e6e6);font-size:13px;font-family:inherit}',
   '.bw-search-input::placeholder{color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+  // Content switch: one compact pill in the field row. The track/thumb are the
+  // only animated parts; result rows keep transition:none (hover stays instant).
+  '.bw-search-scope{flex:none;display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 6px 0 8px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.28));border-radius:11px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-family:inherit;font-size:11px;line-height:1;cursor:pointer}',
+  '.bw-search-scope:hover{border-color:var(--dsw-alias-border-l2,rgba(127,127,127,.45));color:var(--dsw-alias-label-secondary,#bdbdbd)}',
+  '.bw-search-scope-on{border-color:var(--dsw-alias-brand-primary,#5b8def);color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  '.bw-search-scope:disabled{opacity:.5;cursor:default}',
+  '.bw-search-scope-track{position:relative;flex:none;width:22px;height:12px;border-radius:6px;background:var(--dsw-alias-border-l3,rgba(127,127,127,.3));transition:background 120ms ease}',
+  '.bw-search-scope-thumb{position:absolute;top:2px;left:2px;width:8px;height:8px;border-radius:50%;background:var(--dsw-alias-label-primary-foreground,#fff);transition:transform 120ms ease}',
+  '.bw-search-scope-on .bw-search-scope-track{background:var(--dsw-alias-brand-primary,#5b8def)}',
+  '.bw-search-scope-on .bw-search-scope-thumb{transform:translateX(10px)}',
   '.bw-search-list{flex:1;min-height:0;overflow-y:auto;padding:6px 8px 8px}',
   '.bw-search-section{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 6px 2px;font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
   '.bw-search-status{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.bw-search-empty{padding:18px 10px;text-align:center;font-size:12px;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
+  '.bw-search-hint{flex:none;padding:6px 12px 9px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));font-size:11px;line-height:1.5;color:var(--dsw-alias-label-quaternary,#8a8a8a)}',
   // Hover is a pure CSS highlight: the pointer never drives a React update, so
   // the row under the cursor lights up on the next paint instead of waiting for
   // a continuous-priority render (which made fast mouse moves feel laggy).

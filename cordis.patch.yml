@@ -14,3 +14,16 @@
 - insert:
     - id: workspace-plus
       name: 'dsh-workspace-plus'
+
+# The floating search panel reads message history through the Host's
+# `sessions.search` (SQLite FTS5). Every shipped layer leaves the index off
+# (`path: ':memory:'`, `openAt: never`), so the panel would only match titles.
+# This layer replaces that config: the index stays lazy (`first-search` defers
+# the node:sqlite import and the first build until someone searches) and lives
+# in a durable file so a restart reconciles incrementally instead of rebuilding.
+# A later profile layer can override the same id with `openAt: never` again;
+# the panel then degrades to title matching and shows its disabled hint.
+- id: session-query-sqlite
+  config:
+    path: !!js dshHomePath('storages/session-search.db')
+    openAt: first-search

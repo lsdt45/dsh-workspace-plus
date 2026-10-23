@@ -387,6 +387,7 @@ function renderStrip(sessionsState: any, workspacesState?: any, prefs?: Record<s
     useStore: (selector: (s: any) => any) => selector({ prefs: prefs || {} }),
     t: (key: string) => key,
     open: () => {},
+    newSession: () => {},
   })
   const inner = wrapper && wrapper.children && wrapper.children[0]
   assert.ok(inner && typeof inner.type === 'function', 'the strip seat did not produce a component element')
@@ -415,6 +416,52 @@ test('a provisional New Session chip uses the localized blank title', () => {
   assert.deepEqual(findByClass(tree, /bw-tab-label/)[0].children, ['session.new'])
 })
 
+
+test('the strip ends with a + that starts a new session', () => {
+  // The button mirrors the shell's own "New session" (workspace +, Ctrl+N): it
+  // asks the host to create the session instead of inventing one, so it must be
+  // reachable no matter what the strip contains — including an empty one.
+  const sessions = { byId: { a: { id: 'a', displayTitle: 'chat a', retainedBy: { mainView: 1 } } }, ids: ['a'] }
+  const calls: string[] = []
+  const wrapper = stripSeat({
+    useSessions: (selector: (s: any) => any) => selector(sessions),
+    useSessionStatus: (selector: (s: any) => any) => selector(new Map()),
+    useWorkspaces: (selector: (s: any) => any) => selector({ items: [], phase: 'ready', archivedSessionIds: [] }),
+    useStore: (selector: (s: any) => any) => selector({ prefs: {} }),
+    t: (key: string) => key,
+    open: () => {},
+    newSession: () => { calls.push('new') },
+  })
+  const inner = wrapper.children[0]
+  const tree = deepRender(inner.type(inner.props))
+  const button = findByClass(tree, /^bw-tabs-new$/)[0]
+  assert.ok(button, 'the new-session button did not render')
+  assert.equal(button.type, 'button', 'it must be a real button, not a div')
+  assert.equal(button.props['aria-label'], 'session.new', 'and it is labelled like the shell button')
+  assert.equal(typeof button.props.title, 'string', 'with a hover title')
+  button.props.onClick({ stopPropagation: () => {} })
+  assert.deepEqual(calls, ['new'], 'the click asks the host for a new session')
+})
+
+test('the + survives after the last tab is closed', () => {
+  // Closing every chip used to unmount the whole bar, stranding the user with no
+  // way to reopen anything from the strip. The "+" must stay put.
+  const empty = { byId: {}, ids: [] }
+  const wrapper = stripSeat({
+    useSessions: (selector: (s: any) => any) => selector(empty),
+    useSessionStatus: (selector: (s: any) => any) => selector(new Map()),
+    useWorkspaces: (selector: (s: any) => any) => selector({ items: [], phase: 'ready', archivedSessionIds: [] }),
+    useStore: (selector: (s: any) => any) => selector({ prefs: {} }),
+    t: (key: string) => key,
+    open: () => {},
+    newSession: () => {},
+  })
+  const inner = wrapper && wrapper.children && wrapper.children[0]
+  const tree = inner && typeof inner.type === 'function' ? deepRender(inner.type(inner.props)) : null
+  assert.ok(tree, 'the bar must still render with no tabs')
+  assert.equal(findByClass(tree, /^bw-tabs-new$/).length, 1, 'the new-session button is the way back')
+  assert.equal(findByClass(tree, /^bw-tab(?:$|\s)/).length, 0, 'and no phantom chips')
+})
 
 test('the strip can be switched off from the plugin settings', () => {
   const sessions = { byId: { a: { id: 'a', displayTitle: 'chat a', retainedBy: { mainView: 1 } } }, ids: ['a'] }
@@ -456,11 +503,88 @@ test('the plugin settings page exposes the native-fallback switches', () => {
   const calls: Array<[string, unknown]> = []
   const tree = renderSettings({}, calls)
   const switches = findByClass(tree, /^bw-switch(?:$|\s)/)
-  assert.equal(switches.length, 4, 'four toggles: tabs, dots, chains, breathing light')
-  assert.deepEqual(switches.map((node) => node.props['aria-checked']), [true, true, true, true], 'all default to on')
+  assert.equal(switches.length, 5, 'five toggles: tabs, new-tab clicks, dots, chains, breathing light')
+  assert.deepEqual(switches.map((node) => node.props['aria-checked']), [true, true, true, true, true], 'all default to on')
   switches[0].props.onClick()
-  switches[1].props.onClick()
+  switches[2].props.onClick()
   assert.deepEqual(calls, [['showTabs', false], ['statusDots', false]], 'the new switches write their prefs')
+  // The click gesture is a real preference: turning it off restores replace-in-place.
+  const replaced = renderSettings({ newTabOnClick: false }, [])
+  assert.equal(findByClass(replaced, /^bw-switch(?:$|\s)/)[1].props['aria-checked'], false, 'stored off state reaches the switch')
+})
+
+// ------------------------------------------------- sidebar click gesture
+// The tab list is module state inside the bundle, and the strip renders from it,
+// so a click is observed by re-rendering the strip and reading its chip ids. This
+// test runs the whole gesture sequence in order because each step feeds the next
+// one the active tab the real handler would have set (the harness's effects are
+// inert, so nothing else can seed that state).
+const chipIds = (sessionsState: any, prefs?: Record<string, unknown>): string[] => {
+  const tree = renderStrip(sessionsState, undefined, prefs)
+  return findByClass(tree, CHIP).map((chip) => String(chip.props['data-bw-tab-id']))
+}
+
+/** A session row's own clickable host, found by its rendered label. */
+function sessionRowHost(tree: any, label: string): any {
+  const texts = (node: any, out: string[]): string[] => {
+    if (node === null || node === undefined) return out
+    if (typeof node === 'string' || typeof node === 'number') { out.push(String(node)); return out }
+    if (Array.isArray(node)) { for (const child of node) texts(child, out); return out }
+    if (typeof node === 'object') texts(node.children, out)
+    return out
+  }
+  const rows = findByClass(tree, /bw-session-row/).filter((row) => row.props['data-bw-context'] === 'session')
+  const hit = rows.find((row) => texts(row, []).includes(label))
+  assert.ok(hit, 'the session row "' + label + '" did not render')
+  return hit
+}
+
+test('sidebar clicks open new tabs, and Shift switches to replace-in-place', () => {
+  const chats: Record<string, any> = {
+    p1: { id: 'p1', title: 'chat p1' },
+    p2: { id: 'p2', title: 'chat p2' },
+    p3: { id: 'p3', title: 'chat p3' },
+    p4: { id: 'p4', title: 'chat p4' },
+    r1: { id: 'r1', title: 'chat r1' },
+  }
+  const sessions = {
+    byId: { ...chats, p1: { ...chats.p1, retainedBy: { mainView: 1 } } },
+    ids: ['p1', 'p2', 'p3', 'p4', 'r1'],
+  }
+  const items = [{ workspaceId: 'w1', title: 'web/app', path: '/repos/app', sessionIds: ['p1', 'p2', 'p3', 'p4', 'r1'] }]
+  const tree = renderWith({ prefs: {}, items, sessions, pinned: [] })
+
+  // A plain click must ADD a tab: the page being read stays open. The strip is
+  // empty in this harness (its sync effect is inert), so the click seeds the
+  // session on screen as a chip first — exactly what a fresh browser does.
+  sessionRowHost(tree, 'chat p2').props.onClick({ shiftKey: false })
+  assert.deepEqual(chipIds(sessions), ['p1', 'p2'], 'the first plain click keeps the open page and adds its own tab')
+
+  sessionRowHost(tree, 'chat p3').props.onClick({ shiftKey: false })
+  assert.deepEqual(chipIds(sessions), ['p1', 'p2', 'p3'], 'a second plain click grows the strip instead of overwriting')
+
+  // Shift is the escape hatch: the strip does not grow. This chip is already open
+  // elsewhere, so the rule that a session never owns two chips applies — the tab
+  // being replaced is dropped and the existing chip takes over.
+  sessionRowHost(tree, 'chat p1').props.onClick({ shiftKey: true })
+  assert.deepEqual(chipIds(sessions), ['p1', 'p2'], 'Shift replaces instead of growing, and never duplicates a chip')
+
+  // A session that is NOT open yet shows the plain swap: the ACTIVE tab (p1, the
+  // one the Shift click above selected) takes the new session, everything else
+  // keeps its slot, and the count does not change.
+  sessionRowHost(tree, 'chat p4').props.onClick({ shiftKey: true })
+  assert.deepEqual(chipIds(sessions), ['p4', 'p2'], 'Shift swaps the active tab in place for a new session')
+  assert.equal(chipIds(sessions).length, 2, 'a replace never grows the strip')
+
+  // Turning the preference off restores the old gesture for plain clicks: the
+  // ACTIVE tab (p4) takes the clicked session and the count stays.
+  const replaced = renderWith({ prefs: { newTabOnClick: false }, items, sessions, pinned: [] })
+  sessionRowHost(replaced, 'chat r1').props.onClick({ shiftKey: false })
+  assert.deepEqual(chipIds(sessions, { newTabOnClick: false }), ['r1', 'p2'], 'with the preference off a plain click replaces')
+
+  // …and flips Shift back to "open a new tab".
+  sessionRowHost(replaced, 'chat p3').props.onClick({ shiftKey: true })
+  assert.deepEqual(chipIds(sessions, { newTabOnClick: false }), ['r1', 'p2', 'p3'], 'so Shift now grows the strip')
 })
 
 test('header overrides only apply while tabs are shown', () => {
@@ -469,7 +593,7 @@ test('header overrides only apply while tabs are shown', () => {
   // the shell's own header layout.
   const occurrences = CSS_TEXT.split('header[data-window-drag]').length - 1
   const scoped = (CSS_TEXT.match(/html:not\(\[data-bw-tabs-off\]\) header\[data-window-drag\]/g) || []).length
-  assert.equal(occurrences, 3, 'three header overrides exist')
+  assert.equal(occurrences, 5, 'five header overrides exist')
   assert.equal(scoped, occurrences, 'every header override is scoped to tabs-on')
 })
 

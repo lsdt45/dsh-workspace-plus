@@ -25,9 +25,10 @@ import type { Translate } from './core/time.ts'
 import { currentSessionIdOf, sessionTitleOf } from './core/view.ts'
 import { StyleNode } from './ui/base.ts'
 import { StatusDot, sessionStateOf } from './rows.ts'
+import { useHoverTip } from './ui/tooltip.ts'
 import { useTabReorder } from './browser/dnd.ts'
-import { CheckIcon16, ChevronDownIcon16 } from './icons.ts'
-import { closeTab, moveTab, reconcileTabs, saveTabs, scrollDeltaFor, setActiveTab, stripCapacity, stripFillWidth, subscribeTabs, tabsActive, tabsSnapshot } from './tabs.ts'
+import { CheckIcon16, ChevronDownIcon16, PlusIcon16 } from './icons.ts'
+import { closeTab, moveTab, reconcileTabs, saveTabs, scrollDeltaFor, setActiveTab, stripFillWidth, subscribeTabs, tabsActive, tabsSnapshot } from './tabs.ts'
 
 /**
  * Bridge to the sidebar's session menu.
@@ -40,79 +41,11 @@ import { closeTab, moveTab, reconcileTabs, saveTabs, scrollDeltaFor, setActiveTa
 export const tabsHost: { openSessionMenu: ((sessionId: string, event: any) => void) | null } = { openSessionMenu: null }
 
 /**
- * Park the session chips (the shell's header-actions block) after the view-nav row.
- *
- * The chips belong to the shell, so CSS alone cannot know where a dynamic row
- * ends. This measures that row and publishes the offset as a custom property the
- * CSS rule consumes; the rule keeps the right-aligned position as its fallback, so
- * a markup change leaves the chips where they were instead of hiding them.
- */
-function useChipsAfterNav(enabled: boolean) {
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return undefined
-    const header = document.querySelector<HTMLElement>('header[data-window-drag]')
-    // Tabs off: the header is the shell's again, so the parked chips go back to
-    // their own slot and every measured offset is dropped.
-    if (!enabled) {
-      if (header) {
-        for (const name of ['--bw-chips-left', '--bw-chips-right', '--bw-chips-top', '--bw-chips-bottom']) header.style.removeProperty(name)
-      }
-      return undefined
-    }
-    const place = () => {
-      const header = document.querySelector<HTMLElement>('header[data-window-drag]')
-      if (!header) return
-      const nav = header.querySelector('[class*="_tabs"]')
-      if (!nav) return
-      const head = header.getBoundingClientRect()
-      // The nav row itself spans the header; the anchor is its LAST item, so the
-      // chips land after "编队" rather than after the row's trailing whitespace.
-      const items = nav.children && nav.children.length ? nav.children : [nav]
-      const last = items[items.length - 1]
-      const row = (last || nav).getBoundingClientRect()
-      if (!head.width || !row.width) return
-      const offset = Math.max(24, Math.round(row.right - head.left + 18))
-      // A pathological measurement must never park the chips off-screen: keep the
-      // right-aligned fallback instead.
-      if (offset > head.width - 220) return
-      header.style.setProperty('--bw-chips-left', offset + 'px')
-      header.style.setProperty('--bw-chips-right', 'auto')
-      // Vertically centre the chips on the nav item they follow, so both sides of
-      // the row share one baseline instead of the chips riding a few pixels high.
-      const chips = header.querySelector('[class*="_headerActions"]')
-      if (chips) {
-        const chipsHeight = chips.getBoundingClientRect().height
-        if (chipsHeight > 0) {
-          // The nav item's box includes the active underline and its padding, so
-          // its geometric centre sits below the text, and the chips block carries
-          // a little of its own padding on top of that. Measured on two live
-          // screenshots: 2 CSS px low after the first correction, so the bias is
-          // now 4.
-          const top = Math.round(row.top + row.height / 2 - head.top - chipsHeight / 2 - 4)
-          header.style.setProperty('--bw-chips-top', top + 'px')
-          header.style.setProperty('--bw-chips-bottom', 'auto')
-        }
-      }
-    }
-    place()
-    const nav = header ? header.querySelector('[class*="_tabs"]') : null
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null
-    if (observer && header) observer.observe(header)
-    if (observer && nav) observer.observe(nav)
-    window.addEventListener('resize', place)
-    return () => {
-      if (observer) observer.disconnect()
-      window.removeEventListener('resize', place)
-    }
-  }, [enabled])
-}
-
-/**
  * Mirror the "show tabs" switch into CSS.
  *
- * The header overrides (hide the crumb title line, park the session chips at the
- * measured end of the view-nav row) only make sense while the strip is drawn:
- * with tabs off they must not touch the shell's layout, so every one of those
+ * The header override (hide the crumb title line) only makes sense while the
+ * strip is drawn:
+ * with tabs off the shell's header must render exactly as shipped, so the rule
  * rules is scoped to `html:not([data-bw-tabs-off])`.
  */
 function useTabsSurface(showTabs: boolean) {
@@ -291,35 +224,17 @@ function useWheelScroll(stripRef: any) {
 }
 
 /**
- * Let the strip claim the header space that actually exists — carefully.
+ * Room the tab row may occupy before the header's right-hand controls.
  *
- * The conversation header is a grid of [leading area][session title row]. The
- * leading column sizes to the strip's content, so a strip that stopped after
- * its last chip left a large empty band between the tabs and the header
- * utilities. Measuring the first control to the right and stretching the row to
- * it fixes that gap, but the measurement MUST NOT be re-run against the layout
- * it just changed: some hosts reflow their right-hand controls when the title
- * row shrinks, and chasing them on every pass walked them rightwards until they
- * vanished (the reported regression). Hence:
- *
- *  - one measurement epoch per header width; the first successful result is
- *    LATCHED — later passes may only shrink it, never grow it;
- *  - a follow-up pass that finds the limit farther right than the latched one
- *    means the host is being pushed around: the row falls back to its CSS width
- *    (unstable epoch, no more measuring until a resize);
- *  - the row never grows past what the open chips can fill (stripCapacity), so
- *    a couple of tabs never stretch the strip into the host's controls;
- *  - a reserve keeps a minimum slice of the header for the host controls.
- *
- * A window resize starts a fresh epoch: the row is released to its natural
- * width first, then measured once after layout settles.
+ * Chips are content-sized now (no flex-grow), so this is a CAP rather than a
+ * stretch: the row stays as wide as its chips need and only this measurement
+ * keeps it from running into the window utilities. The measurement walks the
+ * header for the first control right of the strip in the same band — the parked
+ * session chips sit on the view-nav row and are filtered out by that band test.
  */
-function useStripFill(barRef: any, deps: any[], tabCount: number): number {
-  const [width, setWidth] = React.useState(0)
-  const epochRef = React.useRef({ headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false })
-
-  /** Measure the current layout; with `steady` set, only verify/shrink a latched row. */
-  const measure = (steady?: boolean) => {
+function useStripFill(barRef: any, deps: any[]): number {
+  const [room, setRoom] = React.useState(0)
+  const measure = () => {
     const bar = barRef.current
     if (!bar || typeof document === 'undefined' || typeof bar.getBoundingClientRect !== 'function') return
     const header = typeof bar.closest === 'function'
@@ -329,112 +244,245 @@ function useStripFill(barRef: any, deps: any[], tabCount: number): number {
     const barRect = bar.getBoundingClientRect()
     const headerRect = header.getBoundingClientRect()
     if (!barRect.width || !headerRect.width) return
-    if (Math.abs(epochRef.current.headerWidth - headerRect.width) > 1) {
-      epochRef.current = { headerWidth: headerRect.width, width: 0, limit: 0, locked: false, unstable: false }
-    }
-    const epoch = epochRef.current
-    if (epoch.unstable) return
-    // The grid item holding the strip: its right edge is where the session title
-    // row begins. Walk up until the parent IS the header (the host nests the
-    // header in more than one shape: sometimes title row is a direct child,
-    // sometimes it lives deeper under a display:contents wrapper).
+    // The grid item holding the strip: its right edge is where the title row begins.
     let gridItem: any = bar
     while (gridItem && gridItem.parentElement && gridItem.parentElement !== header) gridItem = gridItem.parentElement
     const leadingRight = gridItem && gridItem !== bar
       ? gridItem.getBoundingClientRect().right
       : barRect.right
     let limit = 0
-    const nodes = Array.from(header.querySelectorAll('*')) as any[]
-    for (const node of nodes) {
-      // Skip the strip itself and anything that CONTAINS it (the leading grid
-      // item): their right edge is the row's own edge, never a control.
+    for (const node of Array.from(header.querySelectorAll('*')) as any[]) {
       if (bar === node || (typeof bar.contains === 'function' && bar.contains(node))) continue
       if (typeof node.contains === 'function' && node.contains(bar)) continue
       const rect = node.getBoundingClientRect()
       if (rect.width < 8 || rect.height < 8) continue
-      // Same band as the strip: the navigation row below must not cap the row.
+      // Same band as the strip only: the view-nav row (with the parked chips) must
+      // never cap the tab row.
       if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) continue
-      // A hidden-but-rendered node (collapsed menu, tooltip, transition ghost) has
-      // a box but must never cap the row.
       if (typeof getComputedStyle === 'function') {
         const style = getComputedStyle(node)
         if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') continue
       }
-      // Structural scaffolding: the title row (and any wrapper of it) starts at
-      // the leading area's right edge and runs to the header's right edge. It is
-      // layout, not a control, so it must never become the limit.
+      // Structural scaffolding (the title row and its wrappers) is layout, not a control.
       if (rect.left <= leadingRight + 8 && rect.right >= headerRect.right - 40) continue
-      // Only the right-hand control cluster may cap the row: an element further
-      // left inside the title row (title text, a status chip) must not become
-      // the limit, or the strip would overlap it.
       if (headerRect.right - rect.right > 120) continue
       if (rect.left <= barRect.left + 8) continue
       if (!limit || rect.left < limit) limit = rect.left
     }
-    let next = stripFillWidth(limit, barRect.left, headerRect.width, 220, 100)
-    if (next > 0) next = Math.min(next, stripCapacity(tabCount))
-    if (next > 0 && steady && epoch.locked && limit > epoch.limit + 24) {
-      // Our own widening moved the host controls further right: the layout is
-      // chasing us. Give the row back to CSS and stop measuring this epoch.
-      epoch.unstable = true
-      epoch.width = 0
-      setWidth(0)
-      return
-    }
-    if (next > 0 && epoch.locked) next = Math.min(next, epoch.width)
-    if (next > 0) {
-      epoch.locked = true
-      epoch.width = next
-      epoch.limit = limit
-    } else if (!steady) {
-      epoch.locked = false
-    }
-    setWidth((previous: number) => (previous === next ? previous : next))
+    const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, 100)
+    setRoom((previous: number) => (previous === next ? previous : next))
   }
-
   React.useLayoutEffect(() => {
     measure()
     if (typeof setTimeout !== 'function') return undefined
-    // Host chrome (utilities, dropdowns) can arrive a few frames after the strip
-    // mounts: retry while nothing was measured. Never retry after a latch (that
-    // is the loop that used to push the header controls away).
-    const retry = () => { if (!epochRef.current.locked && !epochRef.current.unstable) measure() }
-    const timers = [400, 1500, 3200].map((delay) => setTimeout(retry, delay))
+    const timers = [80, 300, 900].map((delay) => setTimeout(measure, delay))
     return () => { for (const timer of timers) clearTimeout(timer) }
   }, deps)
-  // Verify the latched row once the browser has laid it out; a pushed-around
-  // host reverts the row to its natural width instead of drifting.
-  React.useEffect(() => {
-    if (!width || typeof setTimeout !== 'function') return undefined
-    const timer = setTimeout(() => measure(true), 260)
-    return () => clearTimeout(timer)
-  }, [width])
-  // A window resize is a genuinely new layout: release the row, then measure the
-  // natural layout once. The header observer catches sidebar/layout changes too.
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return undefined
-    const reset = () => {
-      epochRef.current = { headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false }
-      setWidth(0)
-      if (typeof setTimeout === 'function') setTimeout(() => measure(), 240)
-    }
-    window.addEventListener('resize', reset)
-    const bar = barRef.current
-    const header = bar && typeof bar.closest === 'function' ? bar.closest('header[data-window-drag]') : null
-    let lastHeaderWidth = header ? header.getBoundingClientRect().width : 0
-    const observer = typeof ResizeObserver === 'function' && header
-      ? new ResizeObserver(() => {
-        const next = header.getBoundingClientRect().width
-        if (Math.abs(next - lastHeaderWidth) > 1) { lastHeaderWidth = next; reset() }
-      })
-      : null
-    if (observer && header) observer.observe(header)
-    return () => {
-      window.removeEventListener('resize', reset)
-      if (observer) observer.disconnect()
-    }
+    const onResize = () => measure()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
-  return width
+  return room
+}
+
+/** Header custom property carrying the parked chips' vertical offset. */
+const CHIPS_TOP_VAR = '--bw-chips-top'
+
+/**
+ * Park the shell's session chips (agent team / mode / subagents) on the right end
+ * of the view-nav row.
+ *
+ * The chips belong to the shell and CSS pins them to that row's right edge (see
+ * the headerActions rule in styles.ts); this hook only measures the row's vertical
+ * centre so the chips line up with the view-nav items.
+ *
+ * Cold start is the hard case and the reason this hook is shaped the way it is:
+ * the header mounts first, while the chips come from other plugins and appear a
+ * frame (or several) later — sometimes with zero height until their own data
+ * arrives. Two rules follow, and both were violated by the first version (which
+ * only recovered when switching a tab rebuilt the header):
+ *
+ *  - a measurement that finds no chips, or chips with no height, must NOT be
+ *    treated as final: it schedules another attempt instead of giving up;
+ *  - a DOM mutation must re-measure even when the header and nav row are the same
+ *    nodes, because that is exactly how the chips arrive (a child subtree grows).
+ *
+ * A settled measurement stops the retry chain so an idle header costs nothing.
+ */
+function useChipsAfterNav(enabled: boolean) {
+  const useIsoLayoutEffect = typeof React.useLayoutEffect === 'function' ? React.useLayoutEffect : React.useEffect
+  useIsoLayoutEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    let header: HTMLElement | null = null
+    let nav: HTMLElement | null = null
+    let headerObserver: ResizeObserver | null = null
+    let navObserver: ResizeObserver | null = null
+    let chipsObserver: ResizeObserver | null = null
+    /** Watches the mounted header's subtree for the chips element appearing. */
+    let headerTreeObserver: MutationObserver | null = null
+    /** Document-level watch that only asks "is the header still the same node?". */
+    let bodyObserver: MutationObserver | null = null
+    /** The chips element currently observed, to detect a swap. */
+    let observedChips: HTMLElement | null = null
+    let timers: ReturnType<typeof setTimeout>[] = []
+    let stopped = false
+    /** The offset currently written, so an unchanged measurement stays quiet. */
+    let applied: number | null = null
+    /** Whether a retry chain is already running (never start a second one). */
+    let retrying = false
+    /** Open-ended settle window: cold start can take a while on a loaded machine. */
+    const RETRY_DELAYS = [40, 90, 180, 350, 650, 1000, 1500, 2200]
+    let retryIndex = 0
+
+    const clearTimers = () => {
+      for (const timer of timers) clearTimeout(timer)
+      timers = []
+    }
+
+    const observeChips = (chips: HTMLElement | null) => {
+      if (chipsObserver) { chipsObserver.disconnect(); chipsObserver = null }
+      observedChips = chips
+      if (!chips || typeof ResizeObserver !== 'function') return
+      // The chips' own height is an input to the calculation: when they gain
+      // content (an async badge, a label) the offset must be recomputed.
+      chipsObserver = new ResizeObserver(() => requestMeasure())
+      chipsObserver.observe(chips)
+    }
+
+    /**
+     * Watch the mounted header for the chips element appearing or being swapped.
+     *
+     * This is the cold-start path: the header exists from the first frame, while
+     * the chips (owned by other plugins) mount into it later. Watching the header
+     * subtree is cheap — it is a narrow band whose content changes on navigation,
+     * not on every streamed token — and the callback only re-measures when the
+     * chips element is actually a different node.
+     */
+    const watchHeaderTree = (node: HTMLElement) => {
+      if (headerTreeObserver) headerTreeObserver.disconnect()
+      if (typeof MutationObserver !== 'function') return
+      headerTreeObserver = new MutationObserver(() => {
+        if (stopped || !node.isConnected) return
+        if (node.querySelector('[class*="_headerActions"]') !== observedChips) requestMeasure()
+      })
+      headerTreeObserver.observe(node, { childList: true, subtree: true })
+    }
+
+    const bind = (next: HTMLElement) => {
+      if (headerObserver) headerObserver.disconnect()
+      if (navObserver) navObserver.disconnect()
+      header = next
+      nav = next.querySelector<HTMLElement>('[class*="_tabs"]')
+      watchHeaderTree(next)
+      observeChips(next.querySelector<HTMLElement>('[class*="_headerActions"]'))
+      if (typeof ResizeObserver !== 'function') return
+      headerObserver = new ResizeObserver(() => requestMeasure())
+      headerObserver.observe(next)
+      if (nav) {
+        navObserver = new ResizeObserver(() => requestMeasure())
+        navObserver.observe(nav)
+      }
+    }
+
+    /**
+     * Measure once. Returns true when the offset was decided (written or already
+     * correct), false when the inputs are not there yet and a retry is owed.
+     */
+    const place = (): boolean => {
+      if (stopped) return true
+      const current = document.querySelector<HTMLElement>('header[data-window-drag]')
+      if (!current) return false
+      if (current !== header) bind(current)
+      const chips = current.querySelector<HTMLElement>('[class*="_headerActions"]')
+      if (!chips) { observeChips(null); return false }
+      // Re-observe when the shell swapped the chips element inside the header
+      // (a tab switch remounts the actions slot with a new node).
+      if (chips !== observedChips) observeChips(chips)
+      if (!nav) { nav = current.querySelector<HTMLElement>('[class*="_tabs"]'); if (!nav) return false }
+      const head = current.getBoundingClientRect()
+      const chipsHeight = chips.getBoundingClientRect().height
+      const row = nav.getBoundingClientRect()
+      // A header that has not been laid out yet, or chips that have mounted but
+      // not sized, are "not ready" — not "zero offset".
+      if (!head.height || !row.height || chipsHeight <= 0) return false
+      const maxTop = Math.max(0, head.height - chipsHeight)
+      const top = Math.max(0, Math.min(maxTop, Math.round(row.top + row.height / 2 - head.top - chipsHeight / 2)))
+      if (top !== applied) {
+        current.style.setProperty(CHIPS_TOP_VAR, top + 'px')
+        applied = top
+      }
+      return true
+    }
+
+    /** Coalesce bursts of mutations into one measurement per frame. */
+    let frame = 0
+    const requestMeasure = () => {
+      if (stopped) return
+      if (typeof requestAnimationFrame !== 'function') { measure() ; return }
+      if (frame) return
+      frame = requestAnimationFrame(() => { frame = 0; measure() })
+    }
+
+    /**
+     * Measure now, and if the inputs are not ready yet, keep retrying on the
+     * backoff schedule. A successful measurement ends the chain.
+     */
+    const measure = () => {
+      if (stopped) return
+      if (place()) { retryIndex = 0; return }
+      scheduleRetry()
+    }
+
+    const scheduleRetry = () => {
+      if (stopped || retrying) return
+      if (retryIndex >= RETRY_DELAYS.length) return
+      retrying = true
+      const delay = RETRY_DELAYS[retryIndex++]
+      timers.push(setTimeout(() => {
+        retrying = false
+        if (stopped) return
+        if (!place()) scheduleRetry()
+        else retryIndex = 0
+      }, delay))
+    }
+
+    if (!enabled) {
+      const current = document.querySelector<HTMLElement>('header[data-window-drag]')
+      if (current) current.style.removeProperty(CHIPS_TOP_VAR)
+      return undefined
+    }
+    measure()
+    // The body observer only has to notice the header (re)mounting; the header's
+    // own subtree is where the chips appear, and that is watched per header below
+    // so a streaming conversation does not drive a measurement per token.
+    if (typeof MutationObserver === 'function' && document.body) {
+      bodyObserver = new MutationObserver(() => {
+        if (stopped) return
+        const current = document.querySelector<HTMLElement>('header[data-window-drag]')
+        // Only the header identity matters here; the header's own subtree (where
+        // the chips appear) is watched by watchHeaderTree, so a busy conversation
+        // never drives a measurement.
+        if (current && current !== header) requestMeasure()
+      })
+      bodyObserver.observe(document.body, { childList: true, subtree: false })
+    }
+    window.addEventListener('resize', requestMeasure)
+    return () => {
+      stopped = true
+      if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
+      clearTimers()
+      if (headerObserver) headerObserver.disconnect()
+      if (navObserver) navObserver.disconnect()
+      if (chipsObserver) chipsObserver.disconnect()
+      if (headerTreeObserver) headerTreeObserver.disconnect()
+      if (bodyObserver) bodyObserver.disconnect()
+      window.removeEventListener('resize', requestMeasure)
+      const current = document.querySelector<HTMLElement>('header[data-window-drag]')
+      if (current) current.style.removeProperty(CHIPS_TOP_VAR)
+    }
+  }, [enabled])
 }
 
 /* --------------------------- overflow menu ---------------------------- */
@@ -585,16 +633,24 @@ export interface TabsStripProps {
   t: Translate
   /** Open a session in the shell's main view. */
   open?: (id: string) => void
+  /**
+   * Start a brand-new session, exactly like the shell's own "New session"
+   * (the + on a workspace row, Ctrl+N, the command palette). The shell picks the
+   * workspace — the current one, else the most recent — so this button must not
+   * invent a workspace id of its own.
+   */
+  newSession?: () => void
   /** Session id the hosting seat scopes this strip to, when it hands one down. */
   sessionId?: string | number | null
 }
 
 export function TabsStrip(props: TabsStripProps) {
-  const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open } = props
+  const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open, newSession } = props
   // The seat declares the shared view store, so the settings page's two
   // "restore the host-native UI" switches are live here: tabs on/off and the
   // plugin dots vs. the host's own status lights.
   const prefs = typeof useStore === 'function' ? (useStore((s: any) => s.prefs) || {}) : {}
+  const workspaceItems = typeof useWorkspaces === 'function' ? useWorkspaces((s: any) => s.items) : null
   const showTabs = prefs.showTabs !== false
   const statusDots = prefs.statusDots !== false
   useTabsSurface(showTabs)
@@ -630,9 +686,9 @@ export function TabsStrip(props: TabsStripProps) {
   const anchorRef = React.useRef(null)
   const [menuOpen, setMenuOpen] = React.useState(false)
   const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs])
-  // The row stretches to the header utilities so the chips fill the space
-  // instead of leaving a dead band after the last tab.
-  const fillWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs], tabs.length)
+  // The row is capped to the room before the window utilities; chips size to
+  // their own titles and only shrink/scroll when that room runs out.
+  const roomWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs])
   useRevealActive(stripRef, sessionId, tabs.length)
   useWheelScroll(stripRef)
   // The trigger only exists while chips are hidden; a row that suddenly fits
@@ -652,13 +708,51 @@ export function TabsStrip(props: TabsStripProps) {
   // the shell's own layout — the tab list keeps syncing in the background, so
   // turning it back on restores the same strip.
   if (!showTabs) return null
-  if (tabs.length === 0) return null
+  // No chips left (every tab closed): keep the bar only so the "+" survives —
+  // otherwise the last close would strand the user with no way back to a tab.
+  if (tabs.length === 0 && typeof newSession !== 'function') return null
   const titleOf = (id: string) => {
     // sessionTitleOf localizes the provisional New Session page instead of
     // leaking its raw id into the chip.
     const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
     return sessionTitleOf(summary, t) || id
   }
+  // Second bubble line: the project (last workspace title segment) and the
+  // absolute update time, matching the session row's bubble meta.
+  const chipMetaOf = (id: string) => {
+    const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
+    const entries = Array.isArray(workspaceItems) ? workspaceItems : []
+    // The workspace snapshot lists its members: find the owner of this session.
+    let workspaceId = ''
+    for (const entry of entries) {
+      if (!entry || !Array.isArray(entry.sessionIds)) continue
+      if (entry.sessionIds.some((sid: any) => String(sid) === String(id))) { workspaceId = String(entry.workspaceId || ''); break }
+    }
+    const workspace = workspaceId ? entries.find((entry: any) => entry && String(entry.workspaceId) === workspaceId) : undefined
+    // Last path segment, matching the sidebar's workspace tag (web/前端 -> 前端).
+    const name = workspace ? String(workspace.title || '').split('/').pop() || workspace.leaf || '' : ''
+    const updatedAt = Number(summary && summary.updatedAt) > 0 ? new Date(Number(summary.updatedAt)).toLocaleString() : ''
+    return [name, updatedAt].filter(Boolean).join(' · ')
+  }
+  // Hover bubble on the chips: the chip label truncates long titles, so hovering
+  // repeats the FULL title plus the project and absolute time — the same two-line
+  // shape the sidebar session rows use (ui/tooltip.ts). The resolver runs only
+  // while the bubble is visible, so the meta (workspace title + timestamp) is
+  // derived lazily from the hovered session id.
+  const chipTipState = React.useRef({ id: '' })
+  const chipTip = useHoverTip({
+    label: () => {
+      const id = chipTipState.current.id
+      if (!id) return ''
+      const title = titleOf(id)
+      const meta = chipMetaOf(id)
+      return meta ? title + '\n' + meta : title
+    },
+    delayMs: 300,
+    gap: 6,
+    maxWidth: 380,
+    prefer: 'below',
+  })
   const stateOf = (id: string) => {
     const status = statuses && typeof statuses.get === 'function' ? statuses.get(id) : undefined
     const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
@@ -720,7 +814,7 @@ export function TabsStrip(props: TabsStripProps) {
     className: 'bw-tabbar',
     'data-bw-overflow': overflow.overflowing ? '1' : '0',
     // Measured room to the header utilities; undefined keeps the CSS fallback.
-    style: fillWidth > 0 ? { width: fillWidth + 'px', maxWidth: 'none' } : undefined,
+    style: roomWidth > 0 ? { maxWidth: roomWidth + 'px' } : undefined,
   },
     StyleNode(),
     E('div', {
@@ -741,6 +835,8 @@ export function TabsStrip(props: TabsStripProps) {
         // Quiet, native-looking active state: the same 2px underline and brand
         // colour the shell gives its own active view tab, no fill and no border.
         const activeStyle = active ? { boxShadow: 'inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)' } : undefined
+        // Same two-line content the sidebar rows show in their bubble: the full
+        // title, then project · absolute time. aria-label mirrors it for AT.
         return E('div', {
           key: id,
           className: cls('bw-tab', active && 'bw-tab-active', draggingId === id && 'bw-tab-dragging'),
@@ -749,9 +845,18 @@ export function TabsStrip(props: TabsStripProps) {
           role: 'tab',
           tabIndex: active ? 0 : -1,
           'aria-selected': active,
-          title,
+          // The plugin bubble replaces the native tooltip here (a native title
+          // would double up); the chip's own label text still names it for AT.
           draggable: true,
           style: activeStyle,
+          // One bubble for the whole strip: the hovered chip becomes its anchor.
+          onMouseEnter: (event: any) => {
+            const ref = chipTip.attach.ref
+            if (ref && typeof ref === 'object') ref.current = event.currentTarget
+            chipTipState.current.id = id
+            chipTip.attach.onMouseEnter(event)
+          },
+          onMouseLeave: chipTip.attach.onMouseLeave,
           onClick: () => switchTo(id),
           onKeyDown: (event: any) => {
             if (event.key === 'Enter' || event.key === ' ') {
@@ -788,6 +893,21 @@ export function TabsStrip(props: TabsStripProps) {
         )
       }),
     ),
+    // "New session" sits at the end of the row, outside the scrolling list, so it
+    // is reachable no matter how many chips are open or where the row is scrolled
+    // to. It is the same shell entry point the workspace + and Ctrl+N use: no
+    // workspace id is passed, so the shell creates the blank session in the
+    // current (else most recent) workspace, and the strip's blank-session rule
+    // gives it its own chip.
+    typeof newSession === 'function'
+      ? E('button', {
+        type: 'button',
+        className: 'bw-tabs-new',
+        'aria-label': t('session.new'),
+        title: t('session.new'),
+        onClick: (event: any) => { event.stopPropagation(); newSession() },
+      }, E(PlusIcon16, { size: 14 }))
+      : null,
     overflow.overflowing
       ? E('button', {
         ref: moreRef,
@@ -817,5 +937,7 @@ export function TabsStrip(props: TabsStripProps) {
           : null,
       })
       : null,
+    // Shared bubble, rendered last so it floats above the row.
+    chipTip.bubble,
   )
 }

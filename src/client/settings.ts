@@ -51,6 +51,9 @@ export function BetterWorkspaceSettings({ useStore, actions, t }: BetterWorkspac
   // "restore the host-native UI" escape hatches (tab strip, plugin-drawn dots).
   const switches: Array<[string, boolean]> = [
     ['showTabs', prefs.showTabs !== false],
+    // The click gesture: on (default) a sidebar click opens a new tab, off it
+    // replaces the current one. Shift always means the other gesture.
+    ['newTabOnClick', prefs.newTabOnClick !== false],
     ['statusDots', prefs.statusDots !== false],
     ['compactChains', compactChains],
     ['statusPulse', statusPulse],

@@ -49,10 +49,10 @@ export function openTab(tabs: unknown, sessionId: unknown): string[] {
 /**
  * Replace the session inside one tab, in place.
  *
- * This is what a plain sidebar click does: the current tab switches to the
- * clicked session instead of the strip growing. When the clicked session is
- * already open elsewhere, the previous tab is dropped so a session never
- * occupies two tabs.
+ * The strip grows nothing: the current tab switches to the clicked session.
+ * This is the opt-in gesture (Shift+click, or the "open in a new tab" setting
+ * turned off). When the clicked session is already open elsewhere, the previous
+ * tab is dropped so a session never occupies two tabs.
  */
 export function replaceTab(tabs: unknown, previousId: unknown, nextId: unknown): string[] {
   const prev = tabIdOf(previousId)
@@ -66,6 +66,40 @@ export function replaceTab(tabs: unknown, previousId: unknown, nextId: unknown):
   const copy = list.slice()
   copy[at] = next
   return copy
+}
+
+/** How a sidebar click should open a session. */
+export interface ClickTabOptions {
+  /**
+   * Whether a plain click opens the session in a new tab.
+   *
+   * Defaults to true: clicking through the sidebar must never cost you the page
+   * you had open, which is the browser behaviour people expect from a tab strip.
+   * The plugin setting restores the original replace-in-place gesture.
+   */
+  newTabOnClick?: boolean
+  /** Shift inverts the configured gesture (the tab strip's long-standing shortcut). */
+  shift?: boolean
+}
+
+/**
+ * The tab list a session click produces.
+ *
+ * One rule covers all four combinations of the setting and the Shift modifier,
+ * because Shift means "the other gesture" either way: with the default setting
+ * a plain click opens a tab and Shift replaces, and with the setting off a plain
+ * click replaces while Shift opens a tab. A session that is already open keeps
+ * its chip either way (openTab and replaceTab both refuse to duplicate it).
+ */
+export function tabsForClick(tabs: unknown, activeId: unknown, clickedId: unknown, options: ClickTabOptions = {}): string[] {
+  const opensTab = (options.newTabOnClick !== false) !== (options.shift === true)
+  if (!opensTab) return replaceTab(tabs, activeId, clickedId)
+  // A fresh browser (or cleared storage) starts with an empty list while a
+  // session is already on screen. Seeding it first keeps that page reachable as
+  // a chip and makes the clicked session land at the end, like every other open.
+  const list = normalizeTabs(tabs)
+  const active = tabIdOf(activeId)
+  return openTab(list.length === 0 && active ? [active] : list, clickedId)
 }
 
 /** Predicates the tab reconciliation uses to drop unreachable tabs. */
@@ -87,7 +121,9 @@ export interface ReconcileOptions {
  *  - a provisional New Session (blank, never engaged) opens a tab of its own, so
  *    "new session" reads as a new page instead of replacing the page you were on;
  *  - any other not-yet-open session swaps the session inside the previous tab,
- *    so ordinary navigation never grows the strip;
+ *    so navigation the plugin does not own (the command palette, a host entry
+ *    point) never grows the strip; the plugin's own session clicks write the
+ *    list themselves before navigating (see tabsForClick);
  *  - tabs left behind by abandoned provisional sessions or archived sessions are
  *    dropped: the shell hides blank sessions except the current one and refuses
  *    archived ones, so such a chip could never be reached again.
@@ -107,7 +143,8 @@ export function reconcileTabs(
   const isArchived = typeof options.isArchived === 'function' ? options.isArchived : () => false
   const kept = normalizeTabs(tabs).filter((id) => id === current || (!isBlank(id) && !isArchived(id)))
   if (kept.includes(current)) return kept
-  return isBlank(current) ? openTab(kept, current) : replaceTab(kept, previousId, current)
+  if (isBlank(current)) return openTab(kept, current)
+  return replaceTab(kept, previousId, current)
 }
 
 /**
@@ -186,19 +223,6 @@ export function stripFillWidth(limitLeft: number, barLeft: number, headerWidth: 
   return width >= minimum ? width : 0
 }
 
-/**
- * Widest row the open chips can actually fill.
- *
- * A chip never grows past 200px (+12px padding), so widening the row beyond
- * that capacity would only create invisible empty space while pushing the
- * host's right-hand controls away. With two or three tabs the strip therefore
- * keeps its natural width instead of stretching.
- */
-export function stripCapacity(tabCount: number, chipMax = 212, gap = 2): number {
-  const count = Math.max(0, Math.floor(Number(tabCount) || 0))
-  if (!count) return 0
-  return count * chipMax + (count - 1) * gap
-}
 
 /** Remaining tabs plus the neighbour that should take over when the closed tab was active. */
 export interface CloseTabResult {

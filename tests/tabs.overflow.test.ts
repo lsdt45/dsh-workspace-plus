@@ -300,12 +300,18 @@ test('the strip stylesheet carries the overflow contract', () => {
   assert.match(bar[0], /max-width:52vw/, 'the strip stays bounded so it never crowds the header controls')
   const chip = CSS_TEXT.match(/\.bw-tab\{[^}]*\}/)
   assert.ok(chip, 'the .bw-tab rule is missing')
-  assert.match(chip[0], /flex:1 1 auto/, 'chips grow into the measured row and shrink at the floor')
+  assert.match(chip[0], /flex:0 1 auto/, 'chips size to their own title and shrink at the floor')
   assert.match(chip[0], /min-width:\d+px/, 'chips keep a readable floor when shrinking')
   // Edge fades: all three scroll positions (none/left/right/both) are covered.
   assert.match(CSS_TEXT, /\.bw-tabs\[data-bw-fade-right="1"\]:not\(\[data-bw-fade-left="1"\]\)\{[^}]*mask-image:linear-gradient\(to left/, 'right fade')
   assert.match(CSS_TEXT, /\.bw-tabs\[data-bw-fade-left="1"\]:not\(\[data-bw-fade-right="1"\]\)\{[^}]*mask-image:linear-gradient\(to right/, 'left fade')
   assert.match(CSS_TEXT, /\.bw-tabs\[data-bw-fade-left="1"\]\[data-bw-fade-right="1"\]\{[^}]*mask-image:linear-gradient\(to right/, 'both fades')
+  // The "+" (new session) button and its panel neighbours.
+  const newButton = CSS_TEXT.match(/\.bw-tabs-new\{[^}]*\}/)
+  assert.ok(newButton, 'the new-session button rule is missing')
+  assert.match(newButton[0], /flex:none/, 'the "+" never shrinks away with the chips')
+  assert.match(newButton[0], /width:24px/, 'it matches the chevron hit target')
+  assert.match(CSS_TEXT, /\.bw-tabs-new:hover\{[^}]*background/, 'and gives hover feedback like its neighbour')
   // The trigger and its panel.
   assert.match(CSS_TEXT, /\.bw-tabs-more\{[^}]*cursor:pointer/, 'the chevron trigger exists')
   const menu = CSS_TEXT.match(/\.bw-tabs-menu\{[^}]*\}/)

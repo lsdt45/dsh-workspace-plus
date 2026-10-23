@@ -100,6 +100,12 @@ export const ListIcon16 = ({ size = 14, className }: GlyphProps) => lucideSvg(si
   E('path', { key: 'lines', d: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01' }),
 ])
 
+/** "New session" at the end of the strip: the plus every tab bar carries. */
+export const PlusIcon16 = ({ size = 14, className }: GlyphProps) => lucideSvg(size, className, [
+  E('path', { d: 'M12 5v14' }),
+  E('path', { d: 'M5 12h14' }),
+])
+
 /** Overflow-menu trigger: the downward chevron mainstream tab strips use. */
 export const ChevronDownIcon16 = ({ size = 12, className }: GlyphProps) => lucideSvg(size, className, [
   E('path', { d: 'm6 9 6 6 6-6' }),

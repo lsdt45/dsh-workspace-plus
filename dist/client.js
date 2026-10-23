@@ -130,6 +130,8 @@
     "settings.collapse": "\u6536\u8D77",
     "settings.showTabs": "\u5C55\u793A\u4F1A\u8BDD\u6807\u7B7E\u9875",
     "settings.showTabs.hint": "\u5728\u5BF9\u8BDD\u9876\u680F\u663E\u793A\u4F1A\u8BDD\u6807\u7B7E\u9875;\u5173\u95ED\u540E\u9690\u85CF\u6807\u7B7E\u6761,\u9876\u680F\u8FD8\u539F\u4E3A\u5BBF\u4E3B\u539F\u751F\u5E03\u5C40(\u4F1A\u8BDD\u6807\u9898\u4E0E\u64CD\u4F5C\u533A\u56DE\u5230\u539F\u4F4D\u7F6E)\u3002",
+    "settings.newTabOnClick": "\u70B9\u51FB\u4F1A\u8BDD\u5373\u5728\u65B0\u6807\u7B7E\u9875\u6253\u5F00",
+    "settings.newTabOnClick.hint": "\u9ED8\u8BA4\u5F00\u542F:\u70B9\u51FB\u5DE6\u4FA7\u4F1A\u8BDD\u603B\u662F\u65B0\u5F00\u4E00\u4E2A\u6807\u7B7E\u9875,\u4E0D\u4F1A\u9876\u6389\u6B63\u5728\u770B\u7684\u9875\u9762;\u5173\u95ED\u540E\u6062\u590D\u300C\u66FF\u6362\u5F53\u524D\u6807\u7B7E\u300D\u7684\u65E7\u884C\u4E3A\u3002\u4E24\u79CD\u65B9\u5F0F\u4E0B Shift + \u70B9\u51FB\u90FD\u53CD\u8F6C\u624B\u52BF\u2014\u2014\u5F00\u7740\u65F6 Shift+\u70B9\u51FB\u66FF\u6362\u5F53\u524D\u6807\u7B7E,\u5173\u6389\u65F6 Shift+\u70B9\u51FB\u65B0\u5F00\u6807\u7B7E\u3002",
     "settings.statusDots": "\u542F\u7528\u5706\u70B9\u72B6\u6001",
     "settings.statusDots.hint": "\u4F1A\u8BDD\u884C\u4F7F\u7528\u63D2\u4EF6\u7ED8\u5236\u7684\u7EDF\u4E00 6px \u72B6\u6001\u70B9(\u8FD0\u884C\u6A59 / \u5F85\u4EA4\u4E92\u7425\u73C0 / \u5B8C\u6210\u7EFF);\u5173\u95ED\u540E\u8FD8\u539F\u4E3A\u5BBF\u4E3B\u539F\u751F\u7684\u72B6\u6001\u706F\u6837\u5F0F,\u6807\u7B7E\u9875\u4E5F\u4E0D\u518D\u663E\u793A\u72B6\u6001\u70B9\u3002",
     "settings.compactChains": "\u5355\u94FE\u5206\u7EC4\u6298\u53E0\u663E\u793A",
@@ -322,6 +324,8 @@
     "settings.collapse": "Collapse",
     "settings.showTabs": "Show session tabs",
     "settings.showTabs.hint": "Draw the session tab strip in the conversation header; turning it off hides the strip and restores the shell's native header layout (the session title and actions return to their original spots).",
+    "settings.newTabOnClick": "Open sidebar clicks in a new tab",
+    "settings.newTabOnClick.hint": "On by default: clicking a sidebar session always opens its own tab, so it never throws away the page you are reading. Turn it off to restore replace-in-place. Shift+click inverts the gesture either way: replace while this is on, open a new tab while it is off.",
     "settings.statusDots": "Enable status dots",
     "settings.statusDots.hint": "Session rows use the plugin-drawn 6px status dots (running orange / pending amber / done green); turning it off restores the host's native status-light style and hides the dots in the tab strip.",
     "settings.compactChains": "Merge single-child chains",
@@ -760,7 +764,7 @@
 
   // src/client/store.ts
   var createViewStore = () => storeKit.defineStore({
-    init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, statusDots: true, compactChains: true, viewMode: "projects", timeDirection: "latest", sortOrder: "manual", archivedFilter: "hide" }, styling: {}, pinned: [] }),
+    init: () => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, newTabOnClick: true, statusDots: true, compactChains: true, viewMode: "projects", timeDirection: "latest", sortOrder: "manual", archivedFilter: "hide" }, styling: {}, pinned: [] }),
     // NOTE: hydration REPLACES the state with the persisted whole value —
     // init defaults never merge. Every action must tolerate a missing key
     // (states persisted by older plugin versions lack sessionGroups), and
@@ -943,6 +947,10 @@
   var ListIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
     E("path", { key: "lines", d: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" })
   ]);
+  var PlusIcon16 = ({ size = 14, className }) => lucideSvg(size, className, [
+    E("path", { d: "M12 5v14" }),
+    E("path", { d: "M5 12h14" })
+  ]);
   var ChevronDownIcon16 = ({ size = 12, className }) => lucideSvg(size, className, [
     E("path", { d: "m6 9 6 6 6-6" })
   ]);
@@ -1052,26 +1060,25 @@
     // render exactly as shipped, title line included. tabs-strip.js mirrors the
     // switch into data-bw-tabs-off on <html>.
     'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_crumbs"]{display:none}',
-    // The session's own chips (agent team / PTC mode / subagents) share the view
-    // navigation row instead of the tab row: the nav row is the last line of the
-    // header, so pinning them to its bottom-right corner puts them after the
-    // view chips with no extra header height. Absolute positioning keeps the
-    // shell's own header layout untouched.
+    // The session chips (agent team / mode / subagents) belong to the view-nav row's
+    // right end, not the tab row: they are absolutely parked there so they line up
+    // under the right-hand window controls. The nav row paints with z-index:1 while
+    // the chips travel inside the title row's stacking context, so lift that row
+    // above the nav row: without it the row painted over the chips' lower half and
+    // swallowed its clicks (the old "only the top edge clicks" bug).
     "html:not([data-bw-tabs-off]) header[data-window-drag]{position:relative}",
-    // z-index lifts the block above the view-nav row it is pinned onto: without it
-    // the row paints over the chips and swallows their clicks.
-    // left comes from useChipsAfterNav(): the measured end of the view-nav row.
-    // Until it lands (first paint, markup drift) the rule falls back to the old
-    // right-aligned spot.
-    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_titleRow"]{z-index:7}',
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_tabs"]{-webkit-app-region:no-drag;app-region:no-drag}',
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:auto;right:var(--bw-chips-right,12px);top:var(--bw-chips-top,auto);bottom:auto;margin:0;z-index:6;pointer-events:auto;-webkit-app-region:no-drag;app-region:no-drag}',
     // Session tab strip: compact chips in the conversation header, one per open
     // session. The chip's dot is .bw-state-dot, so the three states stay identical.
     // Session tab strip, modelled on the reference: dot + label chips with a
     // thick active underline, no fill or border, and a quiet close cross.
     //
-    // Overflow (browser-like): the row is widened by tabs-strip.ts to the measured
-    // header space (chips grow to fill it), and 52vw is only the fallback when the
-    // right-hand utilities cannot be measured yet. The chips are the first tier —
+    // Overflow (browser-like): the row is widened by tabs-strip.ts to the space
+    // left of the shell's right-hand cluster (session chips + window utilities),
+    // and 52vw is only the fallback before the first measurement. The chips are the
+    // first tier —
     // they shrink from their natural width to a readable floor; only past that
     // floor does the row scroll, which is when the edge fades and the chevron
     // appear. The fade is a mask on the scroller itself (not an overlay), so it
@@ -1080,16 +1087,20 @@
     // and a button inside a drag region never receives clicks — the chevron lived
     // outside .bw-tabs, whose own no-drag only covered the chips.
     ".bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}",
-    ".bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}",
+    // The row sizes to its chips instead of stretching to the whole bar: the "+"
+    // then sits right after the last chip (browser-like, left-aligned) rather than
+    // being pushed to the far right. It may still shrink when the chips exceed the
+    // room, which is what turns on the horizontal scroll below.
+    ".bw-tabs{display:flex;align-items:center;gap:2px;flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}",
     ".bw-tabs::-webkit-scrollbar{display:none}",
     '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
     '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
     '.bw-tabs[data-bw-fade-left="1"][data-bw-fade-right="1"]{-webkit-mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent)}',
-    // flex-grow: once useStripFill widens the row to the header utilities, the
-    // chips share the extra space (browser-style equal spread) instead of ending
-    // in a dead band; shrink still floors them at 96px before the row scrolls
-    // (100px left the row overflowing by a couple of pixels just before it fit).
-    ".bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:96px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
+    // A chip sizes to its own title (browser-style): flex-grow off, so a short
+    // title stays short, while max-width caps long titles and shrink floors the
+    // chip before the row scrolls. The max-width therefore is the only fixed
+    // dimension a chip has.
+    ".bw-tab{display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:72px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
     ".bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}",
     ".bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
     ".bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}",
@@ -1100,6 +1111,12 @@
     ".bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}",
     ".bw-tab:hover .bw-tab-close{opacity:1}",
     ".bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    // "New session" at the end of the row: the same quiet 24px hit target as the
+    // overflow chevron, but always present (the chevron only appears on overflow).
+    // It lives outside .bw-tabs, so it never scrolls away with the chips.
+    ".bw-tabs-new{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}",
+    ".bw-tabs-new:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    ".bw-tabs-new:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
     // Overflow trigger: the chevron sits at the end of the row (Firefox/Edge's
     // "list all tabs"), so a cut-off chip always has a visible way out.
     ".bw-tabs-more{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}",
@@ -2321,7 +2338,19 @@
   var TIP_EDGE = 12;
   var TIP_TICK_MS = 120;
   var pointInRect = (rect, point) => !!rect && !!point && point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
-  var placeTip = (anchor, size, viewport, gap = 8) => {
+  var placeTip = (anchor, size, viewport, gap = 8, prefer) => {
+    if (prefer === "below") {
+      const below2 = anchor.bottom + gap;
+      const above2 = anchor.top - gap - size.height;
+      const fitsBelow2 = below2 + size.height <= viewport.height - TIP_EDGE;
+      const fitsAbove2 = above2 >= TIP_EDGE;
+      if (!fitsBelow2 && fitsAbove2) {
+        return { left: Math.max(TIP_EDGE, Math.min(anchor.left, viewport.width - TIP_EDGE - size.width)), top: above2, side: "top" };
+      }
+      const centred2 = anchor.left + anchor.width / 2 - size.width / 2;
+      const x2 = Math.max(TIP_EDGE, Math.min(centred2, viewport.width - TIP_EDGE - size.width));
+      return { left: x2, top: Math.max(TIP_EDGE, below2), side: "bottom" };
+    }
     const top = Math.max(TIP_EDGE, Math.min(
       anchor.top + anchor.height / 2 - size.height / 2,
       Math.max(TIP_EDGE, viewport.height - TIP_EDGE - size.height)
@@ -2345,6 +2374,7 @@
     const delayMs = opts.delayMs === void 0 ? 300 : opts.delayMs;
     const gap = opts.gap === void 0 ? 8 : opts.gap;
     const maxWidth = opts.maxWidth === void 0 ? 320 : opts.maxWidth;
+    const prefer = opts.prefer;
     const anchorRef = React.useRef(null);
     const pointerRef = React.useRef(null);
     const timerRef = React.useRef(null);
@@ -2471,7 +2501,7 @@
     const text = open && label !== null ? typeof label === "function" ? label() : String(label) : null;
     let bubble = null;
     if (text) {
-      const placement = anchor && size ? placeTip(anchor, size, { width: window.innerWidth, height: window.innerHeight }, gap) : { left: 0, top: 0, side: "bottom" };
+      const placement = anchor && size ? placeTip(anchor, size, { width: window.innerWidth, height: window.innerHeight }, gap, prefer) : { left: 0, top: 0, side: "bottom" };
       bubble = E("span", {
         ref: bubbleRef,
         className: "bw-tip",
@@ -3438,6 +3468,13 @@
     copy[at] = next;
     return copy;
   }
+  function tabsForClick(tabs, activeId, clickedId, options = {}) {
+    const opensTab = options.newTabOnClick !== false !== (options.shift === true);
+    if (!opensTab) return replaceTab(tabs, activeId, clickedId);
+    const list = normalizeTabs(tabs);
+    const active = tabIdOf(activeId);
+    return openTab(list.length === 0 && active ? [active] : list, clickedId);
+  }
   function reconcileTabs(tabs, currentId, previousId, options = {}) {
     const current = tabIdOf(currentId);
     if (!current) return normalizeTabs(tabs);
@@ -3445,7 +3482,8 @@
     const isArchived = typeof options.isArchived === "function" ? options.isArchived : () => false;
     const kept = normalizeTabs(tabs).filter((id) => id === current || !isBlank(id) && !isArchived(id));
     if (kept.includes(current)) return kept;
-    return isBlank(current) ? openTab(kept, current) : replaceTab(kept, previousId, current);
+    if (isBlank(current)) return openTab(kept, current);
+    return replaceTab(kept, previousId, current);
   }
   function moveTab(tabs, fromId, toId) {
     const from = tabIdOf(fromId);
@@ -3477,11 +3515,6 @@
     const cap = Number.isFinite(header) && header > 0 ? header - Math.max(40, reserve) : limit - left;
     const width = Math.round(Math.min(limit - left - 12, cap));
     return width >= minimum ? width : 0;
-  }
-  function stripCapacity(tabCount, chipMax = 212, gap = 2) {
-    const count = Math.max(0, Math.floor(Number(tabCount) || 0));
-    if (!count) return 0;
-    return count * chipMax + (count - 1) * gap;
   }
   function closeTab(tabs, sessionId, activeSessionId) {
     const id = tabIdOf(sessionId);
@@ -3563,6 +3596,7 @@
       groupedView,
       items,
       list,
+      newTabOnClick,
       nodePulseOf,
       now,
       open,
@@ -3683,9 +3717,12 @@
             setErrorText(t("session.archivedHint"));
             return;
           }
-          const newTab = !!(event && event.shiftKey);
-          const active = tabsActive();
-          saveTabs(newTab ? openTab(tabsSnapshot(), id) : replaceTab(tabsSnapshot(), active, id));
+          const activeNow = tabsActive() || currentSessionId;
+          const tabsNow = tabsForClick(tabsSnapshot(), activeNow, id, {
+            newTabOnClick: newTabOnClick !== false,
+            shift: !!(event && event.shiftKey)
+          });
+          saveTabs(tabsNow);
           setActiveTab(id);
           open(id);
         },
@@ -3883,52 +3920,6 @@
 
   // src/client/tabs-strip.ts
   var tabsHost = { openSessionMenu: null };
-  function useChipsAfterNav(enabled) {
-    React.useEffect(() => {
-      if (typeof document === "undefined") return void 0;
-      const header = document.querySelector("header[data-window-drag]");
-      if (!enabled) {
-        if (header) {
-          for (const name of ["--bw-chips-left", "--bw-chips-right", "--bw-chips-top", "--bw-chips-bottom"]) header.style.removeProperty(name);
-        }
-        return void 0;
-      }
-      const place = () => {
-        const header2 = document.querySelector("header[data-window-drag]");
-        if (!header2) return;
-        const nav2 = header2.querySelector('[class*="_tabs"]');
-        if (!nav2) return;
-        const head = header2.getBoundingClientRect();
-        const items = nav2.children && nav2.children.length ? nav2.children : [nav2];
-        const last = items[items.length - 1];
-        const row = (last || nav2).getBoundingClientRect();
-        if (!head.width || !row.width) return;
-        const offset = Math.max(24, Math.round(row.right - head.left + 18));
-        if (offset > head.width - 220) return;
-        header2.style.setProperty("--bw-chips-left", offset + "px");
-        header2.style.setProperty("--bw-chips-right", "auto");
-        const chips = header2.querySelector('[class*="_headerActions"]');
-        if (chips) {
-          const chipsHeight = chips.getBoundingClientRect().height;
-          if (chipsHeight > 0) {
-            const top = Math.round(row.top + row.height / 2 - head.top - chipsHeight / 2 - 4);
-            header2.style.setProperty("--bw-chips-top", top + "px");
-            header2.style.setProperty("--bw-chips-bottom", "auto");
-          }
-        }
-      };
-      place();
-      const nav = header ? header.querySelector('[class*="_tabs"]') : null;
-      const observer = typeof ResizeObserver === "function" ? new ResizeObserver(place) : null;
-      if (observer && header) observer.observe(header);
-      if (observer && nav) observer.observe(nav);
-      window.addEventListener("resize", place);
-      return () => {
-        if (observer) observer.disconnect();
-        window.removeEventListener("resize", place);
-      };
-    }, [enabled]);
-  }
   function useTabsSurface(showTabs) {
     const useIsoLayoutEffect = typeof React.useLayoutEffect === "function" ? React.useLayoutEffect : React.useEffect;
     useIsoLayoutEffect(() => {
@@ -4034,10 +4025,9 @@
       return () => el.removeEventListener("wheel", onWheel);
     }, []);
   }
-  function useStripFill(barRef, deps, tabCount) {
-    const [width, setWidth] = React.useState(0);
-    const epochRef = React.useRef({ headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false });
-    const measure = (steady) => {
+  function useStripFill(barRef, deps) {
+    const [room, setRoom] = React.useState(0);
+    const measure = () => {
       const bar = barRef.current;
       if (!bar || typeof document === "undefined" || typeof bar.getBoundingClientRect !== "function") return;
       const header = typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : document.querySelector("header[data-window-drag]");
@@ -4045,17 +4035,11 @@
       const barRect = bar.getBoundingClientRect();
       const headerRect = header.getBoundingClientRect();
       if (!barRect.width || !headerRect.width) return;
-      if (Math.abs(epochRef.current.headerWidth - headerRect.width) > 1) {
-        epochRef.current = { headerWidth: headerRect.width, width: 0, limit: 0, locked: false, unstable: false };
-      }
-      const epoch = epochRef.current;
-      if (epoch.unstable) return;
       let gridItem = bar;
       while (gridItem && gridItem.parentElement && gridItem.parentElement !== header) gridItem = gridItem.parentElement;
       const leadingRight = gridItem && gridItem !== bar ? gridItem.getBoundingClientRect().right : barRect.right;
       let limit = 0;
-      const nodes = Array.from(header.querySelectorAll("*"));
-      for (const node of nodes) {
+      for (const node of Array.from(header.querySelectorAll("*"))) {
         if (bar === node || typeof bar.contains === "function" && bar.contains(node)) continue;
         if (typeof node.contains === "function" && node.contains(bar)) continue;
         const rect = node.getBoundingClientRect();
@@ -4070,65 +4054,171 @@
         if (rect.left <= barRect.left + 8) continue;
         if (!limit || rect.left < limit) limit = rect.left;
       }
-      let next = stripFillWidth(limit, barRect.left, headerRect.width, 220, 100);
-      if (next > 0) next = Math.min(next, stripCapacity(tabCount));
-      if (next > 0 && steady && epoch.locked && limit > epoch.limit + 24) {
-        epoch.unstable = true;
-        epoch.width = 0;
-        setWidth(0);
-        return;
-      }
-      if (next > 0 && epoch.locked) next = Math.min(next, epoch.width);
-      if (next > 0) {
-        epoch.locked = true;
-        epoch.width = next;
-        epoch.limit = limit;
-      } else if (!steady) {
-        epoch.locked = false;
-      }
-      setWidth((previous) => previous === next ? previous : next);
+      const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, 100);
+      setRoom((previous) => previous === next ? previous : next);
     };
     React.useLayoutEffect(() => {
       measure();
       if (typeof setTimeout !== "function") return void 0;
-      const retry = () => {
-        if (!epochRef.current.locked && !epochRef.current.unstable) measure();
-      };
-      const timers = [400, 1500, 3200].map((delay) => setTimeout(retry, delay));
+      const timers = [80, 300, 900].map((delay) => setTimeout(measure, delay));
       return () => {
         for (const timer of timers) clearTimeout(timer);
       };
     }, deps);
     React.useEffect(() => {
-      if (!width || typeof setTimeout !== "function") return void 0;
-      const timer = setTimeout(() => measure(true), 260);
-      return () => clearTimeout(timer);
-    }, [width]);
-    React.useEffect(() => {
       if (typeof window === "undefined" || typeof window.addEventListener !== "function") return void 0;
-      const reset = () => {
-        epochRef.current = { headerWidth: -1, width: 0, limit: 0, locked: false, unstable: false };
-        setWidth(0);
-        if (typeof setTimeout === "function") setTimeout(() => measure(), 240);
-      };
-      window.addEventListener("resize", reset);
-      const bar = barRef.current;
-      const header = bar && typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : null;
-      let lastHeaderWidth = header ? header.getBoundingClientRect().width : 0;
-      const observer = typeof ResizeObserver === "function" && header ? new ResizeObserver(() => {
-        const next = header.getBoundingClientRect().width;
-        if (Math.abs(next - lastHeaderWidth) > 1) {
-          lastHeaderWidth = next;
-          reset();
-        }
-      }) : null;
-      if (observer && header) observer.observe(header);
-      return () => {
-        window.removeEventListener("resize", reset);
-        if (observer) observer.disconnect();
-      };
+      const onResize = () => measure();
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
     }, []);
-    return width;
+    return room;
+  }
+  var CHIPS_TOP_VAR = "--bw-chips-top";
+  function useChipsAfterNav(enabled) {
+    const useIsoLayoutEffect = typeof React.useLayoutEffect === "function" ? React.useLayoutEffect : React.useEffect;
+    useIsoLayoutEffect(() => {
+      if (typeof document === "undefined") return void 0;
+      let header = null;
+      let nav = null;
+      let headerObserver = null;
+      let navObserver = null;
+      let chipsObserver = null;
+      let headerTreeObserver = null;
+      let bodyObserver = null;
+      let observedChips = null;
+      let timers = [];
+      let stopped = false;
+      let applied = null;
+      let retrying = false;
+      const RETRY_DELAYS = [40, 90, 180, 350, 650, 1e3, 1500, 2200];
+      let retryIndex = 0;
+      const clearTimers = () => {
+        for (const timer of timers) clearTimeout(timer);
+        timers = [];
+      };
+      const observeChips = (chips) => {
+        if (chipsObserver) {
+          chipsObserver.disconnect();
+          chipsObserver = null;
+        }
+        observedChips = chips;
+        if (!chips || typeof ResizeObserver !== "function") return;
+        chipsObserver = new ResizeObserver(() => requestMeasure());
+        chipsObserver.observe(chips);
+      };
+      const watchHeaderTree = (node) => {
+        if (headerTreeObserver) headerTreeObserver.disconnect();
+        if (typeof MutationObserver !== "function") return;
+        headerTreeObserver = new MutationObserver(() => {
+          if (stopped || !node.isConnected) return;
+          if (node.querySelector('[class*="_headerActions"]') !== observedChips) requestMeasure();
+        });
+        headerTreeObserver.observe(node, { childList: true, subtree: true });
+      };
+      const bind = (next) => {
+        if (headerObserver) headerObserver.disconnect();
+        if (navObserver) navObserver.disconnect();
+        header = next;
+        nav = next.querySelector('[class*="_tabs"]');
+        watchHeaderTree(next);
+        observeChips(next.querySelector('[class*="_headerActions"]'));
+        if (typeof ResizeObserver !== "function") return;
+        headerObserver = new ResizeObserver(() => requestMeasure());
+        headerObserver.observe(next);
+        if (nav) {
+          navObserver = new ResizeObserver(() => requestMeasure());
+          navObserver.observe(nav);
+        }
+      };
+      const place = () => {
+        if (stopped) return true;
+        const current = document.querySelector("header[data-window-drag]");
+        if (!current) return false;
+        if (current !== header) bind(current);
+        const chips = current.querySelector('[class*="_headerActions"]');
+        if (!chips) {
+          observeChips(null);
+          return false;
+        }
+        if (chips !== observedChips) observeChips(chips);
+        if (!nav) {
+          nav = current.querySelector('[class*="_tabs"]');
+          if (!nav) return false;
+        }
+        const head = current.getBoundingClientRect();
+        const chipsHeight = chips.getBoundingClientRect().height;
+        const row = nav.getBoundingClientRect();
+        if (!head.height || !row.height || chipsHeight <= 0) return false;
+        const maxTop = Math.max(0, head.height - chipsHeight);
+        const top = Math.max(0, Math.min(maxTop, Math.round(row.top + row.height / 2 - head.top - chipsHeight / 2)));
+        if (top !== applied) {
+          current.style.setProperty(CHIPS_TOP_VAR, top + "px");
+          applied = top;
+        }
+        return true;
+      };
+      let frame = 0;
+      const requestMeasure = () => {
+        if (stopped) return;
+        if (typeof requestAnimationFrame !== "function") {
+          measure();
+          return;
+        }
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          measure();
+        });
+      };
+      const measure = () => {
+        if (stopped) return;
+        if (place()) {
+          retryIndex = 0;
+          return;
+        }
+        scheduleRetry();
+      };
+      const scheduleRetry = () => {
+        if (stopped || retrying) return;
+        if (retryIndex >= RETRY_DELAYS.length) return;
+        retrying = true;
+        const delay = RETRY_DELAYS[retryIndex++];
+        timers.push(setTimeout(() => {
+          retrying = false;
+          if (stopped) return;
+          if (!place()) scheduleRetry();
+          else retryIndex = 0;
+        }, delay));
+      };
+      if (!enabled) {
+        const current = document.querySelector("header[data-window-drag]");
+        if (current) current.style.removeProperty(CHIPS_TOP_VAR);
+        return void 0;
+      }
+      measure();
+      if (typeof MutationObserver === "function" && document.body) {
+        bodyObserver = new MutationObserver(() => {
+          if (stopped) return;
+          const current = document.querySelector("header[data-window-drag]");
+          if (current && current !== header) requestMeasure();
+        });
+        bodyObserver.observe(document.body, { childList: true, subtree: false });
+      }
+      window.addEventListener("resize", requestMeasure);
+      return () => {
+        stopped = true;
+        if (frame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+        clearTimers();
+        if (headerObserver) headerObserver.disconnect();
+        if (navObserver) navObserver.disconnect();
+        if (chipsObserver) chipsObserver.disconnect();
+        if (headerTreeObserver) headerTreeObserver.disconnect();
+        if (bodyObserver) bodyObserver.disconnect();
+        window.removeEventListener("resize", requestMeasure);
+        const current = document.querySelector("header[data-window-drag]");
+        if (current) current.style.removeProperty(CHIPS_TOP_VAR);
+      };
+    }, [enabled]);
   }
   function TabsOverflowMenu(props) {
     const { tabs, activeId, titleOf, stateOf, statusDots, t, anchor, onSelect, onClose, onCloseTab, onContextMenu } = props;
@@ -4236,8 +4326,9 @@
     );
   }
   function TabsStrip(props) {
-    const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open } = props;
+    const { useSessions, useSessionStatus, useWorkspaces, useStore, t, open, newSession } = props;
     const prefs = typeof useStore === "function" ? useStore((s) => s.prefs) || {} : {};
+    const workspaceItems = typeof useWorkspaces === "function" ? useWorkspaces((s) => s.items) : null;
     const showTabs = prefs.showTabs !== false;
     const statusDots = prefs.statusDots !== false;
     useTabsSurface(showTabs);
@@ -4261,7 +4352,7 @@
     const anchorRef = React.useRef(null);
     const [menuOpen, setMenuOpen] = React.useState(false);
     const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs]);
-    const fillWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs], tabs.length);
+    const roomWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs]);
     useRevealActive(stripRef, sessionId, tabs.length);
     useWheelScroll(stripRef);
     React.useEffect(() => {
@@ -4275,11 +4366,41 @@
     }, [menuOpen]);
     if (sessions === null && typeof useSessions !== "function") return null;
     if (!showTabs) return null;
-    if (tabs.length === 0) return null;
+    if (tabs.length === 0 && typeof newSession !== "function") return null;
     const titleOf = (id) => {
       const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
       return sessionTitleOf(summary, t) || id;
     };
+    const chipMetaOf = (id) => {
+      const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
+      const entries = Array.isArray(workspaceItems) ? workspaceItems : [];
+      let workspaceId = "";
+      for (const entry of entries) {
+        if (!entry || !Array.isArray(entry.sessionIds)) continue;
+        if (entry.sessionIds.some((sid) => String(sid) === String(id))) {
+          workspaceId = String(entry.workspaceId || "");
+          break;
+        }
+      }
+      const workspace = workspaceId ? entries.find((entry) => entry && String(entry.workspaceId) === workspaceId) : void 0;
+      const name = workspace ? String(workspace.title || "").split("/").pop() || workspace.leaf || "" : "";
+      const updatedAt = Number(summary && summary.updatedAt) > 0 ? new Date(Number(summary.updatedAt)).toLocaleString() : "";
+      return [name, updatedAt].filter(Boolean).join(" \xB7 ");
+    };
+    const chipTipState = React.useRef({ id: "" });
+    const chipTip = useHoverTip({
+      label: () => {
+        const id = chipTipState.current.id;
+        if (!id) return "";
+        const title = titleOf(id);
+        const meta = chipMetaOf(id);
+        return meta ? title + "\n" + meta : title;
+      },
+      delayMs: 300,
+      gap: 6,
+      maxWidth: 380,
+      prefer: "below"
+    });
     const stateOf = (id) => {
       const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
       const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
@@ -4337,7 +4458,7 @@
         className: "bw-tabbar",
         "data-bw-overflow": overflow.overflowing ? "1" : "0",
         // Measured room to the header utilities; undefined keeps the CSS fallback.
-        style: fillWidth > 0 ? { width: fillWidth + "px", maxWidth: "none" } : void 0
+        style: roomWidth > 0 ? { maxWidth: roomWidth + "px" } : void 0
       },
       StyleNode(),
       E(
@@ -4366,9 +4487,18 @@
               role: "tab",
               tabIndex: active ? 0 : -1,
               "aria-selected": active,
-              title,
+              // The plugin bubble replaces the native tooltip here (a native title
+              // would double up); the chip's own label text still names it for AT.
               draggable: true,
               style: activeStyle,
+              // One bubble for the whole strip: the hovered chip becomes its anchor.
+              onMouseEnter: (event) => {
+                const ref = chipTip.attach.ref;
+                if (ref && typeof ref === "object") ref.current = event.currentTarget;
+                chipTipState.current.id = id;
+                chipTip.attach.onMouseEnter(event);
+              },
+              onMouseLeave: chipTip.attach.onMouseLeave,
               onClick: () => switchTo(id),
               onKeyDown: (event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -4401,6 +4531,22 @@
           );
         })
       ),
+      // "New session" sits at the end of the row, outside the scrolling list, so it
+      // is reachable no matter how many chips are open or where the row is scrolled
+      // to. It is the same shell entry point the workspace + and Ctrl+N use: no
+      // workspace id is passed, so the shell creates the blank session in the
+      // current (else most recent) workspace, and the strip's blank-session rule
+      // gives it its own chip.
+      typeof newSession === "function" ? E("button", {
+        type: "button",
+        className: "bw-tabs-new",
+        "aria-label": t("session.new"),
+        title: t("session.new"),
+        onClick: (event) => {
+          event.stopPropagation();
+          newSession();
+        }
+      }, E(PlusIcon16, { size: 14 })) : null,
       overflow.overflowing ? E("button", {
         ref: moreRef,
         type: "button",
@@ -4429,7 +4575,9 @@
           setMenuOpen(false);
           if (tabsHost.openSessionMenu) tabsHost.openSessionMenu(id, event);
         } : null
-      }) : null
+      }) : null,
+      // Shared bubble, rendered last so it floats above the row.
+      chipTip.bubble
     );
   }
 
@@ -5279,6 +5427,9 @@
     );
     const switches = [
       ["showTabs", prefs.showTabs !== false],
+      // The click gesture: on (default) a sidebar click opens a new tab, off it
+      // replaces the current one. Shift always means the other gesture.
+      ["newTabOnClick", prefs.newTabOnClick !== false],
       ["statusDots", prefs.statusDots !== false],
       ["compactChains", compactChains],
       ["statusPulse", statusPulse]
@@ -5399,6 +5550,7 @@
         const pinnedList = useStore ? useStore((s) => s.pinned) || [] : [];
         const statusPulse = prefsMap.statusPulse !== false;
         const statusDots = prefsMap.statusDots !== false;
+        const newTabOnClick = prefsMap.newTabOnClick !== false;
         const archivedSet = new Set(archivedSessionIds || []);
         const runningOf = (id) => {
           const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
@@ -5785,6 +5937,7 @@
           groupedView,
           items,
           list,
+          newTabOnClick,
           nodePulseOf,
           now,
           open,
@@ -6123,9 +6276,17 @@
             // The strip reads the shared view store: the plugin settings page can
             // hide tabs / fall back to native dots, and both must be live here.
             store: viewStore,
-            inject: () => ({ open: (sessionId) => {
-              openSessionCompat(sessionId);
-            } })
+            inject: () => ({
+              open: (sessionId) => {
+                openSessionCompat(sessionId);
+              },
+              // The same entry point the workspace + and Ctrl+N use. No workspace id
+              // is passed: the shell targets the current workspace, else the most
+              // recent one, so the button never has to guess.
+              newSession: () => {
+                uiWorkspace.startSession();
+              }
+            })
           },
           TabsStrip
         ));

@@ -1,14 +1,15 @@
 /**
  * Session tabs — the pure rules behind the strip and the sidebar clicks.
  *
- * The tab list is what survives a restart, so these cases pin the three shapes
- * a click can take: open (new session), replace (plain click) and close
- * (neighbour takes over), plus the bound that keeps the list from growing.
+ * The tab list is what survives a restart, so these cases pin the shapes a click
+ * can take: a plain session click opens a new tab, Shift inverts that to
+ * replace-in-place (or the reverse when the preference is off), closing hands
+ * the page to a neighbour, and the list stays bounded.
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { MAX_TABS, closeTab, moveTab, normalizeTabs, openTab, reconcileTabs, replaceTab, saveTabs, scrollDeltaFor, stripCapacity, stripFillWidth, subscribeTabs, tabsSnapshot } from '../src/client/tabs.ts'
+import { MAX_TABS, closeTab, moveTab, normalizeTabs, openTab, reconcileTabs, replaceTab, saveTabs, scrollDeltaFor, stripFillWidth, subscribeTabs, tabsForClick, tabsSnapshot } from '../src/client/tabs.ts'
 
 test('normalizeTabs keeps unique string ids and drops junk', () => {
   assert.deepEqual(normalizeTabs(undefined), [])
@@ -46,14 +47,36 @@ test('closeTab picks the neighbour only when the closed tab was active', () => {
   assert.deepEqual(closeTab(['a'], 'missing', 'a'), { tabs: ['a'], next: null })
 })
 
-test('reconcileTabs gives a new session its own tab and swaps it for navigation', () => {
+test('a plain session click opens a new tab and Shift replaces in place', () => {
+  // The shipped gesture: never throw away the page being read.
+  assert.deepEqual(tabsForClick(['a'], 'a', 'b'), ['a', 'b'])
+  assert.deepEqual(tabsForClick([], null, 'b'), ['b'])
+  // Shift is the escape hatch back to replace-in-place.
+  assert.deepEqual(tabsForClick(['a'], 'a', 'b', { shift: true }), ['b'])
+  // A session already open keeps its chip instead of being duplicated.
+  assert.deepEqual(tabsForClick(['a', 'b'], 'a', 'b'), ['a', 'b'])
+  assert.deepEqual(tabsForClick(['a', 'b'], 'a', 'b', { shift: true }), ['b'])
+  // Turning the preference off restores the old gesture and inverts Shift.
+  assert.deepEqual(tabsForClick(['a'], 'a', 'b', { newTabOnClick: false }), ['b'])
+  assert.deepEqual(tabsForClick(['a'], 'a', 'b', { newTabOnClick: false, shift: true }), ['a', 'b'])
+  // A fresh browser starts empty while a session is already on screen: the
+  // click keeps that page as a chip and appends the clicked one after it.
+  assert.deepEqual(tabsForClick([], 'a', 'b'), ['a', 'b'])
+  assert.deepEqual(tabsForClick([], null, 'b'), ['b'], 'with nothing on screen there is nothing to seed')
+  // The bound still holds on the growing path.
+  const full = Array.from({ length: MAX_TABS }, (_, i) => 's' + i)
+  assert.equal(tabsForClick(full, 's0', 'new').length, MAX_TABS, 'a click never overflows the strip')
+})
+
+test('reconcileTabs gives a new session its own tab and follows the click preference', () => {
   const isBlank = (id: string): boolean => id === 'blank'
   // "New session" moves the main view to a provisional blank page: the user is
   // on a new page, so the strip grows instead of replacing the page they left.
   assert.deepEqual(reconcileTabs(['a'], 'blank', 'a', { isBlank }), ['a', 'blank'])
   assert.deepEqual(reconcileTabs([], 'blank', null, { isBlank }), ['blank'])
-  // Any other session reached outside a row click (fork, palette, shortcut)
-  // replaces the session inside the previous tab.
+  // Navigation the plugin does not own (fork, palette, shortcut) still swaps the
+  // session inside the previous tab: the click preference never grows the strip
+  // behind the user's back, because the click paths write the list themselves.
   assert.deepEqual(reconcileTabs(['a', 'b'], 'c', 'a'), ['c', 'b'])
   assert.deepEqual(reconcileTabs([], 'a', null), ['a'])
   // Already open: the tab keeps its position, only the selection moves.
@@ -111,15 +134,6 @@ test('stripFillWidth stretches the row to the first control on its right', () =>
   assert.equal(stripFillWidth(1901, 300, 1820, 220, 100), 1589, 'reserve above the limit does not bind')
   assert.equal(stripFillWidth(1901, 300, 1000, 220, 100), 900, 'reserve clamps the row before the header edge')
   assert.equal(stripFillWidth(1500, 300, 1000, 220, 100), 900, 'reserve clamp wins over the measured limit')
-})
-
-test('stripCapacity bounds the row to the space the chips can fill', () => {
-  assert.equal(stripCapacity(0), 0)
-  assert.equal(stripCapacity(1), 212)
-  assert.equal(stripCapacity(3), 640)
-  assert.equal(stripCapacity(8), 1710)
-  // A couple of tabs must never stretch the strip into the host controls.
-  assert.equal(stripCapacity(2) < stripFillWidth(1901, 300, 1820, 220, 100), true)
 })
 
 test('the tab list persists and notifies subscribers', () => {

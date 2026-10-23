@@ -112,6 +112,8 @@ export const en = {
   'settings.collapse': 'Collapse',
   'settings.showTabs': 'Show session tabs',
   'settings.showTabs.hint': "Draw the session tab strip in the conversation header; turning it off hides the strip and restores the shell's native header layout (the session title and actions return to their original spots).",
+  'settings.newTabOnClick': 'Open sidebar clicks in a new tab',
+  'settings.newTabOnClick.hint': 'On by default: clicking a sidebar session always opens its own tab, so it never throws away the page you are reading. Turn it off to restore replace-in-place. Shift+click inverts the gesture either way: replace while this is on, open a new tab while it is off.',
   'settings.statusDots': 'Enable status dots',
   'settings.statusDots.hint': "Session rows use the plugin-drawn 6px status dots (running orange / pending amber / done green); turning it off restores the host's native status-light style and hides the dots in the tab strip.",
   'settings.compactChains': 'Merge single-child chains',

@@ -100,6 +100,33 @@ test('placeTip lands on the left margin when the bubble is wider than the viewpo
   assert.equal(out.left, TIP_EDGE, 'the clamp floor wins over the ceiling')
 })
 
+test('placeTip with prefer=below sits the bubble under the anchor, centred', () => {
+  const anchor = rect(100, 60, 160, 28)
+  const size = { width: 120, height: 20 }
+  const viewport = { width: 1280, height: 800 }
+  const out = placeTip(anchor, size, viewport, 8, 'below')
+  assert.equal(out.side, 'bottom')
+  assert.equal(out.top, anchor.bottom + 8)
+  assert.equal(out.left, 100 + 80 - 60, 'centred on the chip')
+})
+
+test('placeTip with prefer=below clamps at the viewport edges', () => {
+  const size = { width: 240, height: 20 }
+  const viewport = { width: 400, height: 800 }
+  const left = placeTip(rect(0, 60, 80, 28), size, viewport, 8, 'below')
+  assert.equal(left.left, 12, 'left margin on a chip at the left edge')
+  const right = placeTip(rect(360, 60, 40, 28), size, viewport, 8, 'below')
+  assert.equal(right.left, 400 - 12 - 240, 'right margin on a chip at the right edge')
+})
+
+test('placeTip with prefer=below flips above when the bottom edge cannot fit', () => {
+  const size = { width: 160, height: 40 }
+  const viewport = { width: 1280, height: 120 }
+  const out = placeTip(rect(300, 60, 100, 28), size, viewport, 8, 'below')
+  assert.equal(out.side, 'top')
+  assert.equal(out.top, 60 - 8 - 40)
+})
+
 test('placeTip honours a custom gap and does not mutate its inputs', () => {
   const anchor = rect(100, 200, 80, 26)
   const size = { width: 200, height: 20 }

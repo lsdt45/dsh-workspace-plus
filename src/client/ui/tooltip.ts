@@ -74,7 +74,21 @@ export const pointInRect = (rect: TipRect | null | undefined, point: TipPoint | 
  * Tooltip's own behaviour) only when neither side fits a narrow window.
  * `left`/`top` are the bubble's top-left corner; the CSS adds no transform.
  */
-export const placeTip = (anchor: TipRectSize, size: TipSize, viewport: TipSize, gap = 8): TipPlacement => {
+export const placeTip = (anchor: TipRectSize, size: TipSize, viewport: TipSize, gap = 8, prefer?: 'below'): TipPlacement => {
+  // Chips ask for the bubble directly under the strip; rows keep the beside-the-
+  // row placement. A bottom placement that does not fit flips above the anchor.
+  if (prefer === 'below') {
+    const below = anchor.bottom + gap
+    const above = anchor.top - gap - size.height
+    const fitsBelow = below + size.height <= viewport.height - TIP_EDGE
+    const fitsAbove = above >= TIP_EDGE
+    if (!fitsBelow && fitsAbove) {
+      return { left: Math.max(TIP_EDGE, Math.min(anchor.left, viewport.width - TIP_EDGE - size.width)), top: above, side: 'top' }
+    }
+    const centred = anchor.left + anchor.width / 2 - size.width / 2
+    const x = Math.max(TIP_EDGE, Math.min(centred, viewport.width - TIP_EDGE - size.width))
+    return { left: x, top: Math.max(TIP_EDGE, below), side: 'bottom' }
+  }
   const top = Math.max(TIP_EDGE, Math.min(
     anchor.top + anchor.height / 2 - size.height / 2,
     Math.max(TIP_EDGE, viewport.height - TIP_EDGE - size.height),
@@ -103,6 +117,8 @@ interface HoverTipOptions {
   delayMs?: number
   gap?: number
   maxWidth?: number
+  /** Pin the bubble under the anchor (tab chips) instead of beside it (rows). */
+  prefer?: 'below'
 }
 
 /**
@@ -120,6 +136,7 @@ export function useHoverTip(options?: HoverTipOptions) {
   const delayMs = opts.delayMs === undefined ? 300 : opts.delayMs
   const gap = opts.gap === undefined ? 8 : opts.gap
   const maxWidth = opts.maxWidth === undefined ? 320 : opts.maxWidth
+  const prefer = opts.prefer
   const anchorRef = React.useRef(null)
   const pointerRef = React.useRef(null)
   const timerRef = React.useRef(null)
@@ -253,7 +270,7 @@ export function useHoverTip(options?: HoverTipOptions) {
   let bubble = null
   if (text) {
     const placement = anchor && size
-      ? placeTip(anchor, size, { width: window.innerWidth, height: window.innerHeight }, gap)
+      ? placeTip(anchor, size, { width: window.innerWidth, height: window.innerHeight }, gap, prefer)
       : { left: 0, top: 0, side: 'bottom' }
     bubble = E('span', {
       ref: bubbleRef,

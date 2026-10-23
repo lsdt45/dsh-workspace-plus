@@ -112,6 +112,8 @@ export const zh = {
   'settings.collapse': '收起',
   'settings.showTabs': '展示会话标签页',
   'settings.showTabs.hint': '在对话顶栏显示会话标签页;关闭后隐藏标签条,顶栏还原为宿主原生布局(会话标题与操作区回到原位置)。',
+  'settings.newTabOnClick': '点击会话即在新标签页打开',
+  'settings.newTabOnClick.hint': '默认开启:点击左侧会话总是新开一个标签页,不会顶掉正在看的页面;关闭后恢复「替换当前标签」的旧行为。两种方式下 Shift + 点击都反转手势——开着时 Shift+点击替换当前标签,关掉时 Shift+点击新开标签。',
   'settings.statusDots': '启用圆点状态',
   'settings.statusDots.hint': '会话行使用插件绘制的统一 6px 状态点(运行橙 / 待交互琥珀 / 完成绿);关闭后还原为宿主原生的状态灯样式,标签页也不再显示状态点。',
   'settings.compactChains': '单链分组折叠显示',

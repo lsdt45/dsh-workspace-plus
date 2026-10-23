@@ -89,26 +89,25 @@ export const CSS_TEXT = [
   // render exactly as shipped, title line included. tabs-strip.js mirrors the
   // switch into data-bw-tabs-off on <html>.
   'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_crumbs"]{display:none}',
-  // The session's own chips (agent team / PTC mode / subagents) share the view
-  // navigation row instead of the tab row: the nav row is the last line of the
-  // header, so pinning them to its bottom-right corner puts them after the
-  // view chips with no extra header height. Absolute positioning keeps the
-  // shell's own header layout untouched.
+  // The session chips (agent team / mode / subagents) belong to the view-nav row's
+  // right end, not the tab row: they are absolutely parked there so they line up
+  // under the right-hand window controls. The nav row paints with z-index:1 while
+  // the chips travel inside the title row's stacking context, so lift that row
+  // above the nav row: without it the row painted over the chips' lower half and
+  // swallowed its clicks (the old "only the top edge clicks" bug).
   'html:not([data-bw-tabs-off]) header[data-window-drag]{position:relative}',
-  // z-index lifts the block above the view-nav row it is pinned onto: without it
-  // the row paints over the chips and swallows their clicks.
-  // left comes from useChipsAfterNav(): the measured end of the view-nav row.
-  // Until it lands (first paint, markup drift) the rule falls back to the old
-  // right-aligned spot.
-  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:var(--bw-chips-left,auto);right:var(--bw-chips-right,20px);top:var(--bw-chips-top,auto);bottom:var(--bw-chips-bottom,9px);margin:0;z-index:6;pointer-events:auto}',
+  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_titleRow"]{z-index:7}',
+  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_tabs"]{-webkit-app-region:no-drag;app-region:no-drag}',
+  'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:auto;right:var(--bw-chips-right,12px);top:var(--bw-chips-top,auto);bottom:auto;margin:0;z-index:6;pointer-events:auto;-webkit-app-region:no-drag;app-region:no-drag}',
   // Session tab strip: compact chips in the conversation header, one per open
   // session. The chip's dot is .bw-state-dot, so the three states stay identical.
   // Session tab strip, modelled on the reference: dot + label chips with a
   // thick active underline, no fill or border, and a quiet close cross.
   //
-  // Overflow (browser-like): the row is widened by tabs-strip.ts to the measured
-  // header space (chips grow to fill it), and 52vw is only the fallback when the
-  // right-hand utilities cannot be measured yet. The chips are the first tier —
+  // Overflow (browser-like): the row is widened by tabs-strip.ts to the space
+  // left of the shell's right-hand cluster (session chips + window utilities),
+  // and 52vw is only the fallback before the first measurement. The chips are the
+  // first tier —
   // they shrink from their natural width to a readable floor; only past that
   // floor does the row scroll, which is when the edge fades and the chevron
   // appear. The fade is a mask on the scroller itself (not an overlay), so it
@@ -117,16 +116,20 @@ export const CSS_TEXT = [
   // and a button inside a drag region never receives clicks — the chevron lived
   // outside .bw-tabs, whose own no-drag only covered the chips.
   '.bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}',
-  '.bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}',
+  // The row sizes to its chips instead of stretching to the whole bar: the "+"
+  // then sits right after the last chip (browser-like, left-aligned) rather than
+  // being pushed to the far right. It may still shrink when the chips exceed the
+  // room, which is what turns on the horizontal scroll below.
+  '.bw-tabs{display:flex;align-items:center;gap:2px;flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}',
   '.bw-tabs::-webkit-scrollbar{display:none}',
   '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
   '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
   '.bw-tabs[data-bw-fade-left="1"][data-bw-fade-right="1"]{-webkit-mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent);mask-image:linear-gradient(to right,transparent,#000 16px,#000 calc(100% - 16px),transparent)}',
-  // flex-grow: once useStripFill widens the row to the header utilities, the
-  // chips share the extra space (browser-style equal spread) instead of ending
-  // in a dead band; shrink still floors them at 96px before the row scrolls
-  // (100px left the row overflowing by a couple of pixels just before it fit).
-  '.bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:96px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
+  // A chip sizes to its own title (browser-style): flex-grow off, so a short
+  // title stays short, while max-width caps long titles and shrink floors the
+  // chip before the row scrolls. The max-width therefore is the only fixed
+  // dimension a chip has.
+  '.bw-tab{display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:72px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
   '.bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}',
   '.bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
   '.bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}',
@@ -137,6 +140,12 @@ export const CSS_TEXT = [
   '.bw-tab-close{flex:none;appearance:none;border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:1px 4px 2px;border-radius:4px;opacity:.45}',
   '.bw-tab:hover .bw-tab-close{opacity:1}',
   '.bw-tab-close:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  // "New session" at the end of the row: the same quiet 24px hit target as the
+  // overflow chevron, but always present (the chevron only appears on overflow).
+  // It lives outside .bw-tabs, so it never scrolls away with the chips.
+  '.bw-tabs-new{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}',
+  '.bw-tabs-new:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}',
+  '.bw-tabs-new:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
   // Overflow trigger: the chevron sits at the end of the row (Firefox/Edge's
   // "list all tabs"), so a cut-off chip always has a visible way out.
   '.bw-tabs-more{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#9a9a9a);cursor:pointer}',

@@ -11,7 +11,7 @@ import { buildSessionTree, buildWorkspaceList, countSessionTree } from '../core/
 import type { SessionTreeNode, WorkspaceInput, WorkspaceRow as TreeWorkspaceRow } from '../core/tree.ts'
 import { currentSessionIdOf, orderRows } from '../core/view.ts'
 import type { ArchivedFilter, SortOrder, TimeDirection, ViewMode } from '../core/view.ts'
-import { openTab, replaceTab, saveTabs, setActiveTab, tabsActive, tabsSnapshot } from '../tabs.ts'
+import { saveTabs, setActiveTab, tabsActive, tabsForClick, tabsSnapshot } from '../tabs.ts'
 import type { BrowserDrag, BrowserSessionList, BrowserSessionRow, BrowserTreeNode, BrowserWorkspaceGroup } from './model.ts'
 
 /** Extra row flags the call sites add (pin membership, tray projection, hover tag). */
@@ -40,6 +40,8 @@ export interface BrowserTreeViewInput {
   items?: ReadonlyArray<WorkspaceInput> | null
   list?: BrowserSessionList | null
   nodePulseOf: (node: SessionTreeNode) => SessionState | null
+  /** Whether a plain session click opens a new tab (false = replace in place). */
+  newTabOnClick: boolean
   now: number
   open?: ((sessionId: string) => unknown) | null
   openCtx: (kind: string, payload: any, event: any) => void
@@ -87,7 +89,7 @@ export interface BrowserTreeViewInput {
 
 export function createTreeView(input: BrowserTreeViewInput) {
   const {
-    actions, tabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+    actions, tabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, newTabOnClick, nodePulseOf, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
   } = input
 
 /* ---------------------------- rows ----------------------------- */
@@ -191,16 +193,19 @@ const renderSessionRow = (session: BrowserSessionRow, depth: number, workspaceId
     now,
     onOpen: (id: string, event: any) => {
       if (session.archived) { setErrorText(t('session.archivedHint')); return }
-      // Shift+click opens a tab of its own; a plain click swaps the session
-      // inside the current tab (the original tab requirement). Both write the
-      // persisted list first, so the strip reflects the click immediately.
-      const newTab = !!(event && event.shiftKey)
-      // A plain click swaps the session inside the ACTIVE tab. The tab store's
-      // active id is the tab that actually owns the page (the main view can be
-      // sessionless for a beat, e.g. right after archiving), so it replaces the
-      // right one even when the shell has no current session yet.
-      const active = tabsActive()
-      saveTabs(newTab ? openTab(tabsSnapshot(), id) : replaceTab(tabsSnapshot(), active, id))
+      // A plain click opens the session in a NEW tab (never on top of the page
+      // you were reading); Shift inverts that to replace-in-place, or the other
+      // way round when the "open in a new tab" setting is turned off. The gesture
+      // is decided by tabsForClick so the rule stays a pure unit test.
+      // The strip's own active id can be unset for a beat (it syncs on the view
+      // change); the sidebar already knows which session is on screen, so use it
+      // as the fallback that keeps that page as a chip on a fresh strip.
+      const activeNow = tabsActive() || currentSessionId
+      const tabsNow = tabsForClick(tabsSnapshot(), activeNow, id, {
+        newTabOnClick: newTabOnClick !== false,
+        shift: !!(event && event.shiftKey),
+      })
+      saveTabs(tabsNow)
       // Select the tab this click wrote, so the chip highlights in the same
       // frame as the navigation instead of after the shell reports the new
       // mainView retention.

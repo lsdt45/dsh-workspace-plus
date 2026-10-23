@@ -1,0 +1,20 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="workspace-plus-tab" x1="8" y1="2" x2="30" y2="11" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A8DAFF"/>
+      <stop offset="1" stop-color="#6BA6F2"/>
+    </linearGradient>
+    <linearGradient id="workspace-plus-panel" x1="4" y1="7" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67C7FE"/>
+      <stop offset="1" stop-color="#3F77D8"/>
+    </linearGradient>
+  </defs>
+  <path d="M8.2 2.6h11.6a3.2 3.2 0 0 1 0 6.4H8.2a3.2 3.2 0 0 1 0-6.4Z" fill="url(#workspace-plus-tab)"/>
+  <path d="M22.6 2.6h4.2a3.2 3.2 0 0 1 0 6.4h-4.2a3.2 3.2 0 0 1 0-6.4Z" fill="url(#workspace-plus-tab)" fill-opacity="0.4"/>
+  <path d="M4.2 12.2c0-2.3 1.9-4.2 4.2-4.2h19.2c2.3 0 4.2 1.9 4.2 4.2v15.6c0 2.3-1.9 4.2-4.2 4.2H8.4c-2.3 0-4.2-1.9-4.2-4.2V12.2Z" fill="url(#workspace-plus-panel)"/>
+  <path d="M10.4 14.8v11" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M10.4 16.3h2.4M10.4 20.3h2.4M10.4 24.3h2.4" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round"/>
+  <rect x="15.2" y="14.9" width="10.6" height="2.9" rx="1.45" fill="#FFFFFF"/>
+  <rect x="15.2" y="18.9" width="8" height="2.9" rx="1.45" fill="#FFFFFF" fill-opacity="0.78"/>
+  <rect x="15.2" y="22.9" width="12" height="2.9" rx="1.45" fill="#FFFFFF" fill-opacity="0.58"/>
+</svg>

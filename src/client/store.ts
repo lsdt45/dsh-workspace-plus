@@ -58,7 +58,7 @@ export interface ViewStore {
 }
 
 export const createViewStore = (): ViewStore => storeKit.defineStore({
-  init: (): ViewState => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, statusDots: true, compactChains: true, viewMode: 'projects', timeDirection: 'latest', sortOrder: 'manual', archivedFilter: 'hide' }, styling: {}, pinned: [] }),
+  init: (): ViewState => ({ folders: [], workspaceGroups: [], workspaceGroupById: {}, sessionSectionById: {}, expanded: {}, sessionsExpanded: {}, sessionGroups: {}, prefs: { showTabs: true, newTabOnClick: true, statusDots: true, compactChains: true, viewMode: 'projects', timeDirection: 'latest', sortOrder: 'manual', archivedFilter: 'hide' }, styling: {}, pinned: [] }),
   // NOTE: hydration REPLACES the state with the persisted whole value —
   // init defaults never merge. Every action must tolerate a missing key
   // (states persisted by older plugin versions lack sessionGroups), and

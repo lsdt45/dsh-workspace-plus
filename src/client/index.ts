@@ -176,6 +176,10 @@ window.__ModuleLoader__.load({
       // "Enable status dots" off: rows fall back to the host's native status
       // lights, and the tab strip drops its dots (see rows.js / tabs-strip.js).
       const statusDots = prefsMap.statusDots !== false
+      // "Open sessions in a new tab" is the default: a sidebar click must not
+      // cost the reader the page they had open. Turning it off restores the
+      // original replace-in-place gesture; Shift always means the other one.
+      const newTabOnClick = prefsMap.newTabOnClick !== false
       const archivedSet = new Set<string>(archivedSessionIds || [])
       // Same shape as the official row: the status store wins when it reports a
       // running flag, and the list snapshot covers the sessions the store has
@@ -480,7 +484,7 @@ window.__ModuleLoader__.load({
       const {
         bodyRows, isEmpty, pinnedTray, renderCustomWorkspaceGroups, renderPinnedSection, renderPlainFolder, renderProjectsHeader, renderSectionedSession, renderSessionNode, renderSessionRow, renderSessionTree, renderTimeBuckets, renderWorkspaceEntry, restoreSession, sectionRowsOf
       } = createTreeView({
-        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, nodePulseOf, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
+        actions, tabs: storeTabs, archivedFilter, canMoveWorkspaceGroup, drag, expandedMap, fail, folderDropEvents, folderExpanded, folderPulseOf, groupedView, items, list, newTabOnClick, nodePulseOf, now, open, openCtx, phase, pinnedList, pinnedSet, projectItems, recency, rowStyleOf, sectionedSessions, sessDropHalf, sessionDragEvents, sessionDraggable, sessionGroupOpen, sessionRowOf, sessionSectionOf, sessionsOf, sessionsOpenOf, setErrorText, sgroupDropEvents, sgroupDropInto, sortOrder, startSession, statusPulse, statusDots, styleEntry, t, timeDirection, timeSorted, tree, unarchiveSession, ungrouped, viewMode, visibleItems, workspaceDragEvents, workspaceGroupDropEvents, workspaceGroupOf, workspaceGroups, workspaceIndexOf, workspaceTitleOf, wsDropHalf, wsDropInto, wsPulseOf
       })
 
       const {
@@ -731,7 +735,13 @@ window.__ModuleLoader__.load({
           // The strip reads the shared view store: the plugin settings page can
           // hide tabs / fall back to native dots, and both must be live here.
           store: viewStore,
-          inject: () => ({ open: (sessionId: string) => { openSessionCompat(sessionId) } }),
+          inject: () => ({
+            open: (sessionId: string) => { openSessionCompat(sessionId) },
+            // The same entry point the workspace + and Ctrl+N use. No workspace id
+            // is passed: the shell targets the current workspace, else the most
+            // recent one, so the button never has to guess.
+            newSession: () => { uiWorkspace.startSession() },
+          }),
         },
         TabsStrip,
       ))

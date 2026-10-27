@@ -60,7 +60,9 @@ await import(BUNDLE.href)
 
 test('the artifact registers exactly one loader factory under the plugin id', () => {
   assert.ok(registration, 'window.__ModuleLoader__.load() was never called')
-  assert.equal(registration.id, 'dsh-workspace-plus')
+  // The loader id is the package name: client-modules serves the bundle at
+  // /plugins/<package>/client.js and matches its boot-graph row by this id.
+  assert.equal(registration.id, '@lsdt45-dal/dsh-workspace-plus')
   assert.equal(typeof registration.factory, 'function')
 })
 
@@ -169,7 +171,7 @@ test('every seat registration satisfies its slot kind', () => {
   assert.ok(byName.get('shell.overlay')!.id.length > 0, 'list slots need a non-empty id')
   // plugins.bundle.config is a KEYED slot: the shell renders the entry whose
   // key equals the bundle's package name.
-  assert.equal(byName.get('plugins.bundle.config')!.key, 'dsh-workspace-plus')
+  assert.equal(byName.get('plugins.bundle.config')!.key, '@lsdt45-dal/dsh-workspace-plus')
   // Every other seat is a SINGLE slot: no key/id may be passed (single slots
   // throw when two entries share one priority).
   for (const name of ['conversation.header.leading', 'conversation.hero.workspace.directoryFlow', 'sidebar.workspaces', 'sidebar.workspaces.directoryFlow']) {

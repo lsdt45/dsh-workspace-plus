@@ -31,6 +31,12 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createSessionSearchIndex } from './search-index.ts'
 
+/**
+ * Cordis plugin identity. Deliberately NOT the package name: the npm scope
+ * (@lsdt45-dal/…) moves with distribution, while this string names the plugin
+ * in logs and diagnostics. The package name is what `cordis.patch.yml` fills
+ * in for module resolution and what the client bundle registers under.
+ */
 export const name = 'dsh-workspace-plus'
 
 /* ------------------------- host context surface ------------------------- */

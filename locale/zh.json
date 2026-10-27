@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "更好的工作区（dsh-workspace-plus）",
+    "title": "更好的工作区（Better Workspaces）",
     "description": "侧边栏工作区层级树 + 浏览器式会话标签页：名称中的 / 即分组，支持分区、置顶、时间分桶、状态点、拖拽排序与插件配置页。"
   }
 }

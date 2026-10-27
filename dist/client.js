@@ -5473,7 +5473,9 @@
 
   // src/client/index.ts
   window.__ModuleLoader__.load({
-    id: "dsh-workspace-plus",
+    // The loader id is the package name: client-modules serves
+    // /plugins/<package>/client.js and matches the boot graph row by it.
+    id: "@lsdt45-dal/dsh-workspace-plus",
     factory: (hostRequire) => {
       installPlatform(hostRequire);
       const QuietBoundary = createQuietBoundary();
@@ -6262,7 +6264,7 @@
           "plugins.bundle.config",
           {
             name: "plugins.bundle.config",
-            key: "dsh-workspace-plus",
+            key: "@lsdt45-dal/dsh-workspace-plus",
             locale: NS,
             store: viewStore
           },
@@ -6292,7 +6294,7 @@
         ));
         slots.inject("shell.overlay", guarded(
           "shell.overlay",
-          { name: "shell.overlay", id: "dsh-workspace-plus.search" },
+          { name: "shell.overlay", id: "@lsdt45-dal/dsh-workspace-plus.search" },
           SearchOverlaySeat
         ));
         slots.inject("sidebar.workspaces", guarded(
@@ -6308,6 +6310,9 @@
         ));
       }
       return {
+        // Stable plugin identity, independent of the distributable package
+        // name: the bundle id above is what the loader matches, this is what
+        // diagnostics and the cordis fiber report.
         name: "dsh-workspace-plus",
         inject: ["slots", "sessions", "workspaces", "locale", "uiWorkspace"],
         apply

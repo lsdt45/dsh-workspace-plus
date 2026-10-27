@@ -25,7 +25,7 @@ DSH 插件：给 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepsee
 - 🎛️ **插件配置页** —— 「展示会话标签页」「启用圆点状态」等开关，关掉即还原宿主原生顶栏与状态灯
 - 📦 **装上就能用** —— 预构建产物随仓库与 Release 提供，从 git 安装无需构建
 
-> **更新提示**：`dsh plugin --profile desktop update dsh-workspace-plus`（Web 端把 `desktop` 换成 `web`），更新后重启 DSH 生效；标签页与状态点都可在「设置 → 插件 → 更好的工作区」里逐项开关。
+> **更新提示**：`dsh plugin --profile desktop update @lsdt45-dal/dsh-workspace-plus`（Web 端把 `desktop` 换成 `web`），更新后重启 DSH 生效；标签页与状态点都可在「设置 → 插件 → 更好的工作区」里逐项开关。
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
@@ -163,7 +163,7 @@ dsh-model-config
 <td valign="top" width="55%">
   <img src="docs/screenshots/7-view-switch.png" alt="侧边栏视图切换菜单"/><br/><br/>
   <b>单键切换视图</b><br/>
-  侧边栏标题栏的视图按钮预览当前形态（工作区、树、列表或日历），菜单分为「分组方式 / 排序方式 / 筛选会话」，**设置 → 插件 → 更好的工作区（dsh-workspace-plus）** 配置页里有等效选项（见下文「插件配置页」）。<br/><br/>
+  侧边栏标题栏的视图按钮预览当前形态（工作区、树、列表或日历），菜单分为「分组方式 / 排序方式 / 筛选会话」，**设置 → 插件 → 更好的工作区（Better Workspaces）** 配置页里有等效选项（见下文「插件配置页」）。<br/><br/>
   <b>时间视图（单一全局时间线）</b><br/>
   跨项目所有会话聚合展示，按「今天 / 昨天 / 近 7 天 / 近 30 天 / 更早」分桶（本地时区自然日），空桶自动隐藏，名称分组此时隐去；方向可选「最新在前 / 最旧在前」。悬浮会话条时，行尾相对时间互换为所属项目小角标（并出现置顶按钮），条目**右侧**弹出气泡（Codex 风格：贴着行右缘、与行垂直居中；右侧放不下翻到左侧，两侧都放不下才回落到下方。不透明深底，两行：完整标题 + 项目 · 绝对时间）；气泡由插件自己持有，指针离开、行被重排移走或列表滚动时都会立即收起，不会停留在屏幕上。
 </td>
@@ -182,9 +182,9 @@ dsh-model-config
 
 <table>
 <tr>
-<td align="center" width="52%"><img src="docs/screenshots/13-plugin-config.png" alt="设置 → 插件 → 更好的工作区（dsh-workspace-plus）配置页"/></td>
+<td align="center" width="52%"><img src="docs/screenshots/13-plugin-config.png" alt="设置 → 插件 → 更好的工作区（Better Workspaces）配置页"/></td>
 <td valign="top" width="48%">
-  <b>设置 → 插件 → 更好的工作区（dsh-workspace-plus）</b><br/>
+  <b>设置 → 插件 → 更好的工作区（Better Workspaces）</b><br/>
   插件在设置里占一个独立配置页（标题旁显示当前插件版本），不用去侧栏菜单里翻：<br/><br/>
   <b>显示</b>：五个开关——<b>展示会话标签页</b>（关掉后顶栏完全还原为宿主原生布局）、<b>点击会话即在新标签页打开</b>（默认开；关掉后普通点击恢复「替换当前标签」，Shift+点击改开新标签）、<b>启用圆点状态</b>（关掉后侧栏改用宿主原生状态灯，标签页不再显示状态点）、单链分组折叠、状态呼吸灯。<br/><br/>
   <b>视图</b>：分组方式（按工作区 / 按工作区树 / 单列表 / 按时间）、排序方式（手动 / 最近更新）、时间方向（最新在前 / 最旧在前，仅「按时间」视图出现）、筛选会话（隐藏已归档 / 全部对话 / 仅显示已归档）。<br/><br/>
@@ -284,24 +284,41 @@ dsh-model-config
 
 将插件安装到 DSH 正在使用的 profile。桌面端通常使用 `desktop`，Web 版通常使用 `web`。
 
+**推荐从 npm 安装**（预构建产物、可按版本更新，也是插件市场 Discover 索引的收录来源）：
+
 ```bash
 # DSH 桌面端
-dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.git
+dsh plugin --profile desktop add @lsdt45-dal/dsh-workspace-plus
 
 # DSH Web
-dsh plugin --profile web add https://github.com/lsdt45/dsh-workspace-plus.git
+dsh plugin --profile web add @lsdt45-dal/dsh-workspace-plus
+```
+
+也可以直接从 GitHub 仓库安装（拉整仓，速度稍慢）：
+
+```bash
+dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.git
 ```
 
 安装完成后**重启 DSH** 即生效。
+
+> **包名迁移（1.2.0 起）**：包名由 `dsh-workspace-plus` 改为 **`@lsdt45-dal/dsh-workspace-plus`**。npm 上原有的 `dsh-workspace-plus` 是同名的另一个项目（作者 Sen70s，实现的是「工作区多目录 + Windows 通知」），我们无法在其上发布；加 scope 后才能真正发布并进入插件市场 Discover 索引。**旧安装需先卸载再重装**：
+>
+> ```bash
+> dsh plugin --profile desktop remove dsh-workspace-plus
+> dsh plugin --profile desktop add @lsdt45-dal/dsh-workspace-plus
+> ```
+>
+> 浏览器侧的视图、分区、置顶、标签页与外观数据都存在 `dsh.betterWorkspace.*` 命名空间下，**不随包名变化**，重装后原样沿用。
 
 > 插件在 [package.json](package.json) 的 `engines.dsh` 中声明兼容 DSH `>=0.2.0-rc.1 <0.3.0-0`；运行时版本不满足时，DSH 会在安装或加载时提示不兼容（可用 `dsh plugin allow-version` 按精确版本豁免）。
 
 ### 更新
 
-从 Git 安装的插件可按 profile 更新：
+按 profile 更新（npm 与 Git 两种安装方式同一条命令）：
 
 ```bash
-dsh plugin --profile desktop update dsh-workspace-plus
+dsh plugin --profile desktop update @lsdt45-dal/dsh-workspace-plus
 ```
 
 如果使用的是 Web profile，将 `desktop` 替换为 `web`。更新后重启 DSH。
@@ -319,7 +336,7 @@ dsh plugin --profile desktop add /absolute/path/to/dsh-workspace-plus
 ### 卸载
 
 ```bash
-dsh plugin --profile desktop remove dsh-workspace-plus
+dsh plugin --profile desktop remove @lsdt45-dal/dsh-workspace-plus
 ```
 
 卸载后重启 DSH。Web profile 请使用 `--profile web`。

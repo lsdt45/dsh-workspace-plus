@@ -22,7 +22,7 @@
  *  4. `conversation.header.leading`: the browser-style session tab strip in
  *     the conversation header (the free root-scoped leading seat).
  *  5. `plugins.bundle.config`: this bundle's configuration page under
- *     Settings → Plugins (`key: 'dsh-workspace-plus'`).
+ *     Settings → Plugins (`key: '@lsdt45-dal/dsh-workspace-plus'`).
  *
  * The single `hostRequire` below is the loader's factory `require`: every
  * request is a dsh client baseline module (see
@@ -95,7 +95,9 @@ interface BetterBrowserProps {
 }
 
 window.__ModuleLoader__.load({
-  id: 'dsh-workspace-plus',
+  // The loader id is the package name: client-modules serves
+  // /plugins/<package>/client.js and matches the boot graph row by it.
+  id: '@lsdt45-dal/dsh-workspace-plus',
   factory: (hostRequire) => {
     installPlatform(hostRequire)
     // Defined after the install: a class heritage expression evaluates when the
@@ -715,7 +717,7 @@ window.__ModuleLoader__.load({
         'plugins.bundle.config',
         {
           name: 'plugins.bundle.config',
-          key: 'dsh-workspace-plus',
+          key: '@lsdt45-dal/dsh-workspace-plus',
           locale: NS,
           store: viewStore,
         },
@@ -753,7 +755,7 @@ window.__ModuleLoader__.load({
       // without an id — omit it and the panel silently never renders.
       slots.inject('shell.overlay', guarded(
         'shell.overlay',
-        { name: 'shell.overlay', id: 'dsh-workspace-plus.search' },
+        { name: 'shell.overlay', id: '@lsdt45-dal/dsh-workspace-plus.search' },
         SearchOverlaySeat,
       ))
 
@@ -772,6 +774,9 @@ window.__ModuleLoader__.load({
     }
 
     return {
+      // Stable plugin identity, independent of the distributable package
+      // name: the bundle id above is what the loader matches, this is what
+      // diagnostics and the cordis fiber report.
       name: 'dsh-workspace-plus',
       inject: ['slots', 'sessions', 'workspaces', 'locale', 'uiWorkspace'],
       apply,

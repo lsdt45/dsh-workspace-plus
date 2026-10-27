@@ -25,7 +25,7 @@ A DSH plugin that gives the [DeepSeek Harness (DSH)](https://www.npmjs.com/packa
 - 🎛️ **Plugin settings page** — switches for "Show session tabs" and "Enable status dots"; turning them off restores the shell's native header and status lights
 - 📦 **Install and go** — prebuilt artifacts ship with the repo and the Release, so git installs need no build step
 
-> **Updating**: `dsh plugin --profile desktop update dsh-workspace-plus` (use `web` for the Web profile) and restart DSH; tabs and status dots can each be toggled from Settings → Plugins → Better Workspaces.
+> **Updating**: `dsh plugin --profile desktop update @lsdt45-dal/dsh-workspace-plus` (use `web` for the Web profile) and restart DSH; tabs and status dots can each be toggled from Settings → Plugins → Better Workspaces.
 
 > Fork of [KannaKuron/dsh-better-workspace](https://github.com/KannaKuron/dsh-better-workspace)
 
@@ -163,7 +163,7 @@ The index is owned by the plugin: it reads the stored logs under `~/.dsh/session
 <td valign="top" width="55%">
   <img src="docs/screenshots/7-view-switch.png" alt="Sidebar view switch menu"/><br/><br/>
   <b>One-click view switching</b><br/>
-  The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; **Settings → Plugins → dsh-workspace-plus** exposes the same choices (see the Plugin settings page section below).<br/><br/>
+  The header button previews the active workspace, tree, list or calendar view. Its menu separates grouping, sorting and archive filters; **Settings → Plugins → Better Workspaces** exposes the same choices (see the Plugin settings page section below).<br/><br/>
   <b>Time view (Global timeline)</b><br/>
   ONE global timeline across all projects — every visible session joins the same stream, bucketed by <b>today / yesterday / last 7 days / last 30 days / earlier</b> (local calendar days), empty buckets hidden; direction is <b>latest / oldest first</b>. On hover, the relative timestamp swaps for its workspace badge (and the pin button appears), with a Codex-style hover card pinned to the row's right edge and vertically centred on it (it flips to the left when short of room and only falls back below/above in a very narrow window); the plugin owns that bubble, so it withdraws the moment the pointer leaves, the row re-sorts away or the list scrolls.
 </td>
@@ -182,9 +182,9 @@ The index is owned by the plugin: it reads the stored logs under `~/.dsh/session
 
 <table>
 <tr>
-<td align="center" width="52%"><img src="docs/screenshots/13-plugin-config.png" alt="Settings → Plugins → dsh-workspace-plus"/></td>
+<td align="center" width="52%"><img src="docs/screenshots/13-plugin-config.png" alt="Settings → Plugins → Better Workspaces"/></td>
 <td valign="top" width="48%">
-  <b>Settings → Plugins → dsh-workspace-plus</b><br/>
+  <b>Settings → Plugins → Better Workspaces</b><br/>
   The plugin owns a configuration page in Settings (the plugin version sits next to its name), so nothing has to be hunted down in a sidebar menu:<br/><br/>
   <b>Display</b>: five switches — <b>Show session tabs</b> (off restores the shell's native header layout completely), <b>Open sidebar clicks in a new tab</b> (on by default; off restores replace-in-place and makes Shift+click open a new tab), <b>Enable status dots</b> (off hands the sidebar back to the host's native status lights and hides the dots in the tab strip), single-chain collapsing, and the status breathing light.<br/><br/>
   <b>View</b>: grouping (workspace / workspace tree / flat list / time), sorting (manual / recently updated), time direction (latest / oldest first, only in the time view), and archive filter (hide archived / all conversations / archived only).<br/><br/>
@@ -284,24 +284,41 @@ Permanent deletion is implemented by this plugin's own host half (`POST /dsh-wor
 
 Install the plugin into your active DSH profile. Typically `desktop` for desktop builds or `web` for web builds.
 
+**Installing from npm is recommended** — prebuilt artifacts, versioned updates, and the only form the plugin market's Discover index can list:
+
 ```bash
 # DSH Desktop
-dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.git
+dsh plugin --profile desktop add @lsdt45-dal/dsh-workspace-plus
 
 # DSH Web
-dsh plugin --profile web add https://github.com/lsdt45/dsh-workspace-plus.git
+dsh plugin --profile web add @lsdt45-dal/dsh-workspace-plus
+```
+
+Installing from the GitHub repository also works (clones the whole repo, slower):
+
+```bash
+dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.git
 ```
 
 Restart DSH after installing.
+
+> **Package rename (from 1.2.0)**: the package moved from `dsh-workspace-plus` to **`@lsdt45-dal/dsh-workspace-plus`**. The unscoped name on npm belongs to an unrelated project by another author (Sen70s — workspace multi-directory + Windows notifications), so publishing under a scope is what makes an npm release and a Discover listing possible. **An existing install must be removed and re-added**:
+>
+> ```bash
+> dsh plugin --profile desktop remove dsh-workspace-plus
+> dsh plugin --profile desktop add @lsdt45-dal/dsh-workspace-plus
+> ```
+>
+> Browser-side state — views, sections, pins, tabs and appearance — lives under the `dsh.betterWorkspace.*` namespace, which does **not** follow the package name, so it carries over unchanged.
 
 > The plugin declares DSH `>=0.2.0-rc.1 <0.3.0-0` in [package.json](package.json) → `engines.dsh`; on a mismatched runtime DSH reports it as incompatible at install/load time (an exact-version exemption can be granted with `dsh plugin allow-version`).
 
 ### Update
 
-Plugins installed from Git can be updated per profile:
+Update per profile (the same command works for npm and Git installs):
 
 ```bash
-dsh plugin --profile desktop update dsh-workspace-plus
+dsh plugin --profile desktop update @lsdt45-dal/dsh-workspace-plus
 ```
 
 If using a web profile, replace `desktop` with `web`. Restart DSH after updating.
@@ -319,7 +336,7 @@ The local folder is linked into the profile as a `link:` dependency. Edits take 
 ### Uninstall
 
 ```bash
-dsh plugin --profile desktop remove dsh-workspace-plus
+dsh plugin --profile desktop remove @lsdt45-dal/dsh-workspace-plus
 ```
 
 Restart DSH after removal. For web profiles, use `--profile web`.

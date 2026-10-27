@@ -313,6 +313,36 @@ Restart DSH after installing.
 
 > The plugin declares DSH `>=0.2.0-rc.1 <0.3.0-0` in [package.json](package.json) → `engines.dsh`; on a mismatched runtime DSH reports it as incompatible at install/load time (an exact-version exemption can be granted with `dsh plugin allow-version`).
 
+### WARN lines during install
+
+`dsh plugin add` reinstalls the whole profile, so pnpm often prints these two lines. They are **not about the plugin you installed** — they aggregate the profile's own dependency tree and do not affect the plugin:
+
+```text
+[WARN] 1 deprecated subdependencies found: domexception@4.0.0
+[WARN] Issues with peer dependencies found. Run "pnpm peers check" to list them.
+```
+
+- **domexception@4.0.0** comes from `ds-harness-remote` → `@roamhq/wrtc` as an optionalDependency; upstream marks it deprecated and `@roamhq/wrtc` has no newer release to upgrade to.
+- **peer dependencies** are reported for packages the host (DSH itself) provides at runtime and never installs into the profile's `node_modules` (`@deepseek-ai/dsh-*`, `react-dom`, …). Plugins are expected to declare them with `peerDependenciesMeta.optional`, so these are known false positives.
+
+To silence them, add this to `pnpm-workspace.yaml` in the profile directory (e.g. `~/.dsh/profiles/desktop`):
+
+```yaml
+allowedDeprecatedVersions:
+  domexception: '*'
+
+peerDependencyRules:
+  # version conflicts are recorded as "missing" too, so list both kinds
+  ignoreMissing:
+    - '@deepseek-ai/*'
+    - 'react-dom'
+  allowAny:
+    - '@deepseek-ai/*'
+    - '@omdsh/*'
+```
+
+> Do not use a blanket `'*'` in either list: that also swallows real `react` / `cordis` version conflicts. Run `pnpm peers check` inside the profile directory to list the current ones.
+
 ### Update
 
 Update per profile (the same command works for npm and Git installs):

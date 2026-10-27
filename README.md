@@ -313,6 +313,36 @@ dsh plugin --profile desktop add https://github.com/lsdt45/dsh-workspace-plus.gi
 
 > 插件在 [package.json](package.json) 的 `engines.dsh` 中声明兼容 DSH `>=0.2.0-rc.1 <0.3.0-0`；运行时版本不满足时，DSH 会在安装或加载时提示不兼容（可用 `dsh plugin allow-version` 按精确版本豁免）。
 
+### 安装时的 WARN
+
+用 `dsh plugin add` 装任何插件时，pnpm 常会打印这两条警告，它们**与具体插件无关**，是该 profile 依赖树本身的聚合结果，装完不影响使用：
+
+```text
+[WARN] 1 deprecated subdependencies found: domexception@4.0.0
+[WARN] Issues with peer dependencies found. Run "pnpm peers check" to list them.
+```
+
+- **domexception@4.0.0**：由 `ds-harness-remote` → `@roamhq/wrtc` 的 optionalDependency 引入，上游已标 deprecated（`@roamhq/wrtc` 最新版仍是 0.10.0，没有可升级的版本），只能忽略。
+- **peer dependencies**：报告的是宿主（DSH 本体）在运行时提供、但不会装进 profile `node_modules` 的包（`@deepseek-ai/dsh-*`、`react-dom` 等）。插件本应以 `peerDependenciesMeta.optional` 声明，属已知误报。
+
+要彻底消掉，在该 profile 目录（如 `~/.dsh/profiles/desktop`）的 `pnpm-workspace.yaml` 里加：
+
+```yaml
+allowedDeprecatedVersions:
+  domexception: '*'
+
+peerDependencyRules:
+  # 版本冲突也记在 missing 里，所以缺的与冲突的都要列
+  ignoreMissing:
+    - '@deepseek-ai/*'
+    - 'react-dom'
+  allowAny:
+    - '@deepseek-ai/*'
+    - '@omdsh/*'
+```
+
+> 不要用 `'*'` 通配整个列表，否则真正需要关注的 `react` / `cordis` 版本冲突也会被一起吞掉。查当前真实清单用 `pnpm peers check`（在同一个 profile 目录下执行）。
+
 ### 更新
 
 按 profile 更新（npm 与 Git 两种安装方式同一条命令）：

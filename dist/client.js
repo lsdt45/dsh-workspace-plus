@@ -35,6 +35,20 @@
     "search.failed": "\u5185\u5BB9\u68C0\u7D22\u5931\u8D25\uFF1A{reason}",
     "search.indexing": "\u6B63\u5728\u5EFA\u7ACB\u5185\u5BB9\u7D22\u5F15\uFF08\u9996\u6B21\u8F83\u6162\uFF09\u2026",
     "add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
+    "browse.title": "\u9009\u62E9\u5DE5\u4F5C\u533A\u76EE\u5F55",
+    "browse.home": "\u4E3B\u76EE\u5F55",
+    "browse.loading": "\u6B63\u5728\u8BFB\u53D6\u6587\u4EF6\u5939\u2026",
+    "browse.empty": "\u6CA1\u6709\u5B50\u6587\u4EF6\u5939",
+    "browse.truncated": "\u6587\u4EF6\u5939\u8FC7\u591A\uFF0C\u4EC5\u663E\u793A\u5F00\u5934\u90E8\u5206\u3002",
+    "browse.retry": "\u91CD\u8BD5",
+    "browse.newFolder": "\u65B0\u5EFA\u6587\u4EF6\u5939",
+    "browse.folderName": "\u6587\u4EF6\u5939\u540D\u79F0",
+    "browse.folderEmpty": "\u6587\u4EF6\u5939\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A",
+    "browse.create": "\u521B\u5EFA",
+    "browse.creating": "\u521B\u5EFA\u4E2D\u2026",
+    "browse.showHidden": "\u663E\u793A\u9690\u85CF\u6587\u4EF6\u5939",
+    "browse.pickHint": "\u8FDB\u5165\u5B50\u6587\u4EF6\u5939\uFF0C\u6216\u9009\u62E9\u5F53\u524D\u6587\u4EF6\u5939",
+    "browse.open": "\u9009\u62E9\u6B64\u6587\u4EF6\u5939",
     "rail.search": "\u641C\u7D22",
     "rail.add": "\u6DFB\u52A0\u5DE5\u4F5C\u533A",
     "empty": "\u6682\u65E0\u5DE5\u4F5C\u533A",
@@ -229,6 +243,20 @@
     "search.failed": "Content search failed: {reason}",
     "search.indexing": "Building the content index (first run only)\u2026",
     "add": "Add workspace",
+    "browse.title": "Select workspace directory",
+    "browse.home": "Home",
+    "browse.loading": "Reading folders\u2026",
+    "browse.empty": "No subfolders",
+    "browse.truncated": "Too many folders to list; only the beginning is shown.",
+    "browse.retry": "Retry",
+    "browse.newFolder": "New folder",
+    "browse.folderName": "Folder name",
+    "browse.folderEmpty": "Folder name cannot be empty",
+    "browse.create": "Create",
+    "browse.creating": "Creating\u2026",
+    "browse.showHidden": "Show hidden folders",
+    "browse.pickHint": "Open a subfolder or pick the current one",
+    "browse.open": "Pick this folder",
     "rail.search": "Search",
     "rail.add": "Add workspace",
     "empty": "No workspaces yet",
@@ -1214,6 +1242,31 @@
     ".bw-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dsw-alias-label-secondary,#b8b8b8)}",
     ".bw-hint{font-size:11px;color:var(--dsw-alias-label-quaternary,#8a8a8a);line-height:1.5;white-space:normal;word-break:break-word}",
     ".bw-path-echo{font-size:11px;color:var(--dsw-alias-label-tertiary,#9a9a9a);word-break:break-all;max-width:380px}",
+    // Browse-only Hosts get an in-app directory picker: a scrollable crumb
+    // trail, one level of folders, and an explicit pick action. It is the
+    // fallback for `directoryPicker.pick` being refused; the native chooser
+    // remains the first interaction on Hosts that serve it.
+    ".bw-browse-body{max-width:440px;gap:8px}",
+    ".bw-browse-crumbs{display:flex;align-items:center;gap:2px;overflow-x:auto;white-space:nowrap;padding:1px 0;scrollbar-width:thin}",
+    ".bw-browse-crumb-seat{display:inline-flex;align-items:center;gap:2px;flex:none}",
+    ".bw-browse-crumb-sep{color:var(--dsw-alias-label-quaternary,#8a8a8a);font-size:11px}",
+    ".bw-browse-crumb{border:none;background:transparent;padding:1px 3px;border-radius:4px;color:var(--dsw-alias-label-tertiary,#9a9a9a);font-family:inherit;font-size:11px;cursor:pointer;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    ".bw-browse-crumb:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.15));color:var(--dsw-alias-label-primary,#e6e6e6)}",
+    ".bw-browse-crumb:disabled{opacity:.5;cursor:default}",
+    ".bw-browse-crumb-current{color:var(--dsw-alias-label-primary,#e6e6e6);font-weight:500}",
+    ".bw-browse-list{display:flex;flex-direction:column;gap:1px;max-height:min(42vh,260px);overflow-y:auto;padding:2px 0;border-top:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18));border-bottom:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.18))}",
+    ".bw-browse-row-seat{display:block}",
+    ".bw-browse-row{min-height:30px}",
+    ".bw-browse-row-arrow{flex:none;display:grid;place-items:center;color:var(--dsw-alias-label-quaternary,#8a8a8a)}",
+    ".bw-browse-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+    ".bw-browse-hidden{border:none;background:transparent;padding:0;color:var(--dsw-alias-label-quaternary,#8a8a8a);font-family:inherit;font-size:11px;cursor:pointer}",
+    ".bw-browse-hidden:hover{color:var(--dsw-alias-label-secondary,#b8b8b8)}",
+    ".bw-browse-hidden-on{color:var(--dsw-alias-brand-primary,#5b8def)}",
+    ".bw-browse-spacer{flex:1}",
+    ".bw-browse-new{display:flex;align-items:center;gap:6px}",
+    ".bw-browse-new .bw-input{flex:1;min-width:0}",
+    ".bw-browse-error{display:flex;flex-direction:column;gap:4px}",
+    ".bw-browse-error-actions{display:flex;justify-content:flex-end}",
     ".bw-modal-actions{display:flex;justify-content:flex-end;gap:8px}",
     ".bw-btn{height:28px;padding:0 14px;border-radius:6px;font-size:12.5px;cursor:pointer;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.25));background:transparent;color:var(--dsw-alias-label-primary,#e6e6e6);font-family:inherit}",
     ".bw-btn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.12))}",
@@ -1919,9 +1972,222 @@
     });
   }
 
+  // src/client/core/picker.ts
+  var isBrowseOnlyPicker = (reason) => {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    return /needs the native capability/i.test(message) && /serves\s+["']?browse["']?/i.test(message);
+  };
+  var browseFailureText = (reason) => {
+    if (reason !== null && typeof reason === "object" && "rpcError" in reason) {
+      const rpcError = reason.rpcError;
+      if (rpcError !== null && typeof rpcError === "object" && "message" in rpcError) {
+        const message = rpcError.message;
+        if (typeof message === "string" && message !== "") return message;
+      }
+    }
+    return reason instanceof Error ? reason.message : String(reason);
+  };
+
+  // src/client/ui/directory-browser.ts
+  function DirectoryBrowser(props) {
+    const { listDirectory, createDirectory, onPicked, onCancel, t } = props;
+    const [listing, setListing] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState("");
+    const [showHidden, setShowHidden] = React.useState(false);
+    const [folderDraft, setFolderDraft] = React.useState(null);
+    const [creating, setCreating] = React.useState(false);
+    const [createError, setCreateError] = React.useState("");
+    const requestSeq = React.useRef(0);
+    const alive = React.useRef(true);
+    const targetPath = React.useRef(void 0);
+    const navigate = (path) => {
+      const seq = requestSeq.current + 1;
+      requestSeq.current = seq;
+      targetPath.current = path;
+      setLoading(true);
+      setError("");
+      setFolderDraft(null);
+      setCreateError("");
+      listDirectory(path).then((next) => {
+        if (!alive.current || seq !== requestSeq.current) return;
+        setListing(next);
+        setLoading(false);
+      }, (reason) => {
+        if (!alive.current || seq !== requestSeq.current) return;
+        setLoading(false);
+        setError(browseFailureText(reason));
+      });
+    };
+    React.useEffect(() => {
+      alive.current = true;
+      navigate(void 0);
+      return () => {
+        alive.current = false;
+        requestSeq.current += 1;
+      };
+    }, []);
+    const currentPath = listing === null ? "" : listing.path;
+    const homePath = listing === null ? "" : listing.home;
+    const crumbs = listing === null || !Array.isArray(listing.crumbs) ? [] : listing.crumbs;
+    const homeIndex = listing === null ? -1 : crumbs.findIndex((crumb) => crumb.path === homePath);
+    const shownCrumbs = listing === null ? [] : homeIndex === -1 ? crumbs : [{ name: t("browse.home"), path: homePath, hidden: false }, ...crumbs.slice(homeIndex + 1)];
+    const entries = listing === null || !Array.isArray(listing.entries) ? [] : listing.entries.filter((entry) => showHidden || !entry.hidden);
+    const cancelFolder = () => {
+      if (creating) return;
+      setFolderDraft(null);
+      setCreateError("");
+    };
+    const createFolder = () => {
+      if (folderDraft === null || listing === null || typeof createDirectory !== "function" || creating) return;
+      const name = folderDraft.trim();
+      if (name === "") {
+        setCreateError(t("browse.folderEmpty"));
+        return;
+      }
+      setCreating(true);
+      setCreateError("");
+      createDirectory(listing.path, name).then((created) => {
+        if (!alive.current) return;
+        setCreating(false);
+        setFolderDraft(null);
+        navigate(created);
+      }, (reason) => {
+        if (!alive.current) return;
+        setCreating(false);
+        setCreateError(browseFailureText(reason));
+      });
+    };
+    const body = E(
+      "div",
+      { className: "bw-modal-body bw-browse-body" },
+      E(
+        "div",
+        { className: "bw-browse-crumbs", role: "navigation", "aria-label": t("browse.title") },
+        shownCrumbs.map((crumb, index) => E(
+          "span",
+          { key: crumb.path + ":" + index, className: "bw-browse-crumb-seat" },
+          index > 0 ? E("span", { className: "bw-browse-crumb-sep", "aria-hidden": true }, "/") : null,
+          E("button", {
+            type: "button",
+            className: cls("bw-browse-crumb", index === shownCrumbs.length - 1 && "bw-browse-crumb-current"),
+            disabled: loading,
+            onClick: () => navigate(crumb.path)
+          }, crumb.name)
+        ))
+      ),
+      E("div", { className: "bw-path-echo", title: currentPath }, currentPath),
+      error !== "" ? E(
+        "div",
+        { className: "bw-browse-error", role: "alert" },
+        E("div", { className: "bw-error-text" }, error),
+        E(
+          "div",
+          { className: "bw-browse-error-actions" },
+          E(BTN, { variant: "outline", className: "bw-btn-sm", onClick: () => navigate(targetPath.current) }, t("browse.retry"))
+        )
+      ) : null,
+      E(
+        "div",
+        { className: "bw-browse-list", role: "list" },
+        loading ? E("div", { className: "bw-hint" }, t("browse.loading")) : null,
+        !loading && error === "" && entries.length === 0 ? E("div", { className: "bw-hint" }, t("browse.empty")) : null,
+        !loading && error === "" ? entries.map((entry) => E(
+          "div",
+          { key: entry.path, className: "bw-browse-row-seat", role: "listitem" },
+          E(
+            "button",
+            {
+              type: "button",
+              className: "bw-picker-row bw-browse-row",
+              disabled: loading,
+              onClick: () => navigate(entry.path)
+            },
+            E("span", { className: "bw-picker-check" }, icon("IconFolderClose16", 14)),
+            E("span", { className: "bw-picker-row-label" }, entry.name),
+            E("span", { className: "bw-browse-row-arrow", "aria-hidden": true }, icon("IconChevronRightOutline14", 12))
+          )
+        )) : null
+      ),
+      listing !== null && listing.truncated === true ? E("div", { className: "bw-hint" }, t("browse.truncated")) : null,
+      E(
+        "div",
+        { className: "bw-browse-tools" },
+        typeof createDirectory === "function" ? E(BTN, {
+          variant: "outline",
+          className: "bw-btn-sm",
+          disabled: loading || creating,
+          onClick: () => {
+            setFolderDraft("");
+            setCreateError("");
+          }
+        }, t("browse.newFolder")) : null,
+        E("button", {
+          type: "button",
+          className: cls("bw-browse-hidden", showHidden && "bw-browse-hidden-on"),
+          "aria-pressed": showHidden,
+          onClick: () => setShowHidden((value) => !value)
+        }, t("browse.showHidden")),
+        E("span", { className: "bw-browse-spacer" }),
+        E("span", { className: "bw-hint" }, t("browse.pickHint"))
+      ),
+      folderDraft !== null ? E(
+        "div",
+        { className: "bw-browse-new" },
+        E("input", {
+          className: "bw-input",
+          value: folderDraft,
+          autoFocus: true,
+          placeholder: t("browse.folderName"),
+          disabled: creating,
+          onChange: (event) => {
+            setFolderDraft(event.target.value);
+            setCreateError("");
+          },
+          onKeyDown: (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.stopPropagation();
+              createFolder();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.stopPropagation();
+              cancelFolder();
+            }
+          }
+        }),
+        E(BTN, { variant: "primary", className: "bw-btn-sm", disabled: creating || folderDraft.trim() === "", onClick: createFolder }, creating ? t("browse.creating") : t("browse.create")),
+        E(BTN, { variant: "outline", className: "bw-btn-sm", disabled: creating, onClick: cancelFolder }, t("cancel"))
+      ) : null,
+      createError !== "" ? E("div", { className: "bw-browse-error", role: "alert" }, E("div", { className: "bw-error-text" }, createError)) : null
+    );
+    const footer = E(
+      "div",
+      { className: "bw-modal-actions" },
+      E(BTN, { variant: "outline", onClick: onCancel, disabled: creating }, t("cancel")),
+      E(BTN, {
+        variant: "primary",
+        onClick: () => {
+          if (currentPath !== "") onPicked(currentPath);
+        },
+        disabled: loading || creating || error !== "" || currentPath === ""
+      }, t("browse.open"))
+    );
+    return E(ui.Modal, {
+      open: true,
+      onClose: () => {
+        if (!creating) onCancel();
+      },
+      closeLabel: t("close"),
+      title: t("browse.title"),
+      footer
+    }, body, StyleNode());
+  }
+
   // src/client/ui/flow.ts
   function BetterFlow(props) {
-    const { open, busy, onPicked, onCancel, onError, createWorkspace, renameWorkspace, pickDirectory, useWorkspaces, useStore, t } = props;
+    const { open, busy, onPicked, onCancel, onError, createWorkspace, renameWorkspace, pickDirectory, listDirectory, createDirectory, useWorkspaces, useStore, t } = props;
     const initialParent = props.initialParent || "";
     const actions = props.actions;
     const [phase, setPhase] = React.useState("idle");
@@ -1968,6 +2234,10 @@
         setPhase("picked");
       }).catch((reason) => {
         if (!alive) return;
+        if (typeof listDirectory === "function" && isBrowseOnlyPicker(reason)) {
+          setPhase("browsing");
+          return;
+        }
         setPhase("idle");
         onError(messageOf(reason));
       });
@@ -1988,7 +2258,22 @@
       document.addEventListener("pointerdown", onPointerDown);
       return () => document.removeEventListener("pointerdown", onPointerDown);
     }, [open]);
-    if (!open || phase !== "picked" && phase !== "submitting") return null;
+    if (!open) return null;
+    if (phase === "browsing") {
+      if (typeof listDirectory !== "function") return null;
+      return E(DirectoryBrowser, {
+        listDirectory,
+        createDirectory,
+        onPicked: (path) => {
+          setPickedPath(String(path));
+          setParentInput(initialParent);
+          setPhase("picked");
+        },
+        onCancel,
+        t
+      });
+    }
+    if (phase !== "picked" && phase !== "submitting") return null;
     const folderOptions = (() => {
       const set = new Set(storeFolders);
       for (const w of snapshotItems || []) {
@@ -5063,6 +5348,8 @@
       openSearch,
       ownMenuRoot,
       pickDirectory,
+      listDirectory,
+      createDirectory,
       renameWorkspace,
       sessionSectionOf,
       setCtx,
@@ -5335,6 +5622,8 @@
           createWorkspace,
           renameWorkspace,
           pickDirectory,
+          listDirectory,
+          createDirectory,
           useWorkspaces,
           actions,
           useStore,
@@ -5500,6 +5789,8 @@
           unarchiveSession,
           createWorkspace,
           pickDirectory,
+          listDirectory,
+          createDirectory,
           searchSessions,
           searchResultLimit,
           insertWorkspaceBefore,
@@ -6043,6 +6334,8 @@
           notice,
           ownMenuRoot,
           pickDirectory,
+          listDirectory,
+          createDirectory,
           renameWorkspace,
           openSearch: () => searchHost.show(),
           sessionSectionOf,
@@ -6231,6 +6524,11 @@
           unarchiveSession: typeof uiWorkspace.unarchiveSession === "function" ? (sessionId) => uiWorkspace.unarchiveSession(sessionId) : void 0,
           createWorkspace: (input) => workspaces.create(input),
           pickDirectory: () => uiWorkspace.pickDirectory(),
+          // Browse primitives are optional on older Hosts; only wrap them when
+          // the service actually exposes them, so a missing method is never
+          // mistaken for a working fallback.
+          listDirectory: typeof uiWorkspace.listDirectory === "function" ? (path, signal) => uiWorkspace.listDirectory(path, signal) : void 0,
+          createDirectory: typeof uiWorkspace.createDirectory === "function" ? (path, name) => uiWorkspace.createDirectory(path, name) : void 0,
           hooks: {
             directoryFlow: flowSource(slots, "sidebar.workspaces.directoryFlow")
           }
@@ -6239,6 +6537,8 @@
           createWorkspace: (input) => workspaces.create(input),
           renameWorkspace: (workspaceId, title) => workspaces.rename(workspaceId, title),
           pickDirectory: () => uiWorkspace.pickDirectory(),
+          listDirectory: typeof uiWorkspace.listDirectory === "function" ? (path, signal) => uiWorkspace.listDirectory(path, signal) : void 0,
+          createDirectory: typeof uiWorkspace.createDirectory === "function" ? (path, name) => uiWorkspace.createDirectory(path, name) : void 0,
           hooks: { directoryFlow: flowSource(slots, hole) }
         });
         const guarded = (slotKey, options, component) => () => {

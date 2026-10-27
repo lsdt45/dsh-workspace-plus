@@ -2,10 +2,12 @@
 
 import { React, E, ui } from '../platform.ts'
 import { cls, basename, splitTitleSegs, normPath } from '../core/text.ts'
+import { isBrowseOnlyPicker } from '../core/picker.ts'
 import { messageOf } from '../host.ts'
 import { zh } from '../i18n/zh.ts'
 import { icon } from '../icons.ts'
 import { BTN, PickerList, StyleNode } from '../ui/base.ts'
+import { DirectoryBrowser } from './directory-browser.ts'
 
 
 /**
@@ -38,6 +40,9 @@ interface BetterFlowProps {
   createWorkspace: (input: { path: string }) => Promise<any>
   renameWorkspace: (workspaceId: string, title: string) => Promise<any>
   pickDirectory: () => Promise<string | null | undefined>
+  /** Browse-primitive fallback for a host whose composed picker serves `browse`. */
+  listDirectory?: (path?: string, signal?: any) => Promise<any>
+  createDirectory?: (path: string, name: string) => Promise<string>
   useWorkspaces?: (selector: (state: any) => any) => any
   useStore?: (selector: (state: any) => any) => any
   t: (key: string, params?: Record<string, string | number>) => string
@@ -50,10 +55,10 @@ interface BetterFlowProps {
  * browser's directly composed flow (same props, owner state lives above).
  */
 export function BetterFlow(props: BetterFlowProps) {
-  const { open, busy, onPicked, onCancel, onError, createWorkspace, renameWorkspace, pickDirectory, useWorkspaces, useStore, t } = props
+  const { open, busy, onPicked, onCancel, onError, createWorkspace, renameWorkspace, pickDirectory, listDirectory, createDirectory, useWorkspaces, useStore, t } = props
   const initialParent = props.initialParent || ''
   const actions = props.actions
-  const [phase, setPhase] = React.useState('idle') // idle | picking | picked | submitting
+  const [phase, setPhase] = React.useState('idle') // idle | picking | browsing | picked | submitting
   const [pickedPath, setPickedPath] = React.useState('')
   const [parentInput, setParentInput] = React.useState('')
   // Destination state. The 分区 (section) is CLICKED out of the store's
@@ -113,6 +118,14 @@ export function BetterFlow(props: BetterFlowProps) {
       })
       .catch((reason) => {
         if (!alive) return
+        // A browse-only Host answers the native verb with
+        // `directory-picker/unavailable` and names the served kind. That is the
+        // one failure this flow can recover from: switch to the in-app browser
+        // instead of surfacing an error the operator cannot act on.
+        if (typeof listDirectory === 'function' && isBrowseOnlyPicker(reason)) {
+          setPhase('browsing')
+          return
+        }
         setPhase('idle')
         onError(messageOf(reason))
       })
@@ -135,7 +148,22 @@ export function BetterFlow(props: BetterFlowProps) {
     return () => document.removeEventListener('pointerdown', onPointerDown)
   }, [open])
 
-  if (!open || (phase !== 'picked' && phase !== 'submitting')) return null
+  if (!open) return null
+  if (phase === 'browsing') {
+    if (typeof listDirectory !== 'function') return null
+    return E(DirectoryBrowser, {
+      listDirectory,
+      createDirectory,
+      onPicked: (path: string) => {
+        setPickedPath(String(path))
+        setParentInput(initialParent)
+        setPhase('picked')
+      },
+      onCancel,
+      t,
+    })
+  }
+  if (phase !== 'picked' && phase !== 'submitting') return null
 
   const folderOptions = (() => {
     const set = new Set<string>(storeFolders)

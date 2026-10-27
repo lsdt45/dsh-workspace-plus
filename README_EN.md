@@ -80,6 +80,8 @@ After you pick a directory, the small dialog offers two destinations that are bo
 
 Both controls now share one shape — a box with the chevron INSIDE its right edge — and both lists are floating panels: the dialog keeps its height while one is open, the modal card's rounded clip cannot crop them, and the bottom "name-path group" field opens upward when space is tight so the footer buttons stay visible. With a list open, Escape closes only that list; a click or ↑/↓/Home/End selects. A live preview under the fields shows the resulting title and whether the workspace joins a section. On confirm the plugin creates the workspace, writes the group prefix into its title, and places it in the chosen section. The conversation empty-state "Add workspace" menu uses the same interaction.
 
+> **Remote / headless hosts**: DSH may serve the in-app `browse` capability instead of an OS chooser. The add flow then switches to the plugin's built-in directory browser: walk levels, reveal hidden folders, create a folder inline, and pick the current one before the section/group dialog. When a native chooser is available it is still tried first; that path is unchanged.
+
 ### Folder create and delete
 
 Right-click any folder row: new subfolder (parent prefix pre-filled), new workspace here (the add-flow group field pre-fills with this folder), rename folder, delete empty folder — no standalone header button. Explicit empty folders persist in the browser until workspaces live inside them.
@@ -375,7 +377,7 @@ Restart DSH after removal. For web profiles, use `--profile web`.
 
 The sidebar browsing region is the public `sidebar.workspaces` slot; this plugin registers the same slot with a lower priority and replaces the shipped browser with the tree. All data flows through the slot's standard snapshot hooks and injected host actions — no private APIs.
 
-The add flow lands in the seam dsh designed for third parties: the two `directoryFlow` holes. The trigger, busy semantics, and error dialog stay official; this plugin owns everything between the trigger and the adopted path — exactly enough room for pick → section/group popup → create → prefixed rename → section placement.
+The add flow lands in the seam dsh designed for third parties: the two `directoryFlow` holes. The trigger and busy semantics stay official; this plugin owns everything between the trigger and the adopted path — exactly enough room for pick → section/group popup → create → prefixed rename → section placement. When the Host only serves `browse`, that segment switches to the plugin's built-in directory browser (see above).
 
 Both hosts must reach the section and group data: besides passing the store directly whenever this plugin occupies `sidebar.workspaces`, each directory-flow seat now declares the same store seat (`store: viewStore`, all at root scope, so the renderer reuses one instance per handle+scope). A flow hosted by the official shell therefore still lists sections and existing groups.
 

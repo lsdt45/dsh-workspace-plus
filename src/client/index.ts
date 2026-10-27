@@ -81,6 +81,9 @@ interface BetterBrowserProps {
   unarchiveSession?: (sessionId: string) => any
   createWorkspace?: (input: any) => any
   pickDirectory?: () => any
+  /** Browse-primitive fallback when the Host serves the in-app directory picker. */
+  listDirectory?: (path?: string, signal?: any) => any
+  createDirectory?: (path: string, name: string) => any
   /** Host full-text search over session history (absent before 0.2.1). */
   searchSessions?: (query: string, signal?: any) => Promise<{ items: Array<{ sessionId: string; snippet?: string }>; hasMore?: boolean }>
   searchResultLimit?: number
@@ -122,8 +125,8 @@ window.__ModuleLoader__.load({
         useSessions, useSessionStatus, useSessionPendingInteraction, useWorkspaces,
         useStore, actions,
         startSession, open, renameSession, forkSession, renameWorkspace, deleteWorkspace,
-        archiveSession, unarchiveSession, createWorkspace, pickDirectory, searchSessions, searchResultLimit,
-        insertWorkspaceBefore, insertSessionBefore,
+        archiveSession, unarchiveSession, createWorkspace, pickDirectory, listDirectory, createDirectory,
+        searchSessions, searchResultLimit, insertWorkspaceBefore, insertSessionBefore,
         deleteSession, checkSessionDelete: checkDelete, openDirectory, refreshSessions, refreshPage,
         t,
       } = props
@@ -496,7 +499,7 @@ window.__ModuleLoader__.load({
       })
 
       const { render: renderLayout } = createLayout({
-        actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, ownMenuRoot, pickDirectory, renameWorkspace, openSearch: () => searchHost.show(), sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide: wide === true, workspaceGroupOf, workspaceGroups, workspaceIndexOf
+        actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, ownMenuRoot, pickDirectory, listDirectory, createDirectory, renameWorkspace, openSearch: () => searchHost.show(), sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide: wide === true, workspaceGroupOf, workspaceGroups, workspaceIndexOf
       })
 
       return renderLayout()
@@ -661,6 +664,15 @@ window.__ModuleLoader__.load({
           : undefined,
         createWorkspace: (input: any) => workspaces.create(input),
         pickDirectory: () => uiWorkspace.pickDirectory(),
+        // Browse primitives are optional on older Hosts; only wrap them when
+        // the service actually exposes them, so a missing method is never
+        // mistaken for a working fallback.
+        listDirectory: typeof uiWorkspace.listDirectory === 'function'
+          ? (path?: string, signal?: any) => uiWorkspace.listDirectory(path, signal)
+          : undefined,
+        createDirectory: typeof uiWorkspace.createDirectory === 'function'
+          ? (path: string, name: string) => uiWorkspace.createDirectory(path, name)
+          : undefined,
         hooks: {
           directoryFlow: flowSource(slots, 'sidebar.workspaces.directoryFlow'),
         },
@@ -669,6 +681,12 @@ window.__ModuleLoader__.load({
         createWorkspace: (input: any) => workspaces.create(input),
         renameWorkspace: (workspaceId: string, title: string) => workspaces.rename(workspaceId, title),
         pickDirectory: () => uiWorkspace.pickDirectory(),
+        listDirectory: typeof uiWorkspace.listDirectory === 'function'
+          ? (path?: string, signal?: any) => uiWorkspace.listDirectory(path, signal)
+          : undefined,
+        createDirectory: typeof uiWorkspace.createDirectory === 'function'
+          ? (path: string, name: string) => uiWorkspace.createDirectory(path, name)
+          : undefined,
         hooks: { directoryFlow: flowSource(slots, hole) },
       })
 

@@ -1,0 +1,36 @@
+README.md
+  h_87b3838b753bd2 84-85,381
+README_EN.md
+  h_87b3838b753bd2 84-85,381
+src/client/browser/layout.ts
+  h_87b3838b753bd2 40-41,73,271-272
+src/client/core/picker.ts
+  h_87b3838b753bd2 1-33
+src/client/i18n/en.ts
+  h_87b3838b753bd2 20-33
+src/client/i18n/zh.ts
+  h_87b3838b753bd2 20-33
+src/client/index.ts
+  h_87b3838b753bd2 84-86,128-129,502,667-675,684-689
+src/client/styles.ts
+  h_87b3838b753bd2 246-270
+src/client/ui/directory-browser.ts
+  h_87b3838b753bd2 1-219
+src/client/ui/flow.ts
+  h_87b3838b753bd2 5,10,43-45,58,61,121-128,151-166
+tests/core.picker.test.ts
+  h_87b3838b753bd2 1-28
+tests/ui.directory-browser.test.ts
+  h_87b3838b753bd2 1-440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "152198471ee48f210f59b2762b42dad641e19f0c",
+  "prompts": {},
+  "humans": {
+    "h_87b3838b753bd2": {
+      "author": "monokuro <42729729+lsdt45@users.noreply.github.com>"
+    }
+  }
+}

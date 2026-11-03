@@ -84,14 +84,22 @@ test('reconcileTabs gives a new session its own tab and follows the click prefer
   assert.deepEqual(reconcileTabs(['a', 'b'], null, 'a'), ['a', 'b'], 'no current session leaves the list alone')
 })
 
-test('reconcileTabs drops abandoned provisional and archived tabs', () => {
+test('reconcileTabs keeps blank tabs and only drops archived ones', () => {
   const isBlank = (id: string): boolean => id === 'blank'
-  // The shell hides every blank session except the current one, so a blank tab
-  // left behind can never be switched back to: drop it.
-  assert.deepEqual(reconcileTabs(['a', 'blank'], 'b', 'blank', { isBlank }), ['a', 'b'])
-  assert.deepEqual(reconcileTabs(['blank'], 'other', 'blank', { isBlank }), ['other'])
+  const isArchived = (id: string): boolean => id === 'arch'
+  // A blank session is a page the user just created. Switching away keeps its
+  // chip, and the session being switched to opens a tab of its own instead of
+  // taking that chip over.
+  assert.deepEqual(reconcileTabs(['a', 'blank'], 'b', 'blank', { isBlank }), ['a', 'blank', 'b'])
+  assert.deepEqual(reconcileTabs(['blank'], 'other', 'blank', { isBlank }), ['blank', 'other'])
+  // The chip also survives when the shell lands on a tab that is already open.
+  assert.deepEqual(reconcileTabs(['a', 'blank'], 'a', 'blank', { isBlank }), ['a', 'blank'])
+  // A new session is blank itself: it still gets its own tab.
+  assert.deepEqual(reconcileTabs(['a', 'blank'], 'blank', 'a', { isBlank }), ['a', 'blank'])
   // Archived sessions are refused by the shell; their chips are dead too.
-  assert.deepEqual(reconcileTabs(['a', 'arch'], 'a', 'a', { isArchived: (id) => id === 'arch' }), ['a'])
+  assert.deepEqual(reconcileTabs(['a', 'arch'], 'a', 'a', { isArchived }), ['a'])
+  // Navigation the plugin does not own still swaps the previous tab.
+  assert.deepEqual(reconcileTabs(['a', 'b'], 'c', 'a'), ['c', 'b'])
   // Unknown ids stay put: a partial session snapshot must never lose a tab.
   assert.deepEqual(reconcileTabs(['a', 'zzz'], 'a', 'a'), ['a', 'zzz'])
 })

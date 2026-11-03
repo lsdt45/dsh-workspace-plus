@@ -3,8 +3,8 @@
  *
  * The feature lives in the client half (src/client/**): the hierarchy tree,
  * the add-workspace parent-group popup, and view state (persisted in the
- * browser through the dsh client store). This host half carries the one
- * operation the browser cannot perform.
+ * browser through the dsh client store). This host half carries the operations
+ * the browser cannot perform.
  *
  *  - `POST /dsh-workspace-plus/delete-session` — permanent session deletion.
  *    DSH ships archive but no delete RPC, so the plugin owns one: the pipeline
@@ -21,6 +21,12 @@
  *         environment (DSH injects it into tool subprocesses only), so the
  *         sessions root is read from the persistence service itself.
  *
+ *  - `POST /dsh-workspace-plus/search` — stored-session content search for the
+ *    floating panel, read through this plugin's own resilient index.
+ *  - `POST /dsh-workspace-plus/git-branch` — the branch checked out in each
+ *    requested project directory, for the hover badges. Read-only, briefly
+ *    cached, and it never fails a request over one unreadable path.
+ *
  * The configuration page lives in the client half (`plugins.bundle.config`);
  * this host half exposes no settings service.
  */
@@ -29,6 +35,7 @@ import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { createBranchResolver, GIT_BRANCH_ROUTE } from './git-branch.ts'
 import { createSessionSearchIndex } from './search-index.ts'
 
 /**
@@ -472,6 +479,38 @@ function registerSessionSearchRoute(ctx: HostContext): () => void {
   }
 }
 
+/* ============================== git branch ============================== */
+
+/**
+ * Register the exact git-branch route; returns its disposer.
+ *
+ * Read-only: the only state is the resolver's short TTL cache, so repeat hovers
+ * cost no git children while a checkout still shows up within the TTL. Per-path
+ * failures are already swallowed by the resolver, so a 500 here means the route
+ * itself broke rather than one directory being unreadable.
+ */
+function registerGitBranchRoute(ctx: HostContext): () => void {
+  const resolver = createBranchResolver()
+  return ctx.webServer.register({
+    kind: 'exact',
+    path: GIT_BRANCH_ROUTE,
+    handler: async (request: IncomingMessage, response: ServerResponse) => {
+      // The client probes availability with GET and expects exactly this 405.
+      if (request.method !== 'POST') return respond(response, 405, { ok: false, error: 'method-not-allowed' })
+      const validation = isSameOriginJsonRequest(request)
+      if (!validation.ok) return respond(response, validation.status, { ok: false, error: validation.error })
+      let body: any
+      try { body = await readJsonBody(request) } catch { return respond(response, 400, { ok: false, error: 'bad-request' }) }
+      try {
+        return respond(response, 200, { ok: true, branches: await resolver.resolve(body?.paths) })
+      } catch (error) {
+        ctx.logger.warn('[dsh-workspace-plus] failed to resolve git branches:', error)
+        respond(response, 500, { ok: false, error: 'branch-resolve-failed' })
+      }
+    },
+  })
+}
+
 /* =============================== plugin =============================== */
 
 export function apply(ctx: HostContext | null | undefined): void {
@@ -498,6 +537,16 @@ export function apply(ctx: HostContext | null | undefined): void {
     const dispose = registerSessionSearchRoute(sctx)
     if (typeof sctx.effect === 'function') sctx.effect(() => dispose, 'dsh-workspace-plus session search route')
     log('[dsh-workspace-plus] session search route registered: ' + SESSION_SEARCH_ROUTE)
+  })
+
+  // Git branch lookup for the client half's project badges. Read-only and
+  // webServer-only: git is probed per request, so a host without git (or with a
+  // window outside any repository) degrades to an empty map instead of refusing
+  // to load the plugin.
+  ctx.inject(['webServer'], (sctx) => {
+    const dispose = registerGitBranchRoute(sctx)
+    if (typeof sctx.effect === 'function') sctx.effect(() => dispose, 'dsh-workspace-plus git branch route')
+    log('[dsh-workspace-plus] git branch route registered: ' + GIT_BRANCH_ROUTE)
   })
 
 }

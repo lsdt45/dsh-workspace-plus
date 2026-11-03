@@ -20,12 +20,14 @@
  */
 
 import { React, E } from './platform.ts'
-import { cls } from './core/text.ts'
+import { cls, joinMeta } from './core/text.ts'
 import type { Translate } from './core/time.ts'
 import { currentSessionIdOf, sessionTitleOf } from './core/view.ts'
 import { StyleNode } from './ui/base.ts'
 import { StatusDot, sessionStateOf } from './rows.ts'
 import { useHoverTip } from './ui/tooltip.ts'
+import { useGitBranch } from './ui/branch.ts'
+import { branchCache } from './git-branch.ts'
 import { useTabReorder } from './browser/dnd.ts'
 import { CheckIcon16, ChevronDownIcon16, PlusIcon16 } from './icons.ts'
 import { closeTab, moveTab, reconcileTabs, saveTabs, scrollDeltaFor, setActiveTab, stripFillWidth, subscribeTabs, tabsActive, tabsSnapshot } from './tabs.ts'
@@ -177,8 +179,9 @@ function useStripOverflow(stripRef: any, deps: any[]): StripOverflow {
  * must never leave the current page's chip outside the row. The scroll is an
  * instant write, not a smooth animation: the shell remounts the header while
  * navigating, so an animation would be cut off mid-flight and leave the chip
- * half-visible. A short follow-up check catches the reconciliation that drops an
- * abandoned blank tab one frame after the switch (it shifts every later chip).
+ * half-visible. A short follow-up check catches a row that only settles a frame
+ * after the switch — a chip whose label or the strip's overflow controls appear
+ * late shifts every later chip, and the active one must still end up visible.
  */
 function useRevealActive(stripRef: any, sessionId: string | null, tabCount: number) {
   React.useLayoutEffect(() => {
@@ -685,6 +688,12 @@ export function TabsStrip(props: TabsStripProps) {
   const moreRef = React.useRef(null)
   const anchorRef = React.useRef(null)
   const [menuOpen, setMenuOpen] = React.useState(false)
+  // The chip bubble's second line carries the hovered project's git branch, so
+  // the hovered chip is state: the strip must re-render when its answer lands
+  // (the branch cache is module state, not a React store). The anchor element is
+  // tracked in chipTipState below, which the delayed show() reads.
+  const [hovered, setHovered] = React.useState({ id: '', cwd: '' })
+  const hoverBranch = useGitBranch(hovered.cwd)
   const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs])
   // The row is capped to the room before the window utilities; chips size to
   // their own titles and only shrink/scroll when that room runs out.
@@ -717,9 +726,11 @@ export function TabsStrip(props: TabsStripProps) {
     const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
     return sessionTitleOf(summary, t) || id
   }
-  // Second bubble line: the project (last workspace title segment) and the
-  // absolute update time, matching the session row's bubble meta.
-  const chipMetaOf = (id: string) => {
+  // The project a chip belongs to: its last workspace title segment (the tag
+  // the sidebar rows show) and the directory the branch lookup keys on. A
+  // session summary may carry its own cwd; the workspace listing supplies the
+  // path otherwise, exactly like the sidebar's session rows.
+  const chipProjectOf = (id: string) => {
     const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
     const entries = Array.isArray(workspaceItems) ? workspaceItems : []
     // The workspace snapshot lists its members: find the owner of this session.
@@ -731,27 +742,39 @@ export function TabsStrip(props: TabsStripProps) {
     const workspace = workspaceId ? entries.find((entry: any) => entry && String(entry.workspaceId) === workspaceId) : undefined
     // Last path segment, matching the sidebar's workspace tag (web/前端 -> 前端).
     const name = workspace ? String(workspace.title || '').split('/').pop() || workspace.leaf || '' : ''
+    const cwd = String((summary && summary.cwd) || (workspace && workspace.path) || '').trim()
+    return { name, cwd }
+  }
+  // Second bubble line: the project (last workspace title segment), the project
+  // directory's current git branch when known, and the absolute update time —
+  // the same meta the session rows show. A missing segment drops itself.
+  const chipMetaOf = (id: string, branch: string) => {
+    const summary = sessions && sessions.byId ? sessions.byId[id] : undefined
     const updatedAt = Number(summary && summary.updatedAt) > 0 ? new Date(Number(summary.updatedAt)).toLocaleString() : ''
-    return [name, updatedAt].filter(Boolean).join(' · ')
+    return joinMeta(chipProjectOf(id).name, branch, updatedAt)
   }
   // Hover bubble on the chips: the chip label truncates long titles, so hovering
-  // repeats the FULL title plus the project and absolute time — the same two-line
-  // shape the sidebar session rows use (ui/tooltip.ts). The resolver runs only
-  // while the bubble is visible, so the meta (workspace title + timestamp) is
-  // derived lazily from the hovered session id.
-  const chipTipState = React.useRef({ id: '' })
+  // repeats the FULL title plus the project, the project's git branch and the
+  // absolute time — the same two-line shape the sidebar session rows use
+  // (ui/tooltip.ts). The resolver runs only while the bubble is visible and
+  // reads the branch from the cache, so it stays side-effect free; the refresh
+  // rides the opening instead (onShow). The ref carries the hovered chip for the
+  // delayed show(): the resolver's own closure belongs to a render that predates
+  // the hover.
+  const chipTipState = React.useRef({ id: '', cwd: '' })
   const chipTip = useHoverTip({
     label: () => {
-      const id = chipTipState.current.id
+      const id = hovered.id
       if (!id) return ''
       const title = titleOf(id)
-      const meta = chipMetaOf(id)
+      const meta = chipMetaOf(id, hoverBranch)
       return meta ? title + '\n' + meta : title
     },
     delayMs: 300,
     gap: 6,
     maxWidth: 380,
     prefer: 'below',
+    onShow: () => { if (chipTipState.current.cwd) branchCache.ensure([chipTipState.current.cwd]) },
   })
   const stateOf = (id: string) => {
     const status = statuses && typeof statuses.get === 'function' ? statuses.get(id) : undefined
@@ -836,7 +859,7 @@ export function TabsStrip(props: TabsStripProps) {
         // colour the shell gives its own active view tab, no fill and no border.
         const activeStyle = active ? { boxShadow: 'inset 0 -2px 0 var(--dsw-alias-brand-primary, #5b8def)' } : undefined
         // Same two-line content the sidebar rows show in their bubble: the full
-        // title, then project · absolute time. aria-label mirrors it for AT.
+        // title, then project · git branch · absolute time.
         return E('div', {
           key: id,
           className: cls('bw-tab', active && 'bw-tab-active', draggingId === id && 'bw-tab-dragging'),
@@ -853,7 +876,13 @@ export function TabsStrip(props: TabsStripProps) {
           onMouseEnter: (event: any) => {
             const ref = chipTip.attach.ref
             if (ref && typeof ref === 'object') ref.current = event.currentTarget
-            chipTipState.current.id = id
+            const project = chipProjectOf(id)
+            // The ref is what the delayed show() reads: it must already name the
+            // chip being hovered, or the bubble asks for the previous directory.
+            chipTipState.current = { id, cwd: project.cwd }
+            setHovered((previous: { id: string; cwd: string }) => (previous.id === id && previous.cwd === project.cwd
+              ? previous
+              : { id, cwd: project.cwd }))
             chipTip.attach.onMouseEnter(event)
           },
           onMouseLeave: chipTip.attach.onMouseLeave,

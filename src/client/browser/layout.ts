@@ -37,6 +37,8 @@ export interface LayoutInput {
   ownMenuRoot: any
   openSearch: () => void
   pickDirectory: any
+  listDirectory?: any
+  createDirectory?: any
   renameWorkspace: any
   sessionSectionOf: any
   setCtx: any
@@ -68,7 +70,7 @@ export interface LayoutInput {
 
 export function createLayout(input: LayoutInput) {
   const {
-    actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, openSearch, ownMenuRoot, pickDirectory, renameWorkspace, sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide, workspaceGroupOf, workspaceGroups, workspaceIndexOf
+    actions, bodyRows, createWorkspace, ctx, ctxItems, ctxSubmenu, customize, deleting, deletingRef, dialog, errorText, expandSidebar, fail, flowOpen, flowParent, handleCtxPick, items, notice, openSearch, ownMenuRoot, pickDirectory, listDirectory, createDirectory, renameWorkspace, sessionSectionOf, setCtx, setCtxSubmenu, setCustomize, setDialog, setErrorText, setFlowOpen, setFlowParent, styleEntry, submitFolderDelete, submitFolderNew, submitFolderRename, submitSessionDelete, submitSessionGroupRename, submitSessionRename, submitWorkspaceDelete, submitWorkspaceGroup, submitWorkspaceRename, t, useStore, useWorkspaces, viewMode, wide, workspaceGroupOf, workspaceGroups, workspaceIndexOf
   } = input
 
 /* --------------------------- dialogs --------------------------- */
@@ -266,6 +268,8 @@ export function createLayout(input: LayoutInput) {
       createWorkspace,
       renameWorkspace,
       pickDirectory,
+      listDirectory,
+      createDirectory,
       useWorkspaces,
       actions,
       useStore,

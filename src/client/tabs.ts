@@ -102,11 +102,19 @@ export function tabsForClick(tabs: unknown, activeId: unknown, clickedId: unknow
   return openTab(list.length === 0 && active ? [active] : list, clickedId)
 }
 
-/** Predicates the tab reconciliation uses to drop unreachable tabs. */
+/** Predicates the tab reconciliation consults to keep the strip reachable. */
 export interface ReconcileOptions {
-  /** Whether the id is a provisional New Session (blank, never engaged). */
+  /**
+   * Whether the id is a provisional New Session (blank, never engaged).
+   *
+   * Blank is not a reason to prune a tab: the shell only hides a blank session
+   * from the sidebar, the host keeps the session, and its chip still navigates
+   * back to it. The predicate instead tells the reconciliation that the screen
+   * the shell is leaving holds a page the user just created, so the next
+   * navigation opens a tab rather than swapping the previous one.
+   */
   isBlank?: (id: string) => boolean
-  /** Whether the id is archived (the shell refuses to show it). */
+  /** Whether the id is archived (the shell refuses to show it, so its chip is dead). */
   isArchived?: (id: string) => boolean
 }
 
@@ -120,13 +128,17 @@ export interface ReconcileOptions {
  *
  *  - a provisional New Session (blank, never engaged) opens a tab of its own, so
  *    "new session" reads as a new page instead of replacing the page you were on;
+ *  - a blank tab survives the shell moving to another session: the shell only
+ *    hides a blank session from the sidebar (the host keeps the session, and
+ *    the chip still reopens it), so dropping the chip would silently close the
+ *    page the user had just created. For the same reason the previous tab is
+ *    not swapped while it is blank: the new session opens a tab of its own;
  *  - any other not-yet-open session swaps the session inside the previous tab,
  *    so navigation the plugin does not own (the command palette, a host entry
  *    point) never grows the strip; the plugin's own session clicks write the
  *    list themselves before navigating (see tabsForClick);
- *  - tabs left behind by abandoned provisional sessions or archived sessions are
- *    dropped: the shell hides blank sessions except the current one and refuses
- *    archived ones, so such a chip could never be reached again.
+ *  - archived sessions are dropped: the shell refuses to show them, so such a
+ *    chip could never be reached again.
  *
  * Ids the caller knows nothing about stay untouched (a partial session snapshot
  * must never lose a tab), and the list stays bounded through openTab.
@@ -141,10 +153,15 @@ export function reconcileTabs(
   if (!current) return normalizeTabs(tabs)
   const isBlank = typeof options.isBlank === 'function' ? options.isBlank : () => false
   const isArchived = typeof options.isArchived === 'function' ? options.isArchived : () => false
-  const kept = normalizeTabs(tabs).filter((id) => id === current || (!isBlank(id) && !isArchived(id)))
+  // Archived is the only unreachable case: a blank tab is kept on purpose (see
+  // the rules above).
+  const kept = normalizeTabs(tabs).filter((id) => !isArchived(id))
   if (kept.includes(current)) return kept
-  if (isBlank(current)) return openTab(kept, current)
-  return replaceTab(kept, previousId, current)
+  // Leaving a blank page is a page switch in browser terms, so the new session
+  // opens a tab: replacing would close the blank chip that was just kept.
+  const previous = tabIdOf(previousId)
+  if (isBlank(current) || (previous !== '' && isBlank(previous))) return openTab(kept, current)
+  return replaceTab(kept, previous, current)
 }
 
 /**

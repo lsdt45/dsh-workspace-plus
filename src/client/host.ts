@@ -1,4 +1,4 @@
-/** Host-half calls made from the browser: the plugin-owned delete route, directory open, clipboard. */
+/** Host-half calls made from the browser: the plugin-owned delete route, git branch lookup, directory open, clipboard. */
 
 /** The host delete route's success envelope. */
 export interface DeleteSessionResult {
@@ -60,6 +60,62 @@ export const writeClipboardText = async (
     return true
   }
   return false
+}
+
+/* ------------------------------- git branch ------------------------------ */
+
+/** Exact route the host half serves per-directory git branch names on. */
+export const GIT_BRANCH_ROUTE = '/dsh-workspace-plus/git-branch'
+
+/**
+ * The route is not mounted at all — an older host half, or one whose own
+ * webServer injection failed. Kept distinct from a failed lookup because the
+ * branch cache must stop asking: a route that is absent cannot appear later in
+ * the same page session.
+ */
+export class GitBranchRouteUnavailable extends Error {
+  constructor(detail: string) {
+    super(detail)
+    this.name = 'GitBranchRouteUnavailable'
+  }
+}
+
+/**
+ * Fetch the current git branch of each directory (absolute paths).
+ *
+ * The host answers `{ ok: true, branches: { [path]: branch } }`; a directory
+ * that is not inside a git work tree simply has no entry. 404/405 and a
+ * non-JSON body mean the route is absent (a stale host half, a proxy, another
+ * dev server), so those raise {@link GitBranchRouteUnavailable} and the cache
+ * stops asking.
+ */
+export const requestGitBranches = async (paths: string[]): Promise<Record<string, string>> => {
+  let response: Response
+  try {
+    response = await fetch(GIT_BRANCH_ROUTE, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ paths }),
+    })
+  } catch (reason) {
+    // A transport error says nothing about the route existing: the cache
+    // retries after its cooldown.
+    throw new Error('git-branch request failed: ' + messageOf(reason))
+  }
+  if (response.status === 404 || response.status === 405) {
+    throw new GitBranchRouteUnavailable('git-branch route missing (HTTP ' + response.status + ')')
+  }
+  const payload = await response.json().catch(() => null) as { ok?: boolean; branches?: unknown } | null
+  // A mounted exact route always answers JSON; an HTML error page or a body
+  // that is not our envelope is some other server answering for this path.
+  if (!payload || typeof payload !== 'object') {
+    throw new GitBranchRouteUnavailable('git-branch route answered non-JSON (HTTP ' + response.status + ')')
+  }
+  if (!response.ok || payload.ok !== true) {
+    throw new Error('git-branch request failed (HTTP ' + response.status + ')')
+  }
+  const branches = payload.branches
+  return branches && typeof branches === 'object' ? branches as Record<string, string> : {}
 }
 
 export const openSessionDirectory = async (path: string): Promise<void> => {

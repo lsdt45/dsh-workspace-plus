@@ -481,6 +481,7 @@
     for (const seg of splitPlainSegs(plain)) out.push(seg);
     return out;
   };
+  var joinMeta = (...parts) => parts.map((part) => part === null || part === void 0 ? "" : String(part).trim()).filter(Boolean).join(" \xB7 ");
   var normPath = (p) => splitTitleSegs(p).join("/");
 
   // src/client/core/time.ts
@@ -775,6 +776,37 @@
       return true;
     }
     return false;
+  };
+  var GIT_BRANCH_ROUTE = "/dsh-workspace-plus/git-branch";
+  var GitBranchRouteUnavailable = class extends Error {
+    constructor(detail) {
+      super(detail);
+      this.name = "GitBranchRouteUnavailable";
+    }
+  };
+  var requestGitBranches = async (paths) => {
+    let response;
+    try {
+      response = await fetch(GIT_BRANCH_ROUTE, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ paths })
+      });
+    } catch (reason) {
+      throw new Error("git-branch request failed: " + messageOf(reason));
+    }
+    if (response.status === 404 || response.status === 405) {
+      throw new GitBranchRouteUnavailable("git-branch route missing (HTTP " + response.status + ")");
+    }
+    const payload = await response.json().catch(() => null);
+    if (!payload || typeof payload !== "object") {
+      throw new GitBranchRouteUnavailable("git-branch route answered non-JSON (HTTP " + response.status + ")");
+    }
+    if (!response.ok || payload.ok !== true) {
+      throw new Error("git-branch request failed (HTTP " + response.status + ")");
+    }
+    const branches = payload.branches;
+    return branches && typeof branches === "object" ? branches : {};
   };
   var openSessionDirectory = async (path) => {
     const response = await fetch("/api/session/openWorkspacePath", {
@@ -2660,11 +2692,13 @@
     const gap = opts.gap === void 0 ? 8 : opts.gap;
     const maxWidth = opts.maxWidth === void 0 ? 320 : opts.maxWidth;
     const prefer = opts.prefer;
+    const onShow = opts.onShow;
     const anchorRef = React.useRef(null);
     const pointerRef = React.useRef(null);
     const timerRef = React.useRef(null);
     const bubbleRef = React.useRef(null);
     const hoverAwareRef = React.useRef(false);
+    const openRef = React.useRef(false);
     const [anchor, setAnchor] = React.useState(null);
     const [size, setSize] = React.useState(null);
     const open = anchor !== null;
@@ -2677,6 +2711,7 @@
     const hide = () => {
       clearTimer();
       pointerRef.current = null;
+      openRef.current = false;
       setAnchor(null);
       setSize(null);
     };
@@ -2689,7 +2724,11 @@
     const show = () => {
       clearTimer();
       const rect = measure();
-      if (rect) setAnchor(rect);
+      if (!rect) return;
+      setAnchor(rect);
+      if (openRef.current) return;
+      openRef.current = true;
+      if (typeof onShow === "function") onShow();
     };
     const attach = {
       ref: anchorRef,
@@ -2796,6 +2835,109 @@
       }, text);
     }
     return { attach, bubble };
+  }
+
+  // src/client/git-branch.ts
+  var normalizeGitBranch = (value) => {
+    const branch = String(value === null || value === void 0 ? "" : value).trim();
+    return branch === "HEAD" ? "" : branch;
+  };
+  var BRANCH_TTL_MS = 3e4;
+  var BRANCH_FAIL_COOLDOWN_MS = 3e4;
+  var isAbsolutePath = (path) => path.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path) || path.startsWith("\\\\");
+  function createBranchCache(options) {
+    const fetchBranches = options.fetchBranches;
+    const now = typeof options.now === "function" ? options.now : () => Date.now();
+    const ttlMs = typeof options.ttlMs === "number" ? options.ttlMs : BRANCH_TTL_MS;
+    const failCooldownMs = typeof options.failCooldownMs === "number" ? options.failCooldownMs : BRANCH_FAIL_COOLDOWN_MS;
+    const entries = /* @__PURE__ */ new Map();
+    const inFlight = /* @__PURE__ */ new Set();
+    const listeners3 = /* @__PURE__ */ new Set();
+    const queued = /* @__PURE__ */ new Set();
+    let flushScheduled = false;
+    let disabled = false;
+    let cooldownUntil = 0;
+    const notify = () => {
+      for (const listener of Array.from(listeners3)) listener();
+    };
+    const applyBatch = (batch, branches) => {
+      const at = now();
+      for (const path of batch) {
+        const branch = branches && typeof branches === "object" ? normalizeGitBranch(branches[path]) : "";
+        entries.set(path, { branch, at });
+      }
+      cooldownUntil = 0;
+      notify();
+    };
+    const flush = () => {
+      flushScheduled = false;
+      if (queued.size === 0) return;
+      const batch = Array.from(queued);
+      queued.clear();
+      for (const path of batch) inFlight.add(path);
+      fetchBranches(batch).then(
+        (branches) => {
+          for (const path of batch) inFlight.delete(path);
+          applyBatch(batch, branches);
+        },
+        (reason) => {
+          for (const path of batch) inFlight.delete(path);
+          if (reason instanceof GitBranchRouteUnavailable) disabled = true;
+          else cooldownUntil = now() + failCooldownMs;
+        }
+      );
+    };
+    const ensure = (paths) => {
+      if (disabled) return;
+      const at = now();
+      if (at < cooldownUntil) return;
+      for (const value of paths) {
+        const path = typeof value === "string" ? value.trim() : "";
+        if (path === "" || !isAbsolutePath(path)) continue;
+        if (inFlight.has(path) || queued.has(path)) continue;
+        const entry = entries.get(path);
+        if (entry && at - entry.at < ttlMs) continue;
+        queued.add(path);
+      }
+      if (queued.size === 0 || flushScheduled) return;
+      flushScheduled = true;
+      queueMicrotask(flush);
+    };
+    const branchOf = (path) => {
+      const key = typeof path === "string" ? path.trim() : "";
+      if (key === "") return "";
+      const entry = entries.get(key);
+      return entry ? entry.branch : "";
+    };
+    const subscribe = (listener) => {
+      listeners3.add(listener);
+      return () => {
+        listeners3.delete(listener);
+      };
+    };
+    return { branchOf, ensure, subscribe };
+  }
+  var branchCache = createBranchCache({ fetchBranches: requestGitBranches });
+
+  // src/client/ui/branch.ts
+  function useGitBranch(cwd) {
+    const path = typeof cwd === "string" ? cwd.trim() : "";
+    const [branch, setBranch] = React.useState(() => path === "" ? "" : branchCache.branchOf(path));
+    React.useEffect(() => {
+      if (path === "") {
+        setBranch((previous) => previous === "" ? previous : "");
+        return void 0;
+      }
+      const read = () => {
+        const next = branchCache.branchOf(path);
+        setBranch((previous) => previous === next ? previous : next);
+      };
+      read();
+      const unsubscribe = branchCache.subscribe(read);
+      branchCache.ensure([path]);
+      return unsubscribe;
+    }, [path]);
+    return branch;
   }
 
   // src/client/rows.ts
@@ -2928,12 +3070,22 @@
       title: state2 === "warning" ? t("status." + (node.pending === "plan-review" ? "planReview" : node.pending)) : state2 === "ongoing" ? node.running ? t("status.running") : t("status.subagents", { n: node.subagents }) : t("status.completed")
     };
     const hasHoverLabel = tooltip === true;
+    const cwd = hasHoverLabel && typeof node.cwd === "string" ? node.cwd.trim() : "";
+    const branch = useGitBranch(cwd);
     const hoverLabel = hasHoverLabel ? () => {
-      const meta = [workspaceTag, Number(node.updatedAt) > 0 ? new Date(Number(node.updatedAt)).toLocaleString() : ""].filter(Boolean).join(" \xB7 ");
+      const meta = joinMeta(workspaceTag, branch, Number(node.updatedAt) > 0 ? new Date(Number(node.updatedAt)).toLocaleString() : "");
       const title = node.leaf || node.title;
       return meta !== "" ? title + "\n" + meta : title;
     } : null;
-    const tip = useHoverTip({ label: hoverLabel, delayMs: 300, gap: 8, maxWidth: 320 });
+    const tip = useHoverTip({
+      label: hoverLabel,
+      delayMs: 300,
+      gap: 8,
+      maxWidth: 320,
+      // The resolver renders a cached value, so the refresh rides the opening of
+      // the bubble instead of the render (the cache batches a whole hover burst).
+      onShow: cwd === "" ? void 0 : () => branchCache.ensure([cwd])
+    });
     const renderActions = () => {
       let button;
       if (node.archived) {
@@ -3765,10 +3917,11 @@
     if (!current) return normalizeTabs(tabs);
     const isBlank = typeof options.isBlank === "function" ? options.isBlank : () => false;
     const isArchived = typeof options.isArchived === "function" ? options.isArchived : () => false;
-    const kept = normalizeTabs(tabs).filter((id) => id === current || !isBlank(id) && !isArchived(id));
+    const kept = normalizeTabs(tabs).filter((id) => !isArchived(id));
     if (kept.includes(current)) return kept;
-    if (isBlank(current)) return openTab(kept, current);
-    return replaceTab(kept, previousId, current);
+    const previous = tabIdOf(previousId);
+    if (isBlank(current) || previous !== "" && isBlank(previous)) return openTab(kept, current);
+    return replaceTab(kept, previous, current);
   }
   function moveTab(tabs, fromId, toId) {
     const from = tabIdOf(fromId);
@@ -4636,6 +4789,8 @@
     const moreRef = React.useRef(null);
     const anchorRef = React.useRef(null);
     const [menuOpen, setMenuOpen] = React.useState(false);
+    const [hovered, setHovered] = React.useState({ id: "", cwd: "" });
+    const hoverBranch = useGitBranch(hovered.cwd);
     const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs]);
     const roomWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs]);
     useRevealActive(stripRef, sessionId, tabs.length);
@@ -4656,7 +4811,7 @@
       const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
       return sessionTitleOf(summary, t) || id;
     };
-    const chipMetaOf = (id) => {
+    const chipProjectOf = (id) => {
       const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
       const entries = Array.isArray(workspaceItems) ? workspaceItems : [];
       let workspaceId = "";
@@ -4669,22 +4824,30 @@
       }
       const workspace = workspaceId ? entries.find((entry) => entry && String(entry.workspaceId) === workspaceId) : void 0;
       const name = workspace ? String(workspace.title || "").split("/").pop() || workspace.leaf || "" : "";
-      const updatedAt = Number(summary && summary.updatedAt) > 0 ? new Date(Number(summary.updatedAt)).toLocaleString() : "";
-      return [name, updatedAt].filter(Boolean).join(" \xB7 ");
+      const cwd = String(summary && summary.cwd || workspace && workspace.path || "").trim();
+      return { name, cwd };
     };
-    const chipTipState = React.useRef({ id: "" });
+    const chipMetaOf = (id, branch) => {
+      const summary = sessions && sessions.byId ? sessions.byId[id] : void 0;
+      const updatedAt = Number(summary && summary.updatedAt) > 0 ? new Date(Number(summary.updatedAt)).toLocaleString() : "";
+      return joinMeta(chipProjectOf(id).name, branch, updatedAt);
+    };
+    const chipTipState = React.useRef({ id: "", cwd: "" });
     const chipTip = useHoverTip({
       label: () => {
-        const id = chipTipState.current.id;
+        const id = hovered.id;
         if (!id) return "";
         const title = titleOf(id);
-        const meta = chipMetaOf(id);
+        const meta = chipMetaOf(id, hoverBranch);
         return meta ? title + "\n" + meta : title;
       },
       delayMs: 300,
       gap: 6,
       maxWidth: 380,
-      prefer: "below"
+      prefer: "below",
+      onShow: () => {
+        if (chipTipState.current.cwd) branchCache.ensure([chipTipState.current.cwd]);
+      }
     });
     const stateOf = (id) => {
       const status = statuses && typeof statuses.get === "function" ? statuses.get(id) : void 0;
@@ -4780,7 +4943,9 @@
               onMouseEnter: (event) => {
                 const ref = chipTip.attach.ref;
                 if (ref && typeof ref === "object") ref.current = event.currentTarget;
-                chipTipState.current.id = id;
+                const project = chipProjectOf(id);
+                chipTipState.current = { id, cwd: project.cwd };
+                setHovered((previous) => previous.id === id && previous.cwd === project.cwd ? previous : { id, cwd: project.cwd });
                 chipTip.attach.onMouseEnter(event);
               },
               onMouseLeave: chipTip.attach.onMouseLeave,

@@ -1,7 +1,7 @@
 /** Tree row components (workspace folder / workspace / session / session group) and their status helpers. */
 
 import { E, ui } from './platform.ts'
-import { cls } from './core/text.ts'
+import { cls, joinMeta } from './core/text.ts'
 import { timeLabel } from './core/time.ts'
 import type { Translate } from './core/time.ts'
 import { countWorkspaces } from './core/tree.ts'
@@ -9,6 +9,8 @@ import type { CountableNode, WorkspaceRow as WorkspaceData } from './core/tree.t
 import { icon, PinIcon16 } from './icons.ts'
 import { renderWsTag } from './ui/base.ts'
 import { useHoverTip } from './ui/tooltip.ts'
+import { useGitBranch } from './ui/branch.ts'
+import { branchCache } from './git-branch.ts'
 
 
 /** The status states a row can show: amber "waiting", orange "running", green "done". */
@@ -287,6 +289,8 @@ export interface SessionRowNode extends SessionStatusFields {
   /** Last title segment: the label inside its group. */
   leaf: string
   updatedAt: number
+  /** Project directory the session runs in (the bubble's git branch key). */
+  cwd?: string
   /** Running subagents under this session. */
   subagents: number
   archived?: boolean
@@ -326,14 +330,18 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
         ? (node.running ? t('status.running') : t('status.subagents', { n: node.subagents }))
         : t('status.completed'),
   }
-  // Hover tooltip label: line 1 is the full title, line 2 the project ·
-  // absolute timestamp. Built only while the bubble is visible (the
-  // primitives resolver). updatedAt 0 contributes no time part; a blank
-  // workspace tag drops the meta segment.
+  // Hover tooltip label: line 1 is the full title, line 2 the project · git
+  // branch · absolute timestamp. Built only while the bubble is visible (the
+  // primitives resolver), so the branch is read from the cache synchronously;
+  // updatedAt 0 contributes no time part and every missing segment drops itself.
+  // A row without a bubble passes no cwd, so it neither subscribes to the cache
+  // nor warms it.
   const hasHoverLabel = tooltip === true
+  const cwd = hasHoverLabel && typeof node.cwd === 'string' ? node.cwd.trim() : ''
+  const branch = useGitBranch(cwd)
   const hoverLabel = hasHoverLabel
     ? () => {
-      const meta = [workspaceTag, Number(node.updatedAt) > 0 ? new Date(Number(node.updatedAt)).toLocaleString() : ''].filter(Boolean).join(' · ')
+      const meta = joinMeta(workspaceTag, branch, Number(node.updatedAt) > 0 ? new Date(Number(node.updatedAt)).toLocaleString() : '')
       const title = node.leaf || node.title
       return meta !== '' ? title + '\n' + meta : title
     }
@@ -342,7 +350,15 @@ export function SessionRow({ node, depth, current, onOpen, onContextMenu, now, d
   // Tooltip withdraws only on the anchor's mouseleave, and a row that re-sorts
   // or scrolls out from under the pointer never gets one — the bubble stayed on
   // screen until that exact row was hovered and left again.
-  const tip = useHoverTip({ label: hoverLabel, delayMs: 300, gap: 8, maxWidth: 320 })
+  const tip = useHoverTip({
+    label: hoverLabel,
+    delayMs: 300,
+    gap: 8,
+    maxWidth: 320,
+    // The resolver renders a cached value, so the refresh rides the opening of
+    // the bubble instead of the render (the cache batches a whole hover burst).
+    onShow: cwd === '' ? undefined : () => branchCache.ensure([cwd]),
+  })
   const renderActions = () => {
     let button
     if (node.archived) {

@@ -35,6 +35,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const CLIENT_DIR = join(ROOT, 'src/client')
 const CLIENT_ENTRY = join(CLIENT_DIR, 'index.ts')
 const HOST_ENTRY = join(ROOT, 'src/index.ts')
+const SOURCE_DIR = join(ROOT, 'src')
 const DIST = join(ROOT, 'dist')
 const CLIENT_BUNDLE = join(DIST, 'client.js')
 const CLIENT_MAP = CLIENT_BUNDLE + '.map'
@@ -151,7 +152,7 @@ function check(artifacts: Artifacts): void {
   console.log('[build] ok — dist/ matches src/**.')
 }
 
-/** The browser sources whose mtimes drive watch mode. */
+/** Every TypeScript source (client tree and host modules) whose mtimes drive watch mode. */
 function sourceFiles(dir: string): string[] {
   const files: string[] = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -162,9 +163,9 @@ function sourceFiles(dir: string): string[] {
   return files
 }
 
-/** Newest source mtime (client tree + host entry); -1 when the source tree is empty. */
+/** Newest source mtime (the whole src tree, host modules included); -1 when the source tree is empty. */
 function sourceStamp(): number {
-  const files = sourceFiles(CLIENT_DIR).concat(HOST_ENTRY)
+  const files = sourceFiles(SOURCE_DIR)
   return files.reduce((latest, file) => Math.max(latest, statSync(file).mtimeMs), -1)
 }
 
@@ -205,7 +206,7 @@ if (mode === 'check') {
     }
   }
   await tick()
-  console.log('[build] watching src/client/** and src/index.ts (Ctrl-C to stop)')
+  console.log('[build] watching src/** (Ctrl-C to stop)')
   setInterval(() => { void tick() }, 700)
 } else {
   publish(await buildOnce())

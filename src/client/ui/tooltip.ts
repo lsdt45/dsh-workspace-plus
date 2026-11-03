@@ -119,6 +119,13 @@ interface HoverTipOptions {
   maxWidth?: number
   /** Pin the bubble under the anchor (tab chips) instead of beside it (rows). */
   prefer?: 'below'
+  /**
+   * Called once each time the bubble actually opens (the anchor measured and
+   * placed), never while only the label resolver is read. The resolver runs
+   * during render, so anything that fetches what the label shows hangs off this
+   * instead of the resolver.
+   */
+  onShow?: () => void
 }
 
 /**
@@ -137,12 +144,17 @@ export function useHoverTip(options?: HoverTipOptions) {
   const gap = opts.gap === undefined ? 8 : opts.gap
   const maxWidth = opts.maxWidth === undefined ? 320 : opts.maxWidth
   const prefer = opts.prefer
+  const onShow = opts.onShow
   const anchorRef = React.useRef(null)
   const pointerRef = React.useRef(null)
   const timerRef = React.useRef(null)
   const bubbleRef = React.useRef(null)
   // Arms the browser-hover predicate below on the first tick that sees it true.
   const hoverAwareRef = React.useRef(false)
+  // Mirrors the open state for the event handlers (their closures are created in
+  // an older render than the setAnchor that opened the bubble), so onShow fires
+  // once per opening instead of once per show() call.
+  const openRef = React.useRef(false)
   const [anchor, setAnchor] = React.useState(null)
   const [size, setSize] = React.useState(null)
   const open = anchor !== null
@@ -156,6 +168,7 @@ export function useHoverTip(options?: HoverTipOptions) {
   const hide = () => {
     clearTimer()
     pointerRef.current = null
+    openRef.current = false
     setAnchor(null)
     setSize(null)
   }
@@ -168,7 +181,11 @@ export function useHoverTip(options?: HoverTipOptions) {
   const show = () => {
     clearTimer()
     const rect = measure()
-    if (rect) setAnchor(rect)
+    if (!rect) return
+    setAnchor(rect)
+    if (openRef.current) return
+    openRef.current = true
+    if (typeof onShow === 'function') onShow()
   }
   const attach = {
     ref: anchorRef,

@@ -73,5 +73,13 @@ export const splitTitleSegs = (title: string | null | undefined): string[] => {
   return out
 }
 
+/**
+ * Join the non-empty parts of a bubble's meta line ("project · branch · time").
+ * Shared by the sidebar rows and the tab-strip chips so both bubbles omit a
+ * missing segment — an unknown git branch must not leave a bare separator.
+ */
+export const joinMeta = (...parts: Array<string | null | undefined>): string =>
+  parts.map(part => (part === null || part === undefined ? '' : String(part).trim())).filter(Boolean).join(' · ')
+
 /** Canonical folder path: title segments joined with "/". */
 export const normPath = (p: string | null | undefined): string => splitTitleSegs(p).join('/')

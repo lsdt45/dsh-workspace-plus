@@ -1,7 +1,7 @@
 /** core/text.js — title splitting is the plugin's founding rule; lock its edge cases. */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { cls, basename, splitPlainSegs, splitTitleSegs, normPath } from '../src/client/core/text.ts'
+import { cls, basename, splitPlainSegs, splitTitleSegs, normPath, joinMeta } from '../src/client/core/text.ts'
 
 test('cls joins truthy class names', () => {
   assert.equal(cls('a', false, undefined, null, '', 'b'), 'a b')
@@ -39,4 +39,14 @@ test('splitTitleSegs treats a LONE quote as an ordinary character', () => {
 test('normPath normalizes whitespace around separators', () => {
   assert.equal(normPath('  web /  frontend '), 'web/frontend')
   assert.equal(normPath('web'), 'web')
+})
+
+test('joinMeta joins the non-empty bubble segments with " · "', () => {
+  assert.equal(joinMeta('前端', 'main', '2026/11/3 13:47:00'), '前端 · main · 2026/11/3 13:47:00')
+  // A project without a branch keeps the old two-segment meta line.
+  assert.equal(joinMeta('前端', '', '2026/11/3 13:47:00'), '前端 · 2026/11/3 13:47:00')
+  assert.equal(joinMeta('前端', null, undefined, '2026'), '前端 · 2026')
+  assert.equal(joinMeta(null, undefined, ''), '')
+  assert.equal(joinMeta(), '')
+  assert.equal(joinMeta('  main  '), 'main', 'segments are trimmed')
 })

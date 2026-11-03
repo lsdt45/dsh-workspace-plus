@@ -6,7 +6,130 @@
 import { existsSync as existsSync2 } from "node:fs";
 import { rm } from "node:fs/promises";
 import { homedir } from "node:os";
-import { basename as basename2, dirname as dirname2, isAbsolute, join as join2, relative, resolve, sep } from "node:path";
+import { basename as basename2, dirname as dirname2, isAbsolute as isAbsolute2, join as join2, relative, resolve, sep } from "node:path";
+
+// src/git-branch.ts
+import { execFile } from "node:child_process";
+import { stat } from "node:fs/promises";
+import { isAbsolute } from "node:path";
+var GIT_BRANCH_ROUTE = "/dsh-workspace-plus/git-branch";
+var MAX_PATHS = 200;
+var MAX_PATH_LENGTH = 4096;
+var GIT_TIMEOUT_MS = 3e3;
+var DEFAULT_CONCURRENCY = 4;
+var DEFAULT_TTL_MS = 2e4;
+var DEFAULT_MAX_ENTRIES = 256;
+function parseBranchName(stdout) {
+  for (const line of stdout.split(/\r?\n/)) {
+    const name2 = line.trim();
+    if (name2 === "") continue;
+    return name2 === "HEAD" ? "" : name2;
+  }
+  return "";
+}
+async function readGitBranch(directory) {
+  return new Promise((resolve2) => {
+    try {
+      execFile(
+        "git",
+        ["-C", directory, "symbolic-ref", "--short", "-q", "HEAD"],
+        {
+          timeout: GIT_TIMEOUT_MS,
+          windowsHide: true,
+          // A branch name is tiny; cap the buffer so a misbehaving git cannot
+          // grow it without keeping the route waiting.
+          maxBuffer: 64 * 1024,
+          env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" }
+        },
+        (error, stdout) => {
+          resolve2(error ? "" : parseBranchName(stdout));
+        }
+      );
+    } catch {
+      resolve2("");
+    }
+  });
+}
+async function defaultIsDirectory(directory) {
+  try {
+    return (await stat(directory)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+function normalizePaths(paths) {
+  if (!Array.isArray(paths)) return [];
+  const seen = /* @__PURE__ */ new Set();
+  const directories = [];
+  for (const candidate of paths) {
+    if (directories.length >= MAX_PATHS) break;
+    if (typeof candidate !== "string") continue;
+    if (candidate.length === 0 || candidate.length > MAX_PATH_LENGTH) continue;
+    if (!isAbsolute(candidate)) continue;
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    directories.push(candidate);
+  }
+  return directories;
+}
+function createBranchResolver(options = {}) {
+  const ttlMs = Math.max(0, options.ttlMs ?? DEFAULT_TTL_MS);
+  const maxEntries = Math.max(1, options.maxEntries ?? DEFAULT_MAX_ENTRIES);
+  const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
+  const readBranch = options.readBranch ?? readGitBranch;
+  const isDirectory = options.isDirectory ?? defaultIsDirectory;
+  const cache = /* @__PURE__ */ new Map();
+  const cachedBranch = (directory) => {
+    const entry = cache.get(directory);
+    if (entry === void 0) return void 0;
+    if (Date.now() >= entry.expiresAt) {
+      cache.delete(directory);
+      return void 0;
+    }
+    return entry.branch;
+  };
+  const remember = (directory, branch) => {
+    while (cache.size >= maxEntries) {
+      const oldest = cache.keys().next();
+      if (oldest.done === true) break;
+      cache.delete(oldest.value);
+    }
+    cache.set(directory, { branch, expiresAt: Date.now() + ttlMs });
+  };
+  const probe = async (directory) => {
+    const hit = cachedBranch(directory);
+    if (hit !== void 0) return hit;
+    let branch = "";
+    try {
+      if (await isDirectory(directory)) branch = await readBranch(directory);
+    } catch {
+      branch = "";
+    }
+    remember(directory, branch);
+    return branch;
+  };
+  return {
+    async resolve(paths) {
+      const directories = normalizePaths(paths);
+      const branches = {};
+      let next = 0;
+      const worker = async () => {
+        while (next < directories.length) {
+          const directory = directories[next];
+          next += 1;
+          const branch = await probe(directory);
+          if (branch !== "") branches[directory] = branch;
+        }
+      };
+      const workers = [];
+      for (let index = 0; index < Math.min(concurrency, directories.length); index += 1) {
+        workers.push(worker());
+      }
+      await Promise.all(workers);
+      return branches;
+    }
+  };
+}
 
 // src/search-index.ts
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -468,7 +591,7 @@ function safeSessionDirectory(ctx, location, sessionId) {
   const sessionsRoot = resolve(configuredRoot ?? resolve(dshHome, "sessions"));
   const sessionDir = resolve(dirname2(location.path));
   const fromRoot = relative(sessionsRoot, sessionDir);
-  const outsideRoot = !fromRoot || fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot);
+  const outsideRoot = !fromRoot || fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute2(fromRoot);
   if (outsideRoot || basename2(sessionDir) !== sessionId) {
     throw new Error(`refusing unsafe session directory: ${sessionDir}`);
   }
@@ -715,6 +838,30 @@ function registerSessionSearchRoute(ctx) {
     dispose();
   };
 }
+function registerGitBranchRoute(ctx) {
+  const resolver = createBranchResolver();
+  return ctx.webServer.register({
+    kind: "exact",
+    path: GIT_BRANCH_ROUTE,
+    handler: async (request, response) => {
+      if (request.method !== "POST") return respond(response, 405, { ok: false, error: "method-not-allowed" });
+      const validation = isSameOriginJsonRequest(request);
+      if (!validation.ok) return respond(response, validation.status, { ok: false, error: validation.error });
+      let body;
+      try {
+        body = await readJsonBody(request);
+      } catch {
+        return respond(response, 400, { ok: false, error: "bad-request" });
+      }
+      try {
+        return respond(response, 200, { ok: true, branches: await resolver.resolve(body?.paths) });
+      } catch (error) {
+        ctx.logger.warn("[dsh-workspace-plus] failed to resolve git branches:", error);
+        respond(response, 500, { ok: false, error: "branch-resolve-failed" });
+      }
+    }
+  });
+}
 function apply(ctx) {
   const log = ctx && ctx.logger && typeof ctx.logger.info === "function" ? (msg) => {
     ctx.logger.info(msg);
@@ -732,6 +879,11 @@ function apply(ctx) {
     const dispose = registerSessionSearchRoute(sctx);
     if (typeof sctx.effect === "function") sctx.effect(() => dispose, "dsh-workspace-plus session search route");
     log("[dsh-workspace-plus] session search route registered: " + SESSION_SEARCH_ROUTE);
+  });
+  ctx.inject(["webServer"], (sctx) => {
+    const dispose = registerGitBranchRoute(sctx);
+    if (typeof sctx.effect === "function") sctx.effect(() => dispose, "dsh-workspace-plus git branch route");
+    log("[dsh-workspace-plus] git branch route registered: " + GIT_BRANCH_ROUTE);
   });
 }
 export {

@@ -1,0 +1,31 @@
+scripts/build.ts
+  s_1e4a53690d8e76::t_d5cc2352705a92 38,155,166,168,209
+src/client/git-branch.ts
+  s_1e4a53690d8e76::t_55aaad9e3831a3 1-176
+src/client/rows.ts
+  s_1e4a53690d8e76::t_948d98be8c5f44 4,12-13,292-293,333-338,340-341,344,353-361
+src/client/tabs-strip.ts
+  s_1e4a53690d8e76::t_3dba58f02d7892 23,29-30,182-184,691-696,729-733,745-752,754,757-764,767,770,777,862,879-885
+src/git-branch.ts
+  s_1e4a53690d8e76::t_fba69dd76a1e7e 1-232
+tests/core.text.test.ts
+  s_1e4a53690d8e76::t_93620d6db16f98 4,43-52
+tests/git-branch.test.ts
+  s_1e4a53690d8e76::t_6b666f7539eacf 1-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "585b1abbb165640ab855ba055a98ddc975a38582",
+  "prompts": {},
+  "sessions": {
+    "s_1e4a53690d8e76": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a19c46-07c7-7e83-97ea-172098591525",
+        "model": "group/auto-gpt-6-1-sol"
+      },
+      "human_author": "monokuro <42729729+lsdt45@users.noreply.github.com>"
+    }
+  }
+}

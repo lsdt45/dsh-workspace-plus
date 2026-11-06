@@ -593,7 +593,7 @@ test('header overrides only apply while tabs are shown', () => {
   // the shell's own header layout.
   const occurrences = CSS_TEXT.split('header[data-window-drag]').length - 1
   const scoped = (CSS_TEXT.match(/html:not\(\[data-bw-tabs-off\]\) header\[data-window-drag\]/g) || []).length
-  assert.equal(occurrences, 5, 'five header overrides exist')
+  assert.equal(occurrences, 6, 'six header overrides exist')
   assert.equal(scoped, occurrences, 'every header override is scoped to tabs-on')
 })
 

@@ -1130,6 +1130,16 @@
     'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_titleRow"]{z-index:7}',
     'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_tabs"]{-webkit-app-region:no-drag;app-region:no-drag}',
     'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_headerActions"]{position:absolute;left:auto;right:var(--bw-chips-right,12px);top:var(--bw-chips-top,auto);bottom:auto;margin:0;z-index:6;pointer-events:auto;-webkit-app-region:no-drag;app-region:no-drag}',
+    // dsh 0.2.2 fades the title row's cluster with a mask-image gradient (the
+    // session title fades out under the right-hand controls). The parked chips
+    // paint INSIDE that cluster even though their containing block is the header,
+    // so the mask's transparent area outside the cluster box erased them: invisible
+    // AND unclickable — the exact "agent team / mode / subagents / AFlow chips are
+    // gone" regression. With tabs on the plugin hides the crumbs title itself, so
+    // the fade has nothing left to fade: turn the mask off instead of letting it
+    // swallow the chips. Older hosts have no mask there, so this is a no-op for
+    // them.
+    'html:not([data-bw-tabs-off]) header[data-window-drag] [class*="_titleCluster"]{-webkit-mask-image:none;mask-image:none}',
     // Session tab strip: compact chips in the conversation header, one per open
     // session. The chip's dot is .bw-state-dot, so the three states stay identical.
     // Session tab strip, modelled on the reference: dot + label chips with a

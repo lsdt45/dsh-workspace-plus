@@ -57,7 +57,7 @@ A DSH plugin that gives the [DeepSeek Harness (DSH)](https://www.npmjs.com/packa
 github/                 ← virtual folder (naming only, not a real directory)
 └─ dsh-plan-plus        ← workspace "github/dsh-plan-plus"
 dsh-workspace-plus      ← single-root workspaces sit at root
-codeisland-ask-bridge
+demo-webapp
 dsh-model-config
 ```
 
@@ -239,7 +239,7 @@ The index is owned by the plugin: it reads the stored logs under `~/.dsh/session
 
 ### Single-chain collapse
 
-A toggle in the plugin settings page (on by default): a level with exactly one child merges into one row (e.g. `level1` holding `AI trade` renders as `level1/AI trade`); with multiple children it re-expands into a tree; during workspace drags it temporarily re-expands so any level is a drop target.
+A toggle in the plugin settings page (on by default): a level with exactly one child merges into one row (e.g. `level1` holding `example-app` renders as `level1/example-app`); with multiple children it re-expands into a tree; during workspace drags it temporarily re-expands so any level is a drop target.
 
 ### Drag & drop
 

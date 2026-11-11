@@ -57,7 +57,7 @@ DSH 插件：给 [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepsee
 github/                 ← 虚拟分组（不是真实目录，纯命名层级）
 └─ dsh-plan-plus        ← 工作区「github/dsh-plan-plus」
 dsh-workspace-plus      ← 原有的单层工作区照常工作
-codeisland-ask-bridge
+demo-webapp
 dsh-model-config
 ```
 
@@ -239,7 +239,7 @@ dsh-model-config
 
 ### 单链折叠
 
-插件配置页里的开关（默认开）：一层恰好只有一个子级时合并显示为一行（如 `测试层1` 挂着 `AI交易` → `测试层1/AI交易`），出现多个子级时自动还原为树；拖拽工作区期间临时展开，任意一级可投放。
+插件配置页里的开关（默认开）：一层恰好只有一个子级时合并显示为一行（如 `测试层1` 挂着 `示例项目` → `测试层1/示例项目`），出现多个子级时自动还原为树；拖拽工作区期间临时展开，任意一级可投放。
 
 ### 拖拽
 

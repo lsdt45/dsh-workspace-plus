@@ -103,8 +103,8 @@ export const CSS_TEXT = [
   // session title fades out under the right-hand controls). The parked chips
   // paint INSIDE that cluster even though their containing block is the header,
   // so the mask's transparent area outside the cluster box erased them: invisible
-  // AND unclickable — the exact "agent team / mode / subagents / AFlow chips are
-  // gone" regression. With tabs on the plugin hides the crumbs title itself, so
+  // AND unclickable — the exact "agent team / mode / subagents chips are gone"
+  // regression. With tabs on the plugin hides the crumbs title itself, so
   // the fade has nothing left to fade: turn the mask off instead of letting it
   // swallow the chips. Older hosts have no mask there, so this is a no-op for
   // them.

@@ -18,7 +18,7 @@ import { createBranchResolver, parseBranchName, readGitBranch } from '../src/git
 /* ------------------------------ parseBranchName ------------------------------ */
 
 test('parseBranchName keeps the first non-empty line', () => {
-  assert.equal(parseBranchName('feat/junyu/git_branch/261103\n'), 'feat/junyu/git_branch/261103')
+  assert.equal(parseBranchName('feat/git_branch\n'), 'feat/git_branch')
   assert.equal(parseBranchName('\n  main  \r\n'), 'main', 'blank leading lines and padding are ignored')
   assert.equal(parseBranchName('release/1.2\nwarning: something\n'), 'release/1.2', 'only the first line is a branch name')
 })
@@ -189,14 +189,14 @@ test('readGitBranch and the resolver read a real checkout', async (t) => {
     await mkdir(repo)
     await mkdir(plain)
     await git(['init', '-q', repo])
-    await git(['-C', repo, 'checkout', '-b', 'feat/junyu/git_branch/261103'])
-    assert.equal(await readGitBranch(repo), 'feat/junyu/git_branch/261103')
+    await git(['-C', repo, 'checkout', '-b', 'feat/git_branch'])
+    assert.equal(await readGitBranch(repo), 'feat/git_branch')
     assert.equal(await readGitBranch(plain), '', 'a directory outside any repository has no branch')
 
     const resolver = createBranchResolver()
     assert.deepEqual(
       await resolver.resolve([repo, plain, 'relative/dir', repo]),
-      { [repo]: 'feat/junyu/git_branch/261103' },
+      { [repo]: 'feat/git_branch' },
       'the real resolver reads the checkout and drops the non-repository/relative/duplicate paths',
     )
   } finally {

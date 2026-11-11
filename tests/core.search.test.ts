@@ -16,12 +16,12 @@ const list = {
     d: { id: 'd', title: 'Ordinary chat', updatedAt: 400 },
   },
 }
-const labelOf = (id: string): string => ({ a: 'promo-dev', b: 'h5-member-grade', c: 'promo-dev', d: '' } as Record<string, string>)[id] || ''
+const labelOf = (id: string): string => ({ a: 'web-frontend', b: 'mobile-app', c: 'web-frontend', d: '' } as Record<string, string>)[id] || ''
 
 test('searchCandidates skips blank rows and keeps the list order with workspace labels', () => {
   const rows = searchCandidates(list, labelOf)
   assert.deepEqual(rows.map((row) => row.id), ['a', 'b', 'd'])
-  assert.deepEqual(rows[0], { id: 'a', title: 'Git commit and push', workspace: 'promo-dev', updatedAt: 300 })
+  assert.deepEqual(rows[0], { id: 'a', title: 'Git commit and push', workspace: 'web-frontend', updatedAt: 300 })
   assert.equal(rows[1].title, 'Plan review', 'displayTitle wins over title')
 })
 
@@ -45,15 +45,15 @@ test('localSearch matches the title case-insensitively, newest first', () => {
 
 test('localSearch matches the workspace label and rejects an empty query', () => {
   const rows = searchCandidates(list, labelOf)
-  assert.deepEqual(localSearch(rows, 'h5-member').map((row) => row.id), ['b'])
-  assert.deepEqual(localSearch(rows, 'promo').map((row) => row.id), ['a'])
+  assert.deepEqual(localSearch(rows, 'mobile').map((row) => row.id), ['b'])
+  assert.deepEqual(localSearch(rows, 'web-front').map((row) => row.id), ['a'])
   assert.deepEqual(localSearch(rows, ''), [])
   assert.deepEqual(localSearch(rows, '   '), [])
 })
 
 test('localSearch keeps one row per session when both title and workspace match', () => {
-  const rows = [{ id: 'x', title: 'promo-dev notes', workspace: 'promo-dev', updatedAt: 1 }]
-  assert.deepEqual(localSearch(rows, 'promo').map((row) => row.id), ['x'])
+  const rows = [{ id: 'x', title: 'web-frontend notes', workspace: 'web-frontend', updatedAt: 1 }]
+  assert.deepEqual(localSearch(rows, 'web-front').map((row) => row.id), ['x'])
 })
 
 test('recentSearchRows sorts newest first and caps the count', () => {

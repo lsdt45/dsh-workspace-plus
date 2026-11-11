@@ -191,8 +191,8 @@ const renderOverlay = (props: Record<string, any>) => {
 }
 
 const CANDIDATES = [
-  { id: 'a', title: 'Git commit and push', workspace: 'promo-dev', updatedAt: 300 },
-  { id: 'b', title: 'Plan review', workspace: 'h5-member-grade', updatedAt: 500 },
+  { id: 'a', title: 'Git commit and push', workspace: 'web-frontend', updatedAt: 300 },
+  { id: 'b', title: 'Plan review', workspace: 'mobile-app', updatedAt: 500 },
   { id: 'c', title: 'Ordinary chat', workspace: '', updatedAt: 400 },
 ]
 
@@ -318,9 +318,9 @@ test('an empty query lists the most recent sessions with workspace labels and �
   const { tree } = renderOverlay({})
   const rows = byClass(tree, 'bw-search-row')
   assert.deepEqual(rows.map((row) => textOf(byClass(row, 'bw-search-row-title'))), ['Plan review', 'Ordinary chat', 'Git commit and push'])
-  assert.equal(textOf(byClass(rows[0], 'bw-search-row-ws')), 'h5-member-grade')
+  assert.equal(textOf(byClass(rows[0], 'bw-search-row-ws')), 'mobile-app')
   assert.equal(textOf(byClass(rows[1], 'bw-search-row-ws')), '', 'a session without a workspace carries no label')
-  assert.equal(textOf(byClass(rows[2], 'bw-search-row-ws')), 'promo-dev')
+  assert.equal(textOf(byClass(rows[2], 'bw-search-row-ws')), 'web-frontend')
   assert.equal(textOf(byClass(rows[1], 'bw-search-row-idx')), '⌃2')
   assert.equal(textOf(byClass(rows[2], 'bw-search-row-idx')), '⌃3')
   assert.equal(textOf(byClass(tree, 'bw-search-section')), 'search.section.chats')
@@ -339,7 +339,7 @@ test('typing filters titles and workspace labels instantly', () => {
 
 test('a workspace label match also returns the session', () => {
   const { runtime, tree } = renderOverlay({})
-  const typed = typeQuery(runtime, tree, 'h5-member')
+  const typed = typeQuery(runtime, tree, 'mobile')
   const rows = byClass(typed, 'bw-search-row')
   assert.equal(rows.length, 1)
   assert.equal(textOf(byClass(rows[0], 'bw-search-row-title')), 'Plan review')

@@ -151,7 +151,8 @@ window.__ModuleLoader__.load({
       }
       const pending = useSessionPendingInteraction ? useSessionPendingInteraction(s => s) : null
       const storeTabs = useStore ? (useStore(s => s.tabs) || []) : []
-      const storeFolders = useStore ? (useStore(s => s.folders) || []) : []
+      const rawFolders = useStore ? useStore(s => s.folders) : null
+      const storeFolders = Array.isArray(rawFolders) ? rawFolders : []
       const workspaceGroups = useStore ? (useStore(s => s.workspaceGroups) || []) : []
       const workspaceGroupById = useStore ? (useStore(s => s.workspaceGroupById) || {}) : {}
       const sessionSectionById = useStore ? (useStore(s => s.sessionSectionById) || {}) : {}

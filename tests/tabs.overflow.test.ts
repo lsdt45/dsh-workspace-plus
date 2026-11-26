@@ -300,8 +300,9 @@ test('the strip stylesheet carries the overflow contract', () => {
   assert.match(bar[0], /max-width:52vw/, 'the strip stays bounded so it never crowds the header controls')
   const chip = CSS_TEXT.match(/\.bw-tab\{[^}]*\}/)
   assert.ok(chip, 'the .bw-tab rule is missing')
-  assert.match(chip[0], /flex:0 1 auto/, 'chips size to their own title and shrink at the floor')
+  assert.match(chip[0], /flex:1 1 0/, 'chips grow to share the measured row and shrink at the floor')
   assert.match(chip[0], /min-width:\d+px/, 'chips keep a readable floor when shrinking')
+  assert.match(chip[0], /max-width:var\(--bw-tab-cap,/, 'the chip cap is published by the strip so a short row still looks filled')
   // Edge fades: all three scroll positions (none/left/right/both) are covered.
   assert.match(CSS_TEXT, /\.bw-tabs\[data-bw-fade-right="1"\]:not\(\[data-bw-fade-left="1"\]\)\{[^}]*mask-image:linear-gradient\(to left/, 'right fade')
   assert.match(CSS_TEXT, /\.bw-tabs\[data-bw-fade-left="1"\]:not\(\[data-bw-fade-right="1"\]\)\{[^}]*mask-image:linear-gradient\(to right/, 'left fade')

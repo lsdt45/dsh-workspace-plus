@@ -125,12 +125,12 @@ export const CSS_TEXT = [
   // no-drag on the WHOLE bar: the conversation header is the window's drag region,
   // and a button inside a drag region never receives clicks — the chevron lived
   // outside .bw-tabs, whose own no-drag only covered the chips.
-  '.bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}',
+  '.bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;width:52vw;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}',
   // The row sizes to its chips instead of stretching to the whole bar: the "+"
   // then sits right after the last chip (browser-like, left-aligned) rather than
   // being pushed to the far right. It may still shrink when the chips exceed the
   // room, which is what turns on the horizontal scroll below.
-  '.bw-tabs{display:flex;align-items:center;gap:2px;flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}',
+  '.bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}',
   '.bw-tabs::-webkit-scrollbar{display:none}',
   '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
   '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
@@ -139,7 +139,7 @@ export const CSS_TEXT = [
   // title stays short, while max-width caps long titles and shrink floors the
   // chip before the row scrolls. The max-width therefore is the only fixed
   // dimension a chip has.
-  '.bw-tab{display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:72px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
+  '.bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 0;min-width:72px;max-width:var(--bw-tab-cap,200px);padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}',
   '.bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}',
   '.bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}',
   '.bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}',

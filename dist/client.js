@@ -1156,12 +1156,12 @@
     // no-drag on the WHOLE bar: the conversation header is the window's drag region,
     // and a button inside a drag region never receives clicks — the chevron lived
     // outside .bw-tabs, whose own no-drag only covered the chips.
-    ".bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}",
+    ".bw-tabbar{display:flex;align-items:center;gap:2px;min-width:0;width:52vw;max-width:52vw;-webkit-app-region:no-drag;app-region:no-drag}",
     // The row sizes to its chips instead of stretching to the whole bar: the "+"
     // then sits right after the last chip (browser-like, left-aligned) rather than
     // being pushed to the far right. It may still shrink when the chips exceed the
     // room, which is what turns on the horizontal scroll below.
-    ".bw-tabs{display:flex;align-items:center;gap:2px;flex:0 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}",
+    ".bw-tabs{display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-app-region:no-drag;app-region:no-drag}",
     ".bw-tabs::-webkit-scrollbar{display:none}",
     '.bw-tabs[data-bw-fade-right="1"]:not([data-bw-fade-left="1"]){-webkit-mask-image:linear-gradient(to left,transparent,#000 16px);mask-image:linear-gradient(to left,transparent,#000 16px)}',
     '.bw-tabs[data-bw-fade-left="1"]:not([data-bw-fade-right="1"]){-webkit-mask-image:linear-gradient(to right,transparent,#000 16px);mask-image:linear-gradient(to right,transparent,#000 16px)}',
@@ -1170,7 +1170,7 @@
     // title stays short, while max-width caps long titles and shrink floors the
     // chip before the row scrolls. The max-width therefore is the only fixed
     // dimension a chip has.
-    ".bw-tab{display:flex;align-items:center;gap:6px;flex:0 1 auto;min-width:72px;max-width:200px;padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
+    ".bw-tab{display:flex;align-items:center;gap:6px;flex:1 1 0;min-width:72px;max-width:var(--bw-tab-cap,200px);padding:5px 4px 5px 8px;border-radius:6px;color:var(--dsw-alias-label-secondary,#b6b6b6);cursor:pointer;user-select:none}",
     ".bw-tab:hover{background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}",
     ".bw-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary,#5b8def);outline-offset:-2px}",
     ".bw-tab-active{box-shadow:inset 0 -2px 0 var(--dsw-alias-brand-primary,#5b8def)}",
@@ -4475,47 +4475,183 @@
   }
   function useStripFill(barRef, deps) {
     const [room, setRoom] = React.useState(0);
-    const measure = () => {
-      const bar = barRef.current;
-      if (!bar || typeof document === "undefined" || typeof bar.getBoundingClientRect !== "function") return;
-      const header = typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : document.querySelector("header[data-window-drag]");
-      if (!header || typeof header.getBoundingClientRect !== "function") return;
-      const barRect = bar.getBoundingClientRect();
-      const headerRect = header.getBoundingClientRect();
-      if (!barRect.width || !headerRect.width) return;
-      let gridItem = bar;
-      while (gridItem && gridItem.parentElement && gridItem.parentElement !== header) gridItem = gridItem.parentElement;
-      const leadingRight = gridItem && gridItem !== bar ? gridItem.getBoundingClientRect().right : barRect.right;
-      let limit = 0;
-      for (const node of Array.from(header.querySelectorAll("*"))) {
-        if (bar === node || typeof bar.contains === "function" && bar.contains(node)) continue;
-        if (typeof node.contains === "function" && node.contains(bar)) continue;
-        const rect = node.getBoundingClientRect();
-        if (rect.width < 8 || rect.height < 8) continue;
-        if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) continue;
-        if (typeof getComputedStyle === "function") {
-          const style = getComputedStyle(node);
-          if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") continue;
+    const useIsoLayoutEffect = typeof React.useLayoutEffect === "function" ? React.useLayoutEffect : React.useEffect;
+    const requestMeasureRef = React.useRef(() => {
+    });
+    useIsoLayoutEffect(() => {
+      let stopped = false;
+      let timers = [];
+      let frame = 0;
+      let headerObserver = null;
+      let observedHeader = null;
+      let treeObserver = null;
+      let barObserver = null;
+      const RETRY_DELAYS = [60, 150, 320, 640, 1100, 1800];
+      function clearTimers() {
+        for (const timer of timers) {
+          if (typeof timer === "function") {
+            timer();
+            continue;
+          }
+          clearTimeout(timer);
+          if (typeof clearInterval === "function") clearInterval(timer);
         }
-        if (rect.left <= leadingRight + 8 && rect.right >= headerRect.right - 40) continue;
-        if (headerRect.right - rect.right > 120) continue;
-        if (rect.left <= barRect.left + 8) continue;
-        if (!limit || rect.left < limit) limit = rect.left;
+        timers = [];
       }
-      const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, 100);
-      setRoom((previous) => previous === next ? previous : next);
-    };
-    React.useLayoutEffect(() => {
+      let frameTimer = 0;
+      function requestMeasure() {
+        if (stopped) return;
+        if (typeof requestAnimationFrame !== "function") {
+          measure();
+          return;
+        }
+        if (frame || frameTimer) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          if (frameTimer) {
+            clearTimeout(frameTimer);
+            frameTimer = 0;
+          }
+          measure();
+        });
+        if (typeof setTimeout === "function") {
+          frameTimer = setTimeout(() => {
+            frameTimer = 0;
+            if (frame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+            frame = 0;
+            measure();
+          }, 240);
+        }
+      }
+      function bind(header) {
+        if (observedHeader === header) return;
+        if (headerObserver) {
+          headerObserver.disconnect();
+          headerObserver = null;
+        }
+        if (treeObserver) {
+          treeObserver.disconnect();
+          treeObserver = null;
+        }
+        observedHeader = header;
+        if (!header) return;
+        if (typeof ResizeObserver === "function") {
+          headerObserver = new ResizeObserver(requestMeasure);
+          headerObserver.observe(header);
+        }
+        if (typeof MutationObserver === "function") {
+          treeObserver = new MutationObserver(requestMeasure);
+          treeObserver.observe(header, { childList: true, subtree: true });
+        }
+        const bar = barRef.current;
+        if (bar && typeof ResizeObserver === "function") {
+          barObserver = new ResizeObserver(requestMeasure);
+          barObserver.observe(bar);
+        }
+      }
+      function rightLimitOf(header, bar, barRect, headerRect) {
+        const clusterWidth = (node) => {
+          const rect = node.getBoundingClientRect();
+          if (rect.width < 8 || rect.height < 8) return 0;
+          if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) return 0;
+          if (typeof getComputedStyle === "function") {
+            const style = getComputedStyle(node);
+            if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") return 0;
+          }
+          return rect.width;
+        };
+        let clusterLeft = 0;
+        let clusterRight = 0;
+        const measureCluster = (node) => {
+          if (bar === node) return;
+          if (typeof bar.contains === "function" && bar.contains(node)) return;
+          if (typeof node.contains === "function" && node.contains(bar)) return;
+          if (clusterWidth(node) < 8) return;
+          const rect = node.getBoundingClientRect();
+          if (!clusterLeft || rect.left < clusterLeft) clusterLeft = rect.left;
+          if (rect.right > clusterRight) clusterRight = rect.right;
+        };
+        const ANCHORS = [
+          "[data-conversation-header-corner]",
+          '[class*="_headerUtilities"]',
+          '[class*="_headerActions"]'
+        ];
+        for (const selector of ANCHORS) {
+          for (const node of Array.from(header.querySelectorAll(selector))) measureCluster(node);
+        }
+        for (const node of Array.from(header.querySelectorAll('button, [role="button"]'))) {
+          const rect = node.getBoundingClientRect();
+          if (headerRect.right - rect.right > 320) continue;
+          measureCluster(node);
+        }
+        if (clusterRight) {
+          const span = Math.round(clusterRight - clusterLeft);
+          if (span > 0) return Math.max(0, Math.round(headerRect.right - span - 12));
+        }
+        const padding = typeof getComputedStyle === "function" ? parseFloat(getComputedStyle(header).paddingRight) || 0 : 0;
+        return headerRect.right - Math.max(0, padding) - 8;
+      }
+      function measure() {
+        if (stopped) return true;
+        const bar = barRef.current;
+        if (!bar || typeof document === "undefined" || typeof bar.getBoundingClientRect !== "function") return false;
+        const header = typeof bar.closest === "function" ? bar.closest("header[data-window-drag]") : document.querySelector("header[data-window-drag]");
+        if (!header || typeof header.getBoundingClientRect !== "function") return false;
+        bind(header);
+        const barRect = bar.getBoundingClientRect();
+        const headerRect = header.getBoundingClientRect();
+        if (!barRect.width || !headerRect.width) return false;
+        const limit = rightLimitOf(header, bar, barRect, headerRect);
+        const gapToLimit = Math.round(headerRect.right - limit) + 12;
+        const inset = Math.round(barRect.left - headerRect.left);
+        const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, Math.max(40, gapToLimit + inset));
+        if (next <= 0) {
+          return false;
+        }
+        setRoom((previous) => previous === next ? previous : next);
+        return true;
+      }
+      requestMeasureRef.current = requestMeasure;
       measure();
-      if (typeof setTimeout !== "function") return void 0;
-      const timers = [80, 300, 900].map((delay) => setTimeout(measure, delay));
+      if (typeof setTimeout === "function") {
+        timers = RETRY_DELAYS.map((delay) => setTimeout(() => {
+          if (!stopped) measure();
+        }, delay));
+      }
+      if (typeof setInterval === "function") {
+        const tick = setInterval(() => {
+          if (!stopped) measure();
+        }, 1e3);
+        timers.push(tick);
+      }
+      if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+        const onVisibility = () => {
+          if (!stopped && document.visibilityState === "visible") measure();
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+        timers.push(() => document.removeEventListener("visibilitychange", onVisibility));
+      }
       return () => {
-        for (const timer of timers) clearTimeout(timer);
+        stopped = true;
+        clearTimers();
+        if (frameTimer) {
+          clearTimeout(frameTimer);
+          frameTimer = 0;
+        }
+        if (frame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+        frame = 0;
+        if (headerObserver) headerObserver.disconnect();
+        if (treeObserver) treeObserver.disconnect();
+        if (barObserver) barObserver.disconnect();
+        headerObserver = null;
+        treeObserver = null;
+        barObserver = null;
+        observedHeader = null;
       };
     }, deps);
     React.useEffect(() => {
       if (typeof window === "undefined" || typeof window.addEventListener !== "function") return void 0;
-      const onResize = () => measure();
+      const onResize = () => requestMeasureRef.current();
       window.addEventListener("resize", onResize);
       return () => window.removeEventListener("resize", onResize);
     }, []);
@@ -4803,6 +4939,7 @@
     const hoverBranch = useGitBranch(hovered.cwd);
     const overflow = useStripOverflow(stripRef, [tabs.length, sessionId, showTabs]);
     const roomWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs]);
+    const tabCap = roomWidth > 0 ? Math.max(150, Math.min(240, Math.round(roomWidth / Math.max(1, tabs.length + 1)) - 4)) : 200;
     useRevealActive(stripRef, sessionId, tabs.length);
     useWheelScroll(stripRef);
     React.useEffect(() => {
@@ -4915,8 +5052,11 @@
         ref: barRef,
         className: "bw-tabbar",
         "data-bw-overflow": overflow.overflowing ? "1" : "0",
-        // Measured room to the header utilities; undefined keeps the CSS fallback.
-        style: roomWidth > 0 ? { maxWidth: roomWidth + "px" } : void 0
+        // Measured room to the header utilities. A WIDTH, not a cap: the chips are
+        // content-sized, so a max-width only ever clips the row — the row itself has
+        // to be told how wide it is before flex-grow can spread the chips across it.
+        // Undefined keeps the CSS fallback until the first measurement lands.
+        style: roomWidth > 0 ? { width: roomWidth + "px", maxWidth: roomWidth + "px", "--bw-tab-cap": tabCap + "px" } : void 0
       },
       StyleNode(),
       E(

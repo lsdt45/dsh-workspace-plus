@@ -237,53 +237,263 @@ function useWheelScroll(stripRef: any) {
  */
 function useStripFill(barRef: any, deps: any[]): number {
   const [room, setRoom] = React.useState(0)
-  const measure = () => {
-    const bar = barRef.current
-    if (!bar || typeof document === 'undefined' || typeof bar.getBoundingClientRect !== 'function') return
-    const header = typeof bar.closest === 'function'
-      ? bar.closest('header[data-window-drag]')
-      : document.querySelector('header[data-window-drag]')
-    if (!header || typeof header.getBoundingClientRect !== 'function') return
-    const barRect = bar.getBoundingClientRect()
-    const headerRect = header.getBoundingClientRect()
-    if (!barRect.width || !headerRect.width) return
-    // The grid item holding the strip: its right edge is where the title row begins.
-    let gridItem: any = bar
-    while (gridItem && gridItem.parentElement && gridItem.parentElement !== header) gridItem = gridItem.parentElement
-    const leadingRight = gridItem && gridItem !== bar
-      ? gridItem.getBoundingClientRect().right
-      : barRect.right
-    let limit = 0
-    for (const node of Array.from(header.querySelectorAll('*')) as any[]) {
-      if (bar === node || (typeof bar.contains === 'function' && bar.contains(node))) continue
-      if (typeof node.contains === 'function' && node.contains(bar)) continue
-      const rect = node.getBoundingClientRect()
-      if (rect.width < 8 || rect.height < 8) continue
-      // Same band as the strip only: the view-nav row (with the parked chips) must
-      // never cap the tab row.
-      if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) continue
-      if (typeof getComputedStyle === 'function') {
-        const style = getComputedStyle(node)
-        if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') continue
+  const useIsoLayoutEffect = typeof React.useLayoutEffect === 'function' ? React.useLayoutEffect : React.useEffect
+  /** Latest requestMeasure(), so the window listener survives a re-bind. */
+  const requestMeasureRef = React.useRef(() => {})
+  useIsoLayoutEffect(() => {
+    let stopped = false
+    let timers: any[] = []
+    /** Coalescing frame for observer-driven measures. */
+    let frame = 0
+    let headerObserver: any = null
+    let observedHeader: any = null
+    let treeObserver: any = null
+    let barObserver: any = null
+    const RETRY_DELAYS = [60, 150, 320, 640, 1100, 1800]
+
+    function clearTimers() {
+      for (const timer of timers) {
+        if (typeof timer === 'function') { timer(); continue }
+        clearTimeout(timer)
+        if (typeof clearInterval === 'function') clearInterval(timer)
       }
-      // Structural scaffolding (the title row and its wrappers) is layout, not a control.
-      if (rect.left <= leadingRight + 8 && rect.right >= headerRect.right - 40) continue
-      if (headerRect.right - rect.right > 120) continue
-      if (rect.left <= barRect.left + 8) continue
-      if (!limit || rect.left < limit) limit = rect.left
+      timers = []
     }
-    const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, 100)
-    setRoom((previous: number) => (previous === next ? previous : next))
-  }
-  React.useLayoutEffect(() => {
+
+    /**
+     * Coalesce the observers into the next frame.
+     *
+     * The observers only ever fire on the header's own box and on nodes the shell
+     * mounts into it, so this frame lock is about not measuring six times for one
+     * resize, not about damping a feedback loop (see rightLimitOf for why the
+     * measurement has no loop to damp).
+     */
+    let frameTimer: any = 0
+    function requestMeasure() {
+      if (stopped) return
+      if (typeof requestAnimationFrame !== 'function') { measure(); return }
+      if (frame || frameTimer) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        if (frameTimer) { clearTimeout(frameTimer); frameTimer = 0 }
+        measure()
+      })
+      // rAF is throttled to "rarely, or never" while the window is minimised,
+      // occluded or in a background tab. The header still resizes in that state,
+      // so an rAF-only coalescer can drop the measurement entirely and leave the
+      // row at its previous width — which is then too wide for the restored
+      // window and covers the buttons on the right. A plain timer still fires
+      // (throttled to ~1s at worst), so it is the safety net.
+      if (typeof setTimeout === 'function') {
+        frameTimer = setTimeout(() => {
+          frameTimer = 0
+          if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
+          frame = 0
+          measure()
+        }, 240)
+      }
+    }
+
+    function bind(header: any) {
+      if (observedHeader === header) return
+      if (headerObserver) { headerObserver.disconnect(); headerObserver = null }
+      if (treeObserver) { treeObserver.disconnect(); treeObserver = null }
+      observedHeader = header
+      if (!header) return
+      // The header's own box changes on window resize, maximise/restore, a
+      // sidebar collapse and page zoom — the cases the deps cannot see.
+      if (typeof ResizeObserver === 'function') {
+        headerObserver = new ResizeObserver(requestMeasure)
+        headerObserver.observe(header)
+      }
+      // The header utilities are owned by the shell and mount into the header
+      // after the strip on a cold start.
+      if (typeof MutationObserver === 'function') {
+        treeObserver = new MutationObserver(requestMeasure)
+        treeObserver.observe(header, { childList: true, subtree: true })
+      }
+      // The row's own box, so a width we did not write (page zoom, a stylesheet
+      // override, a sibling claim on the first column) is corrected too. Measuring
+      // is idempotent, so a write that changes nothing does not re-trigger this.
+      const bar = barRef.current
+      if (bar && typeof ResizeObserver === 'function') {
+        barObserver = new ResizeObserver(requestMeasure)
+        barObserver.observe(bar)
+      }
+    }
+
+    /**
+     * Left edge of the header's right-hand cluster: the first control that
+     * STARTS to the right of the tab row, in the row's own band.
+     *
+     * The row's own right edge is deliberately only a LOWER BOUND here, never part
+     * of the comparison against a candidate. The shell lays the header out as a
+     * two-column grid (`auto | minmax(0,1fr)`), so the title row begins exactly
+     * where the tab row ends: a rule of the shape "the first node right of the row
+     * whose right edge is near the header edge" therefore matches the title row
+     * itself, the limit comes back as the row's own current right edge, and every
+     * pass adds or removes exactly what the previous pass wrote. That closed loop
+     * is what made the chips shrink step by step while the window was widened.
+     * Requiring a candidate to begin to the right of the row keeps the answer
+     * independent of how wide the row currently is, so the measurement is
+     * idempotent and needs no directional hysteresis.
+     */
+    function rightLimitOf(header: any, bar: any, barRect: any, headerRect: any): number {
+      /**
+       * Right boundary of the row, derived from the WIDTH of the right-hand
+       * cluster and the header's own right edge — never from where the cluster
+       * currently sits.
+       *
+       * Where the cluster sits is a function of the row's width: the header is a
+       * two-column grid (auto | minmax(0,1fr)); the row is the whole first column
+       * and the cluster is laid out after it in the second. Reading the cluster's
+       * left edge therefore always reported "the row's own right edge + 12", so
+       * every pass reproduced the previous width and ANY width was a fixed point.
+       * Whichever value the first pass happened to pick stuck, and a wide one
+       * pushed the cluster past the header's right edge until the outermost
+       * button was clipped by the window frame — the "tab strip covers the
+       * sidebar button" report.
+       *
+       * A cluster WIDTH is intrinsic (content-sized buttons and icons), so
+       * anchoring to header.right - width - gap is stable at every window size
+       * and still follows any plugin that makes that cluster wider.
+       */
+      const clusterWidth = (node: any): number => {
+        const rect = node.getBoundingClientRect()
+        if (rect.width < 8 || rect.height < 8) return 0
+        // Same band as the row only: the view-nav row (with the parked chips) must
+        // never cap the tab row.
+        if (rect.bottom <= barRect.top + 2 || rect.top >= barRect.bottom - 2) return 0
+        if (typeof getComputedStyle === 'function') {
+          const style = getComputedStyle(node)
+          if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return 0
+        }
+        return rect.width
+      }
+      // Union width of every control parked at the header's right end. The span
+      // between the cluster's leftmost and rightmost edge is exactly the space it
+      // needs, and unlike its position that number does not move with the row.
+      let clusterLeft = 0
+      let clusterRight = 0
+      const measureCluster = (node: any) => {
+        if (bar === node) return
+        if (typeof bar.contains === 'function' && bar.contains(node)) return
+        if (typeof node.contains === 'function' && node.contains(bar)) return
+        if (clusterWidth(node) < 8) return
+        const rect = node.getBoundingClientRect()
+        if (!clusterLeft || rect.left < clusterLeft) clusterLeft = rect.left
+        if (rect.right > clusterRight) clusterRight = rect.right
+      }
+      // Preferred: the shell's own right-hand clusters, addressed by stable
+      // semantics instead of by "how close to the right edge it happens to be".
+      // The corner carries a data attribute; the utilities and the actions keep
+      // their module-scoped class names. Any plugin that widens these clusters
+      // widens the span measured here, and the limit follows it.
+      const ANCHORS = [
+        '[data-conversation-header-corner]',
+        '[class*="_headerUtilities"]',
+        '[class*="_headerActions"]',
+      ]
+      for (const selector of ANCHORS) {
+        for (const node of Array.from(header.querySelectorAll(selector)) as any[]) measureCluster(node)
+      }
+      // Always unioned in, never a fallback: a plugin may park extra controls at
+      // the header's right end inside a wrapper whose class does not match any
+      // anchor above, and those buttons still consume width the row must not use.
+      for (const node of Array.from(header.querySelectorAll('button, [role="button"]')) as any[]) {
+        const rect = node.getBoundingClientRect()
+        if (headerRect.right - rect.right > 320) continue
+        measureCluster(node)
+      }
+      if (clusterRight) {
+        const span = Math.round(clusterRight - clusterLeft)
+        if (span > 0) return Math.max(0, Math.round(headerRect.right - span - 12))
+      }
+      // No control matched yet (cold start, or the header is still assembling):
+      // stop at the header's own right padding edge, where the cluster sits.
+      const padding = typeof getComputedStyle === 'function'
+        ? parseFloat(getComputedStyle(header).paddingRight) || 0
+        : 0
+      return headerRect.right - Math.max(0, padding) - 8
+    }
+
+    /** Measure once; true when a usable room was decided this pass. */
+    function measure(): boolean {
+      if (stopped) return true
+      const bar = barRef.current
+      if (!bar || typeof document === 'undefined' || typeof bar.getBoundingClientRect !== 'function') return false
+      const header = typeof bar.closest === 'function'
+        ? bar.closest('header[data-window-drag]')
+        : document.querySelector('header[data-window-drag]')
+      if (!header || typeof header.getBoundingClientRect !== 'function') return false
+      bind(header)
+      const barRect = bar.getBoundingClientRect()
+      const headerRect = header.getBoundingClientRect()
+      if (!barRect.width || !headerRect.width) return false
+      const limit = rightLimitOf(header, bar, barRect, headerRect)
+      // The reserve is derived from where the right-hand cluster actually begins,
+      // so the row always stops a fixed 12px short of it. A constant reserve used
+      // to be right only for the plugin mix it was tuned on: any wider or narrower
+      // cluster silently moved the row over the buttons, or left a wide gap.
+      const gapToLimit = Math.round(headerRect.right - limit) + 12
+      const inset = Math.round(barRect.left - headerRect.left)
+      const next = stripFillWidth(limit, barRect.left, headerRect.width, 0, Math.max(40, gapToLimit + inset))
+      if (next <= 0) {
+        // Nothing usable this pass: hold the last good room instead of dropping
+        // onto the CSS fallback, which is what leaves the row visibly short.
+        return false
+      }
+      setRoom((previous: number) => (previous === next ? previous : next))
+      return true
+    }
+
+    requestMeasureRef.current = requestMeasure
     measure()
-    if (typeof setTimeout !== 'function') return undefined
-    const timers = [80, 300, 900].map((delay) => setTimeout(measure, delay))
-    return () => { for (const timer of timers) clearTimeout(timer) }
+    if (typeof setTimeout === 'function') {
+      timers = RETRY_DELAYS.map((delay) => setTimeout(() => { if (!stopped) measure() }, delay))
+    }
+    // Safety net: the observers can only fire for the header node they were bound
+    // to, and bind() itself runs inside measure(). If the shell ever swaps that
+    // node out (or a frame is dropped) the strip would have no way back to a
+    // correct width and would keep covering the right-hand buttons until reload —
+    // which is exactly the intermittent report this fix keeps chasing. A cheap
+    // periodic pass (two rects plus a short querySelectorAll over the header)
+    // makes convergence independent of any single observer surviving.
+    // Deliberately NOT skipped while the document is hidden: the header still
+    // changes size in that state (a minimised or fully occluded window is resized
+    // by the OS), rAF does not run, and Chrome clamps background timers to roughly
+    // one call a minute. A stale width from before the window was hidden is what
+    // makes the restored row run over the right-hand buttons, so the pass must
+    // keep happening — and it is cheap.
+    if (typeof setInterval === 'function') {
+      const tick = setInterval(() => { if (!stopped) measure() }, 1000)
+      timers.push(tick as any)
+    }
+    // Becoming visible again is the moment the stale width would be painted, so
+    // measure on the transition instead of waiting for the throttled timer.
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      const onVisibility = () => { if (!stopped && document.visibilityState === 'visible') measure() }
+      document.addEventListener('visibilitychange', onVisibility)
+      timers.push(() => document.removeEventListener('visibilitychange', onVisibility) as any)
+    }
+    return () => {
+      stopped = true
+      clearTimers()
+      if (frameTimer) { clearTimeout(frameTimer); frameTimer = 0 }
+      if (frame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frame)
+      frame = 0
+      if (headerObserver) headerObserver.disconnect()
+      if (treeObserver) treeObserver.disconnect()
+      if (barObserver) barObserver.disconnect()
+      headerObserver = null
+      treeObserver = null
+      barObserver = null
+      observedHeader = null
+    }
   }, deps)
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return undefined
-    const onResize = () => measure()
+    const onResize = () => requestMeasureRef.current()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
@@ -698,6 +908,13 @@ export function TabsStrip(props: TabsStripProps) {
   // The row is capped to the room before the window utilities; chips size to
   // their own titles and only shrink/scroll when that room runs out.
   const roomWidth = useStripFill(barRef, [tabs.length, sessionId, showTabs])
+  // The chips grow to share the row, so a cap is what keeps two open sessions
+  // from becoming two 700px slabs. It tracks the measured room: generous when a
+  // handful of chips has the row to themselves, tightening as more arrive.
+  // Count the trailing new-session chip too: it shares the row like any other.
+  const tabCap = roomWidth > 0
+    ? Math.max(150, Math.min(240, Math.round(roomWidth / Math.max(1, tabs.length + 1)) - 4))
+    : 200
   useRevealActive(stripRef, sessionId, tabs.length)
   useWheelScroll(stripRef)
   // The trigger only exists while chips are hidden; a row that suddenly fits
@@ -836,8 +1053,13 @@ export function TabsStrip(props: TabsStripProps) {
     ref: barRef,
     className: 'bw-tabbar',
     'data-bw-overflow': overflow.overflowing ? '1' : '0',
-    // Measured room to the header utilities; undefined keeps the CSS fallback.
-    style: roomWidth > 0 ? { maxWidth: roomWidth + 'px' } : undefined,
+    // Measured room to the header utilities. A WIDTH, not a cap: the chips are
+    // content-sized, so a max-width only ever clips the row — the row itself has
+    // to be told how wide it is before flex-grow can spread the chips across it.
+    // Undefined keeps the CSS fallback until the first measurement lands.
+    style: roomWidth > 0
+      ? { width: roomWidth + 'px', maxWidth: roomWidth + 'px', '--bw-tab-cap': tabCap + 'px' }
+      : undefined,
   },
     StyleNode(),
     E('div', {
